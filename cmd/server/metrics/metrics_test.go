@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewMetrics(t *testing.T) {
+func TestMetrics(t *testing.T) {
 	var tests = []struct {
 		name  string
 		value gauge

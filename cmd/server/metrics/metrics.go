@@ -14,7 +14,9 @@ type Metrics struct {
 }
 
 type MetricsCollector interface {
-	CollectMetrics()
+	UpdateMetrics()
+	GetMetrics() Metrics
+	GetMetric(name string) (interface{}, error)
 }
 
 func NewMetrics(m runtime.MemStats) *Metrics {
@@ -60,9 +62,3 @@ func GetMemStats() runtime.MemStats {
 	runtime.ReadMemStats(&memstats)
 	return memstats
 }
-
-// func main() {
-// 	memst := GetMemStats()
-// 	gaugeMetrics := NewMetrics(memst).GaugeMetrics
-// 	fmt.Println(gaugeMetrics)
-// }
