@@ -1,16 +1,16 @@
-package collector
+package metrics
 
-type Collector struct {
-	MetricsCollector
-	metrics *Metrics
-}
+// type Collector struct {
+// 	MetricsCollector
+// 	metrics *Metrics
+// }
 
-func NewCollector() *Collector {
-	return &Collector{
-		metrics: NewMetrics(),
-	}
-}
+// // func NewCollector() *Collector {
+// // 	return &Collector{
+// // 		metrics: NewMetrics(),
+// // 	}
+// // }
 
-func (col *Collector) CollectMetrics() {
+// func (col *Collector) CollectMetrics() {
 
-}
+// }

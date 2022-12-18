@@ -1,4 +1,4 @@
-package collector
+package metrics
 
 import (
 	"math/rand"
@@ -17,7 +17,7 @@ type MetricsCollector interface {
 	CollectMetrics()
 }
 
-func NewMetrics(m *runtime.MemStats) *Metrics {
+func NewMetrics(m runtime.MemStats) *Metrics {
 	return &Metrics{
 		GaugeMetrics: map[string]gauge{
 			"Alloc":         gauge(m.Alloc),
@@ -56,7 +56,13 @@ func NewMetrics(m *runtime.MemStats) *Metrics {
 }
 
 func GetMemStats() runtime.MemStats {
-	var memstats *runtime.MemStats
-	runtime.ReadMemStats(memstats)
-	return *memstats
+	var memstats runtime.MemStats
+	runtime.ReadMemStats(&memstats)
+	return memstats
 }
+
+// func main() {
+// 	memst := GetMemStats()
+// 	gaugeMetrics := NewMetrics(memst).GaugeMetrics
+// 	fmt.Println(gaugeMetrics)
+// }
