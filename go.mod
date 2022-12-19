@@ -7,4 +7,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	internal/metrics v0.0.0-00010101000000-000000000000 // indirect
 )
+
+replace internal/metrics => /internal/metrics

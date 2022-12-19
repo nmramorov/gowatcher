@@ -9,8 +9,8 @@ type gauge float64
 type counter int64
 
 type Metrics struct {
-	GaugeMetrics map[string]gauge
-	CountMetrics map[string]counter
+	GaugeMetrics   map[string]gauge
+	CounterMetrics map[string]counter
 }
 
 type MetricsCollector interface {
@@ -50,7 +50,7 @@ func NewMetrics(m runtime.MemStats) *Metrics {
 			"Sys":           gauge(m.Sys),
 			"TotalAlloc":    gauge(m.TotalAlloc),
 		},
-		CountMetrics: map[string]counter{
+		CounterMetrics: map[string]counter{
 			"PollCount":   0,
 			"RandomValue": counter(rand.Int63()),
 		},
@@ -61,4 +61,12 @@ func GetMemStats() runtime.MemStats {
 	var memstats runtime.MemStats
 	runtime.ReadMemStats(&memstats)
 	return memstats
+}
+
+func ToGauge(v float64) gauge {
+	return gauge(v)
+}
+
+func ToCounter(v int64) counter {
+	return counter(v)
 }

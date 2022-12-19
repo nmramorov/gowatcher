@@ -30,7 +30,7 @@ func (col *Collector) UpdateMetrics() {
 	col.metrics = NewMetrics(newstats)
 
 	col.updates++
-	col.metrics.CountMetrics["PollCount"] = counter(col.updates)
+	col.metrics.CounterMetrics["PollCount"] = counter(col.updates)
 }
 
 func (col *Collector) GetMetrics() Metrics {
@@ -38,7 +38,7 @@ func (col *Collector) GetMetrics() Metrics {
 }
 
 func (col *Collector) GetMetric(name string) (interface{}, error) {
-	for k, v := range col.metrics.CountMetrics {
+	for k, v := range col.metrics.CounterMetrics {
 		if k == name {
 			return v, nil
 		}
