@@ -9,7 +9,7 @@ import (
 func TestMetrics(t *testing.T) {
 	var tests = []struct {
 		name  string
-		value gauge
+		value Gauge
 	}{
 		{name: "Alloc", value: 0.0},
 		{name: "BuckHashSys", value: 0.0},

@@ -18,7 +18,7 @@ func NewCollector() *Collector {
 	runtime.ReadMemStats(&memstats)
 
 	return &Collector{
-		metrics: NewMetrics(memstats),
+		metrics: NewMetrics(),
 		updates: 0,
 	}
 }
@@ -27,10 +27,8 @@ func (col *Collector) UpdateMetrics() {
 	var newstats runtime.MemStats
 	runtime.ReadMemStats(&newstats)
 
-	col.metrics = NewMetrics(newstats)
-
 	col.updates++
-	col.metrics.CounterMetrics["PollCount"] = counter(col.updates)
+	col.metrics = UpdateMetrics(newstats, col.updates)
 }
 
 func (col *Collector) GetMetrics() Metrics {

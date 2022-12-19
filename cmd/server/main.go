@@ -30,13 +30,18 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	infoLog.Println("Method and Headers are valid.")
 	path := r.URL.Path
 	args := strings.Split(path, "/")
-	if len(args) != 3 {
+	operation := args[1]
+	if strings.Compare(operation, "update") != 0 {
+		http.Error(w, "Provide proper operation", http.StatusForbidden)
+		return
+	}
+	infoLog.Println(args)
+	if len(args) != 5 {
 		http.Error(w, "Wrong arguments in request", http.StatusInternalServerError)
 		return
 	}
-	var metricType, metricName, metricValue = args[0], args[1], args[2]
+	var metricType, metricName, metricValue = args[2], args[3], args[4]
 	infoLog.Printf("Received metric data:\nMetric type: %s\nMetric name: %s\nMetric value: %s", metricType, metricName, metricValue)
-
 	switch metricType {
 	case "gauge":
 		if _, ok := m.metrics.GaugeMetrics[metricName]; !ok {
@@ -48,7 +53,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Wrong Gauge value", http.StatusInternalServerError)
 			return
 		}
-		m.metrics.GaugeMetrics[metricName] = metrics.ToGauge(newMetricValue)
+		m.metrics.GaugeMetrics[metricName] = metrics.Gauge(newMetricValue)
 		infoLog.Printf("Value %s is set to %f", metricName, newMetricValue)
 
 	case "counter":
@@ -62,17 +67,17 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		infoLog.Printf("Value %s is set to %d", metricName, newMetricValue)
-		m.metrics.CounterMetrics[metricName] = metrics.ToCounter(newMetricValue)
+		m.metrics.CounterMetrics[metricName] = metrics.Counter(newMetricValue)
 	default:
 		http.Error(w, "Wrong metric type", http.StatusInternalServerError)
 	}
-	infoLog.Println("Request successfully handled")
+	w.Write([]byte("Request successfully handled"))
 }
 
 func main() {
 	infoLog.Println("Initializing web server...")
 	metricsHandler := MetricsHandler{
-		metrics: &metrics.Metrics{},
+		metrics: metrics.NewMetrics(),
 	}
 
 	server := &http.Server{
