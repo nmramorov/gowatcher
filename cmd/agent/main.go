@@ -46,8 +46,8 @@ func PushMetrics(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
 }
 
 func main() {
-	var pollInterval = 2 * time.Second
-	var reportInterval = 10 * time.Second
+	var pollInterval = 2
+	var reportInterval = 10
 
 	var collector = metrics.NewCollector()
 
@@ -56,11 +56,21 @@ func main() {
 	client := &http.Client{}
 	infoLog.Println("Client initialized...")
 
+	ticker := time.NewTicker(1 * time.Second)
+	startTime := time.Now()
+
 	for {
-		time.AfterFunc(pollInterval, collector.UpdateMetrics)
-		time.AfterFunc(reportInterval, func() { PushMetrics(client, endpoint, collector.GetMetrics()) })
-		time.Sleep(1 * time.Second)
-		infoLog.Println("Tick")
+		tickedTime := <-ticker.C
+
+		timeDiffSec := int(tickedTime.Sub(startTime).Seconds())
+		if timeDiffSec%pollInterval == 0 {
+			collector.UpdateMetrics()
+			infoLog.Println("Metrics have been updated")
+		}
+		if timeDiffSec%reportInterval == 0 {
+			PushMetrics(client, endpoint, collector.GetMetrics())
+			infoLog.Println("Metrics have been pushed")
+		}
 	}
 
 }
