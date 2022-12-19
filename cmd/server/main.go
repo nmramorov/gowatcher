@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -13,7 +14,11 @@ type MetricsHandler struct {
 	metrics *metrics.Metrics
 }
 
+var infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+
 func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	infoLog.Println("Started handling metric...")
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST requests are allowed for now", http.StatusMethodNotAllowed)
 		return
@@ -22,6 +27,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Provide proper header", http.StatusForbidden)
 		return
 	}
+	infoLog.Println("Method and Headers are valid.")
 	path := r.URL.Path
 	args := strings.Split(path, "/")
 	if len(args) != 3 {
@@ -29,6 +35,8 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var metricType, metricName, metricValue = args[0], args[1], args[2]
+	infoLog.Printf("Received metric data:\nMetric type: %s\nMetric name: %s\nMetric value: %s", metricType, metricName, metricValue)
+
 	switch metricType {
 	case "gauge":
 		if _, ok := m.metrics.GaugeMetrics[metricName]; !ok {
@@ -41,6 +49,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		m.metrics.GaugeMetrics[metricName] = metrics.ToGauge(newMetricValue)
+		infoLog.Printf("Value %s is set to %f", metricName, newMetricValue)
 
 	case "counter":
 		if _, ok := m.metrics.CounterMetrics[metricName]; !ok {
@@ -52,15 +61,16 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Wrong Gauge value", http.StatusInternalServerError)
 			return
 		}
+		infoLog.Printf("Value %s is set to %d", metricName, newMetricValue)
 		m.metrics.CounterMetrics[metricName] = metrics.ToCounter(newMetricValue)
 	default:
 		http.Error(w, "Wrong metric type", http.StatusInternalServerError)
 	}
-	fmt.Println(m.metrics.CounterMetrics)
-	fmt.Println(m.metrics.GaugeMetrics)
+	infoLog.Println("Request successfully handled")
 }
 
 func main() {
+	infoLog.Println("Initializing web server...")
 	metricsHandler := MetricsHandler{
 		metrics: &metrics.Metrics{},
 	}
@@ -70,5 +80,6 @@ func main() {
 		Handler: &metricsHandler,
 	}
 
+	infoLog.Println("Web server is ready to accept connections...")
 	server.ListenAndServe()
 }
