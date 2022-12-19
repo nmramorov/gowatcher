@@ -31,8 +31,8 @@ func (col *Collector) UpdateMetrics() {
 	col.metrics = UpdateMetrics(newstats, col.updates)
 }
 
-func (col *Collector) GetMetrics() Metrics {
-	return *col.metrics
+func (col *Collector) GetMetrics() *Metrics {
+	return col.metrics
 }
 
 func (col *Collector) GetMetric(name string) (interface{}, error) {
