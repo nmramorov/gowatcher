@@ -38,6 +38,7 @@ func PushMetrics(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
 	requests := CreateRequests(endpoint, mtrcs)
 	for _, request := range requests {
 		_, err := client.Do(request)
+		defer request.Body.Close()
 		if err != nil {
 			errorLog.Println(err)
 			panic(1)
