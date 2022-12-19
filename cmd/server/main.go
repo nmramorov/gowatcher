@@ -32,12 +32,12 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	args := strings.Split(path, "/")
 	operation := args[1]
 	if strings.Compare(operation, "update") != 0 {
-		http.Error(w, "Provide proper operation", http.StatusForbidden)
+		http.Error(w, "Provide proper operation", http.StatusNotFound)
 		return
 	}
 	infoLog.Println(args)
 	if len(args) != 5 {
-		http.Error(w, "Wrong arguments in request", http.StatusInternalServerError)
+		http.Error(w, "Wrong arguments in request", http.StatusNotFound)
 		return
 	}
 	var metricType, metricName, metricValue = args[2], args[3], args[4]
