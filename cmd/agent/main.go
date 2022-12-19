@@ -37,12 +37,12 @@ func CreateRequests(endpoint string, mtrcs *metrics.Metrics) []*http.Request {
 func PushMetrics(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
 	requests := CreateRequests(endpoint, mtrcs)
 	for _, request := range requests {
-		_, err := client.Do(request)
-		defer request.Body.Close()
+		resp, err := client.Do(request)
 		if err != nil {
 			errorLog.Println(err)
 			panic(1)
 		}
+		defer resp.Body.Close()
 	}
 }
 
