@@ -37,7 +37,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	InfoLog.Println(args)
 	if len(args) != 5 {
-		http.Error(w, "Wrong arguments in request", http.StatusNotImplemented)
+		http.Error(w, "Wrong arguments in request", http.StatusNotFound)
 		return
 	}
 	var metricType, metricName, metricValue = args[2], args[3], args[4]
