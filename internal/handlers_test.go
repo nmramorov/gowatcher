@@ -11,9 +11,8 @@ import (
 func TestMetricsHandler(t *testing.T) {
 	// определяем структуру теста
 	type want struct {
-		code        int
-		response    string
-		contentType string
+		code     int
+		response string
 	}
 	type arguments struct {
 		metricType  string
@@ -30,9 +29,8 @@ func TestMetricsHandler(t *testing.T) {
 		{
 			name: "Positive test Gauge 1",
 			want: want{
-				code:        200,
-				response:    `{"status":"ok"}`,
-				contentType: "text/plain",
+				code:     200,
+				response: `{"status":"ok"}`,
 			},
 			args: arguments{
 				metricType:  "gauge",
@@ -43,9 +41,8 @@ func TestMetricsHandler(t *testing.T) {
 		{
 			name: "Positive test Gauge 2",
 			want: want{
-				code:        200,
-				response:    `{"status":"ok"}`,
-				contentType: "text/plain",
+				code:     200,
+				response: `{"status":"ok"}`,
 			},
 			args: arguments{
 				metricType:  "gauge",
@@ -56,9 +53,8 @@ func TestMetricsHandler(t *testing.T) {
 		{
 			name: "Negative test Gauge 1",
 			want: want{
-				code:        400,
-				response:    "Wrong Gauge value\n",
-				contentType: "text/plain; charset=utf-8",
+				code:     400,
+				response: "Wrong Gauge value\n",
 			},
 			args: arguments{
 				metricType:  "gauge",
@@ -69,9 +65,8 @@ func TestMetricsHandler(t *testing.T) {
 		{
 			name: "Positive test Gauge 3",
 			want: want{
-				code:        200,
-				response:    `{"status":"ok"}`,
-				contentType: "text/plain",
+				code:     200,
+				response: `{"status":"ok"}`,
 			},
 			args: arguments{
 				metricType:  "gauge",
@@ -82,9 +77,8 @@ func TestMetricsHandler(t *testing.T) {
 		{
 			name: "Positive test Counter 1",
 			want: want{
-				code:        200,
-				response:    `{"status":"ok"}`,
-				contentType: "text/plain",
+				code:     200,
+				response: `{"status":"ok"}`,
 			},
 			args: arguments{
 				metricType:  "counter",
@@ -95,9 +89,8 @@ func TestMetricsHandler(t *testing.T) {
 		{
 			name: "Positive test Counter 2",
 			want: want{
-				code:        200,
-				response:    `{"status":"ok"}`,
-				contentType: "text/plain",
+				code:     200,
+				response: `{"status":"ok"}`,
 			},
 			args: arguments{
 				metricType:  "counter",
@@ -108,9 +101,8 @@ func TestMetricsHandler(t *testing.T) {
 		{
 			name: "Negative test Counter 1",
 			want: want{
-				code:        400,
-				response:    "Wrong Counter value\n",
-				contentType: "text/plain; charset=utf-8",
+				code:     400,
+				response: "Wrong Counter value\n",
 			},
 			args: arguments{
 				metricType:  "counter",
@@ -121,9 +113,8 @@ func TestMetricsHandler(t *testing.T) {
 		{
 			name: "Negative test Counter 2",
 			want: want{
-				code:        400,
-				response:    "Wrong Counter value\n",
-				contentType: "text/plain; charset=utf-8",
+				code:     400,
+				response: "Wrong Counter value\n",
 			},
 			args: arguments{
 				metricType:  "counter",
@@ -161,11 +152,6 @@ func TestMetricsHandler(t *testing.T) {
 			}
 			if string(resBody) != tt.want.response {
 				t.Errorf("Expected body %s, got %s", tt.want.response, w.Body.String())
-			}
-
-			// заголовок ответа
-			if res.Header.Get("Content-Type") != tt.want.contentType {
-				t.Errorf("Expected Content-Type %s, got %s", tt.want.contentType, res.Header.Get("Content-Type"))
 			}
 		})
 	}

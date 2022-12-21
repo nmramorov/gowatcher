@@ -21,11 +21,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Only POST requests are allowed for now", http.StatusMethodNotAllowed)
 		return
 	}
-	// if r.Header.Get("Content-Type") != "text/plain" {
-	// 	http.Error(w, "Provide proper header", http.StatusForbidden)
-	// 	return
-	// }
-	InfoLog.Println("Method and Headers are valid.")
+	InfoLog.Println("Method is valid.")
 	w.Header().Set("Content-Type", "text/plain")
 
 	path := r.URL.Path
