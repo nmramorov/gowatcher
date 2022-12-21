@@ -56,7 +56,7 @@ func TestMetricsHandler(t *testing.T) {
 		{
 			name: "Negative test Gauge 1",
 			want: want{
-				code:        500,
+				code:        400,
 				response:    "Wrong Gauge value\n",
 				contentType: "text/plain; charset=utf-8",
 			},
@@ -108,7 +108,7 @@ func TestMetricsHandler(t *testing.T) {
 		{
 			name: "Negative test Counter 1",
 			want: want{
-				code:        500,
+				code:        400,
 				response:    "Wrong Counter value\n",
 				contentType: "text/plain; charset=utf-8",
 			},
@@ -121,7 +121,7 @@ func TestMetricsHandler(t *testing.T) {
 		{
 			name: "Negative test Counter 2",
 			want: want{
-				code:        500,
+				code:        400,
 				response:    "Wrong Counter value\n",
 				contentType: "text/plain; charset=utf-8",
 			},

@@ -32,12 +32,12 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	args := strings.Split(path, "/")
 	operation := args[1]
 	if strings.Compare(operation, "update") != 0 {
-		http.Error(w, "Provide proper operation", http.StatusNotImplemented)
+		http.Error(w, "Provide proper operation", http.StatusNotFound)
 		return
 	}
 	InfoLog.Println(args)
 	if len(args) != 5 {
-		http.Error(w, "Wrong arguments in request", http.StatusNotFound)
+		http.Error(w, "Wrong arguments in request", http.StatusNotImplemented)
 		return
 	}
 	var metricType, metricName, metricValue = args[2], args[3], args[4]
@@ -46,7 +46,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "gauge":
 		newMetricValue, err := strconv.ParseFloat(metricValue, 64)
 		if err != nil {
-			http.Error(w, "Wrong Gauge value", http.StatusInternalServerError)
+			http.Error(w, "Wrong Gauge value", http.StatusBadRequest)
 			return
 		}
 		m.Metrics.GaugeMetrics[metricName] = Gauge(newMetricValue)
@@ -55,14 +55,14 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "counter":
 		newMetricValue, err := strconv.ParseInt(metricValue, 10, 64)
 		if err != nil {
-			http.Error(w, "Wrong Counter value", http.StatusInternalServerError)
+			http.Error(w, "Wrong Counter value", http.StatusBadRequest)
 			return
 		}
 		InfoLog.Printf("Value %s is set to %d", metricName, newMetricValue)
 		newValue := m.Metrics.CounterMetrics[metricName] + Counter(newMetricValue)
 		m.Metrics.CounterMetrics[metricName] = newValue
 	default:
-		http.Error(w, "Wrong metric type", http.StatusInternalServerError)
+		http.Error(w, "Wrong metric type", http.StatusNotImplemented)
 		return
 	}
 	w.Write([]byte(`{"status":"ok"}`))
