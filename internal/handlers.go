@@ -44,10 +44,6 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	InfoLog.Printf("Received metric data:\nMetric type: %s\nMetric name: %s\nMetric value: %s", metricType, metricName, metricValue)
 	switch metricType {
 	case "gauge":
-		if _, ok := m.Metrics.GaugeMetrics[metricName]; !ok {
-			http.Error(w, "Wrong key", http.StatusInternalServerError)
-			return
-		}
 		newMetricValue, err := strconv.ParseFloat(metricValue, 64)
 		if err != nil {
 			http.Error(w, "Wrong Gauge value", http.StatusInternalServerError)
@@ -57,10 +53,6 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		InfoLog.Printf("Value %s is set to %f", metricName, newMetricValue)
 
 	case "counter":
-		if _, ok := m.Metrics.CounterMetrics[metricName]; !ok {
-			http.Error(w, "Wrong key", http.StatusInternalServerError)
-			return
-		}
 		newMetricValue, err := strconv.ParseInt(metricValue, 10, 64)
 		if err != nil {
 			http.Error(w, "Wrong Counter value", http.StatusInternalServerError)
