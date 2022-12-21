@@ -88,7 +88,7 @@ func TestMetricsHandler(t *testing.T) {
 			},
 			args: arguments{
 				metricType:  "counter",
-				metricName:  "RandomValue",
+				metricName:  "testCounter",
 				metricValue: "3",
 			},
 		},
@@ -102,7 +102,7 @@ func TestMetricsHandler(t *testing.T) {
 			args: arguments{
 				metricType:  "counter",
 				metricName:  "myValue",
-				metricValue: "444444",
+				metricValue: "100",
 			},
 		},
 		{

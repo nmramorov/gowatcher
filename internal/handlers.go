@@ -21,10 +21,10 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Only POST requests are allowed for now", http.StatusMethodNotAllowed)
 		return
 	}
-	if r.Header.Get("Content-Type") != "text/plain" {
-		http.Error(w, "Provide proper header", http.StatusForbidden)
-		return
-	}
+	// if r.Header.Get("Content-Type") != "text/plain" {
+	// 	http.Error(w, "Provide proper header", http.StatusForbidden)
+	// 	return
+	// }
 	InfoLog.Println("Method and Headers are valid.")
 	w.Header().Set("Content-Type", "text/plain")
 
@@ -32,7 +32,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	args := strings.Split(path, "/")
 	operation := args[1]
 	if strings.Compare(operation, "update") != 0 {
-		http.Error(w, "Provide proper operation", http.StatusNotFound)
+		http.Error(w, "Provide proper operation", http.StatusNotImplemented)
 		return
 	}
 	InfoLog.Println(args)
