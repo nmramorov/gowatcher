@@ -45,7 +45,7 @@ func TestMetricsHandler(t *testing.T) {
 			want: want{
 				code:        200,
 				response:    `{"status":"ok"}`,
-				contentType: "text/plain",
+				contentType: "text/plain; charset=utf-8",
 			},
 			args: arguments{
 				metricType:  "gauge",
@@ -58,7 +58,7 @@ func TestMetricsHandler(t *testing.T) {
 			want: want{
 				code:        500,
 				response:    "Wrong Gauge value",
-				contentType: "text/plain",
+				contentType: "text/plain; charset=utf-8",
 			},
 			args: arguments{
 				metricType:  "gauge",
@@ -71,7 +71,7 @@ func TestMetricsHandler(t *testing.T) {
 			want: want{
 				code:        500,
 				response:    "Wrong Gauge value",
-				contentType: "text/plain",
+				contentType: "text/plain; charset=utf-8",
 			},
 			args: arguments{
 				metricType:  "gauge",
@@ -97,7 +97,7 @@ func TestMetricsHandler(t *testing.T) {
 			want: want{
 				code:        200,
 				response:    `{"status":"ok"}`,
-				contentType: "text/plain",
+				contentType: "text/plain; charset=utf-8",
 			},
 			args: arguments{
 				metricType:  "counter",
@@ -110,7 +110,7 @@ func TestMetricsHandler(t *testing.T) {
 			want: want{
 				code:        500,
 				response:    "Wrong Counter value",
-				contentType: "text/plain",
+				contentType: "text/plain; charset=utf-8",
 			},
 			args: arguments{
 				metricType:  "counter",
@@ -123,7 +123,7 @@ func TestMetricsHandler(t *testing.T) {
 			want: want{
 				code:        500,
 				response:    "Wrong Counter value",
-				contentType: "text/plain",
+				contentType: "text/plain; charset=utf-8",
 			},
 			args: arguments{
 				metricType:  "counter",

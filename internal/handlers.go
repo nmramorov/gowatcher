@@ -26,6 +26,8 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	InfoLog.Println("Method and Headers are valid.")
+	w.Header().Set("Content-Type", "text/plain")
+
 	path := r.URL.Path
 	args := strings.Split(path, "/")
 	operation := args[1]
