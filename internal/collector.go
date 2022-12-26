@@ -53,7 +53,7 @@ func (col *Collector) String(value interface{}) (string, error) {
 	switch val.Kind() {
 	case reflect.Float64:
 		return strconv.FormatFloat(val.Float(), 'f', -1, 64), nil
-	case reflect.Int:
+	case reflect.Int64:
 		return strconv.FormatInt(val.Int(), 10), nil
 	default:
 		return "", ErrorWrongStringConvertion

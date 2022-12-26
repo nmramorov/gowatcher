@@ -6,10 +6,27 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestMetricsHandler(t *testing.T) {
-	// определяем структуру теста
+func testRequest(t *testing.T, ts *httptest.Server, method, path string) (int, string) {
+	req, err := http.NewRequest(method, ts.URL+path, nil)
+	require.NoError(t, err)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
+	return resp.StatusCode, string(respBody)
+}
+
+func TestPOSTMetricsHandler(t *testing.T) {
 	type want struct {
 		code     int
 		response string
@@ -19,13 +36,11 @@ func TestMetricsHandler(t *testing.T) {
 		metricName  string
 		metricValue string
 	}
-	// создаём массив тестов: имя и желаемый результат
 	tests := []struct {
 		name string
 		want want
 		args arguments
 	}{
-		// определяем все тесты
 		{
 			name: "Positive test Gauge 1",
 			want: want{
@@ -123,36 +138,106 @@ func TestMetricsHandler(t *testing.T) {
 			},
 		},
 	}
-	metricsHandler := MetricsHandler{
-		Metrics: NewMetrics(),
-	}
+	var collector = NewCollector()
+	metricsHandler := NewHandler(collector)
+
+	ts := httptest.NewServer(metricsHandler)
+
+	defer ts.Close()
+
 	for _, tt := range tests {
-		// запускаем каждый тест
 		t.Run(tt.name, func(t *testing.T) {
 			urlPath := fmt.Sprintf("/update/%s/%s/%s", tt.args.metricType, tt.args.metricName, tt.args.metricValue)
-			request := httptest.NewRequest(http.MethodPost, urlPath, nil)
-			request.Header.Set("Content-Type", "text/plain")
+			statusCode, body := testRequest(t, ts, "POST", urlPath)
+			assert.Equal(t, tt.want.code, statusCode)
+			assert.Equal(t, tt.want.response, body)
+		})
+	}
+}
 
-			// создаём новый Recorder
-			w := httptest.NewRecorder()
+func TestGETMetricsHandler(t *testing.T) {
+	type want struct {
+		code     int
+		response string
+	}
+	type arguments struct {
+		metricType string
+		metricName string
+	}
+	tests := []struct {
+		name string
+		want want
+		args arguments
+	}{
+		{
+			name: "Positive test Gauge 1",
+			want: want{
+				code:     200,
+				response: "0",
+			},
+			args: arguments{
+				metricType: "gauge",
+				metricName: "Alloc",
+			},
+		},
+		{
+			name: "Negative test Gauge 1",
+			want: want{
+				code:     404,
+				response: "Metric not found\n",
+			},
+			args: arguments{
+				metricType: "gauge",
+				metricName: "testGauge44",
+			},
+		},
+		{
+			name: "Positive test Gauge 2",
+			want: want{
+				code:     200,
+				response: "0",
+			},
+			args: arguments{
+				metricType: "gauge",
+				metricName: "Frees",
+			},
+		},
+		{
+			name: "Positive test Counter 1",
+			want: want{
+				code:     200,
+				response: "0",
+			},
+			args: arguments{
+				metricType: "counter",
+				metricName: "PollCount",
+			},
+		},
+		{
+			name: "Negative test Counter 1",
+			want: want{
+				code:     404,
+				response: "Metric not found\n",
+			},
+			args: arguments{
+				metricType: "counter",
+				metricName: "mymetric",
+			},
+		},
+	}
+	var collector = NewCollector()
+	metricsHandler := NewHandler(collector)
 
-			metricsHandler.ServeHTTP(w, request)
-			res := w.Result()
+	ts := httptest.NewServer(metricsHandler)
 
-			// проверяем код ответа
-			if res.StatusCode != tt.want.code {
-				t.Errorf("Expected status code %d, got %d", tt.want.code, w.Code)
-			}
+	defer ts.Close()
 
-			// получаем и проверяем тело запроса
-			defer res.Body.Close()
-			resBody, err := io.ReadAll(res.Body)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if string(resBody) != tt.want.response {
-				t.Errorf("Expected body %s, got %s", tt.want.response, w.Body.String())
-			}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			urlPath := fmt.Sprintf("/value/%s/%s", tt.args.metricType, tt.args.metricName)
+			statusCode, body := testRequest(t, ts, "GET", urlPath)
+			assert.Equal(t, tt.want.code, statusCode)
+			assert.Equal(t, tt.want.response, body)
 		})
 	}
 }
