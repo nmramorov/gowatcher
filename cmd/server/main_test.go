@@ -66,7 +66,7 @@ func TestServer(t *testing.T) {
 			name: "Test wrong method 1",
 			want: want{
 				code:     404,
-				response: "Provide proper operation\n",
+				response: "404 page not found\n",
 			},
 			args: arguments{
 				url: "http://localhost:8080/do_something_new",
@@ -76,7 +76,7 @@ func TestServer(t *testing.T) {
 			name: "Test wrong method 2",
 			want: want{
 				code:     404,
-				response: "Provide proper operation\n",
+				response: "404 page not found\n",
 			},
 			args: arguments{
 				url: "http://localhost:8080/updater/gauge/newMetric/none",
@@ -86,7 +86,7 @@ func TestServer(t *testing.T) {
 			name: "Test wrong path 1",
 			want: want{
 				code:     404,
-				response: "Wrong arguments in request\n",
+				response: "404 page not found\n",
 			},
 			args: arguments{
 				url: "http://localhost:8080/update/gauge/",
@@ -96,16 +96,19 @@ func TestServer(t *testing.T) {
 			name: "Test wrong path 1",
 			want: want{
 				code:     404,
-				response: "Wrong arguments in request\n",
+				response: "404 page not found\n",
 			},
 			args: arguments{
 				url: "http://localhost:8080/update/counter/dsfsdf/dsfdsff/dsfsd/fsd",
 			},
 		},
 	}
-	metricsHandler := metrics.MetricsHandler{
-		Metrics: metrics.NewMetrics(),
-	}
+	metricsHandler := metrics.NewHandler()
+
+	ts := httptest.NewServer(metricsHandler)
+
+	defer ts.Close()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, tt.args.url, nil)

@@ -138,8 +138,8 @@ func TestPOSTMetricsHandler(t *testing.T) {
 			},
 		},
 	}
-	var collector = NewCollector()
-	metricsHandler := NewHandler(collector)
+
+	metricsHandler := NewHandler()
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -225,8 +225,7 @@ func TestGETMetricsHandler(t *testing.T) {
 			},
 		},
 	}
-	var collector = NewCollector()
-	metricsHandler := NewHandler(collector)
+	metricsHandler := NewHandler()
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -240,4 +239,16 @@ func TestGETMetricsHandler(t *testing.T) {
 			assert.Equal(t, tt.want.response, body)
 		})
 	}
+}
+
+func TestHTML(t *testing.T) {
+	metricsHandler := NewHandler()
+	metricsHandler.collector.UpdateMetrics()
+
+	ts := httptest.NewServer(metricsHandler)
+
+	defer ts.Close()
+
+	statusCode, _ := testRequest(t, ts, "GET", "/")
+	assert.Equal(t, 200, statusCode)
 }

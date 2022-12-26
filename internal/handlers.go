@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,11 +14,12 @@ type Handler struct {
 	collector *Collector
 }
 
-func NewHandler(collector *Collector) *Handler {
+func NewHandler() *Handler {
 	h := &Handler{
 		Mux:       chi.NewMux(),
-		collector: collector,
+		collector: NewCollector(),
 	}
+	h.Get("/", h.ListMetricsHTML)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
 
@@ -93,4 +95,12 @@ func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte(`{"status":"ok"}`))
+}
+
+func (h *Handler) ListMetricsHTML(w http.ResponseWriter, r *http.Request) {
+	t := template.Must(template.New("").Parse(`
+	<strong>Gauge Metrics:</strong>\n {{range $key, $val := .GaugeMetrics}} {{$key}} = {{$val}}\n {{end}}
+	<strong>Counter Metrics:</strong>\n {{range $key, $val := .CounterMetrics}} {{$key}} = {{$val}}\n {{end}}
+	`))
+	t.Execute(w, h.collector.metrics)
 }
