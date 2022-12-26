@@ -4,7 +4,7 @@ func validateMetricType(metricType string) bool {
 	switch metricType {
 	case "gauge":
 		return true
-	case "count":
+	case "counter":
 		return true
 	default:
 		return false
@@ -13,8 +13,16 @@ func validateMetricType(metricType string) bool {
 
 func validateMetricName(metricName string, collector *Collector) bool {
 	_, err := collector.GetMetric(metricName)
-	if err != nil {
-		return false
+	return err == nil
+}
+
+func ValidateMetric(metricType, metricName string, col *Collector) bool {
+	isValidType := validateMetricType(metricType)
+	if isValidType {
+		isValidName := validateMetricName(metricName, col)
+		if isValidName {
+			return true
+		}
 	}
-	return true
+	return false
 }

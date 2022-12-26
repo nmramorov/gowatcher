@@ -69,24 +69,8 @@ type Handler struct {
 	collector *Collector
 }
 
-func (h *Handler) GetMetricByTypeAndName(rw http.ResponseWriter, r *http.Request) {
-	metricType := chi.URLParam(r, "type")
-	metricName := chi.URLParam(r, "name")
-	isValidType := validateMetricType(metricType)
-	if isValidType == true {
-		isValidName := validateMetricName(metricName, h.collector)
-		if isValidName == true {
-			metric, err := h.collector.GetMetric(metricName)
-			if err != nil {
-				ErrorLog.Fatalf("Unexpected error with metric %s of type %s: %e", metricName, metricType, err)
-				http.Error(rw, "UNexpected error", http.StatusInternalServerError)
-			}
-			payload, ok := metric.([]byte)
-			if ok == false {
-				ErrorLog.Fatalf("Encoding error with metric %s of type %s: %e", metricName, metricType, err)
-				http.Error(rw, "UNexpected error", http.StatusInternalServerError)
-			}
-			rw.Write(payload)
-		}
-	}
-}
+// func (h *Handler) GetMetricByTypeAndName(rw http.ResponseWriter, r *http.Request) {
+// 	metricType := chi.URLParam(r, "type")
+// 	metricName := chi.URLParam(r, "name")
+
+// }
