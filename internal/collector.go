@@ -1,8 +1,9 @@
 package metrics
 
 import (
-	"errors"
+	"reflect"
 	"runtime"
+	"strconv"
 )
 
 type Collector struct {
@@ -10,8 +11,6 @@ type Collector struct {
 	metrics *Metrics
 	updates int
 }
-
-var ErrorMetricNotFound error = errors.New("no such metric")
 
 func NewCollector() *Collector {
 	var memstats runtime.MemStats
@@ -47,4 +46,16 @@ func (col *Collector) GetMetric(name string) (interface{}, error) {
 		}
 	}
 	return 1, ErrorMetricNotFound
+}
+
+func (col *Collector) String(value interface{}) (string, error) {
+	val := reflect.ValueOf(value)
+	switch val.Kind() {
+	case reflect.Float64:
+		return strconv.FormatFloat(val.Float(), 'f', -1, 64), nil
+	case reflect.Int:
+		return strconv.FormatInt(val.Int(), 10), nil
+	default:
+		return "", ErrorWrongStringConvertion
+	}
 }

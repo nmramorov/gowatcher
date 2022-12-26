@@ -14,6 +14,7 @@ type Metrics struct {
 }
 
 type MetricsCollector interface {
+	String()
 	UpdateMetrics()
 	GetMetrics() Metrics
 	GetMetric(name string) (interface{}, error)

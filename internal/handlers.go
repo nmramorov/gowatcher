@@ -1,18 +1,18 @@
 package metrics
 
 import (
-	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type MetricsHandler struct {
 	Metrics *Metrics
 }
 
-var InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+// var InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 
 func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	InfoLog.Println("Started handling metric...")
@@ -62,4 +62,31 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte(`{"status":"ok"}`))
+}
+
+type Handler struct {
+	*chi.Mux
+	collector *Collector
+}
+
+func (h *Handler) GetMetricByTypeAndName(rw http.ResponseWriter, r *http.Request) {
+	metricType := chi.URLParam(r, "type")
+	metricName := chi.URLParam(r, "name")
+	isValidType := validateMetricType(metricType)
+	if isValidType == true {
+		isValidName := validateMetricName(metricName, h.collector)
+		if isValidName == true {
+			metric, err := h.collector.GetMetric(metricName)
+			if err != nil {
+				ErrorLog.Fatalf("Unexpected error with metric %s of type %s: %e", metricName, metricType, err)
+				http.Error(rw, "UNexpected error", http.StatusInternalServerError)
+			}
+			payload, ok := metric.([]byte)
+			if ok == false {
+				ErrorLog.Fatalf("Encoding error with metric %s of type %s: %e", metricName, metricType, err)
+				http.Error(rw, "UNexpected error", http.StatusInternalServerError)
+			}
+			rw.Write(payload)
+		}
+	}
 }

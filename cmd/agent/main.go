@@ -10,9 +10,6 @@ import (
 	"internal/metrics"
 )
 
-var infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-var errorLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime)
-
 func CreateRequests(endpoint string, mtrcs *metrics.Metrics) []*http.Request {
 	var requests []*http.Request
 	for k, v := range mtrcs.GaugeMetrics {

@@ -45,3 +45,26 @@ func TestGetMetricError(t *testing.T) {
 	_, err := newCollector.GetMetric("SampleKey")
 	assert.Equal(t, err, ErrorMetricNotFound)
 }
+
+func TestStringFromCounter(t *testing.T) {
+	var newCollector = NewCollector()
+	pollCount, err := newCollector.GetMetric("PollCount")
+	if err != nil {
+		panic(1)
+	}
+	strPollCount := fmt.Sprint(pollCount)
+	if err != nil {
+		panic(1)
+	}
+	assert.Equal(t, strPollCount, "0")
+}
+
+func TestStringFromGauge(t *testing.T) {
+	var newCollector = NewCollector()
+	alloc, err := newCollector.GetMetric("Alloc")
+	if err != nil {
+		panic(1)
+	}
+	strAlloc := fmt.Sprint(alloc)
+	assert.GreaterOrEqual(t, strAlloc, "0")
+}
