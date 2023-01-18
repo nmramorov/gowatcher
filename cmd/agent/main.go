@@ -43,7 +43,7 @@ func CreateUpdateRequestsJSON(endpoint string, mtrcs *metrics.Metrics) []*http.R
 			MType: "gauge",
 			Value: val,
 		}
-		encoder.Encode(toEncode)
+		encoder.Encode(&toEncode)
 		req, err := http.NewRequest(http.MethodPost, endpoint+"/update/", body)
 		if err != nil {
 			metrics.ErrorLog.Printf("Could not do POST request for gauge with params: %s %f", k, v)
@@ -61,7 +61,7 @@ func CreateUpdateRequestsJSON(endpoint string, mtrcs *metrics.Metrics) []*http.R
 			MType: "counter",
 			Delta: val,
 		}
-		encoder.Encode(toEncode)
+		encoder.Encode(&toEncode)
 		req, err := http.NewRequest(http.MethodPost, endpoint+"/update/", body)
 		if err != nil {
 			metrics.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
@@ -77,7 +77,7 @@ func CreateValueRequestsJSON(endpoint string, mtrcs *metrics.Metrics) []*http.Re
 	for k, v := range mtrcs.GaugeMetrics {
 		body := bytes.NewBuffer([]byte{})
 		encoder := json.NewEncoder(body)
-		encoder.Encode(metrics.JSONMetrics{
+		encoder.Encode(&metrics.JSONMetrics{
 			ID:    k,
 			MType: "gauge",
 		})
@@ -91,7 +91,7 @@ func CreateValueRequestsJSON(endpoint string, mtrcs *metrics.Metrics) []*http.Re
 	for k, v := range mtrcs.CounterMetrics {
 		body := bytes.NewBuffer([]byte{})
 		encoder := json.NewEncoder(body)
-		encoder.Encode(metrics.JSONMetrics{
+		encoder.Encode(&metrics.JSONMetrics{
 			ID:    k,
 			MType: "counter",
 		})
