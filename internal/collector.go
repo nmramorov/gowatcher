@@ -59,3 +59,15 @@ func (col *Collector) String(value interface{}) (string, error) {
 		return "", ErrorWrongStringConvertion
 	}
 }
+
+func (col *Collector) UpdateMetricFromJson(newMetric JSONMetrics) (JSONMetrics, error) {
+	switch newMetric.MType {
+	case "gauge":
+		col.metrics.GaugeMetrics[newMetric.ID] = Gauge(*newMetric.Value)
+	case "counter":
+		col.metrics.CounterMetrics[newMetric.ID] = Counter(*newMetric.Delta)
+	default:
+		return newMetric, ErrorMetricNotFound
+	}
+	return newMetric, nil
+}

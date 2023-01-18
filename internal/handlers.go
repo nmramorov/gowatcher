@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"bytes"
+	"encoding/json"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -8,6 +10,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 )
+
+type JSONMetrics struct {
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+}
 
 type Handler struct {
 	*chi.Mux
@@ -22,8 +31,25 @@ func NewHandler() *Handler {
 	h.Get("/", h.ListMetricsHTML)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
+	h.Post("/update", h.UpdateMetricsJson)
 
 	return h
+}
+
+func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
+	metricData := JSONMetrics{}
+	if err := json.NewDecoder(r.Body).Decode(&metricData); err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+	updatedData, err := h.collector.UpdateMetricFromJson(metricData)
+	if err != nil {
+		panic("Error occured during metric update from json")
+	}
+	buf := bytes.NewBuffer([]byte{})
+	encoder := json.NewEncoder(buf)
+	encoder.Encode(updatedData)
+	rw.Write(buf.Bytes())
 }
 
 func (h *Handler) GetMetricByTypeAndName(rw http.ResponseWriter, r *http.Request) {
