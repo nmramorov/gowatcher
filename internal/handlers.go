@@ -44,7 +44,7 @@ func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(buf)
 	encoder.Encode(updatedData)
 	InfoLog.Printf("Updated metric %s", updatedData.ID)
-	r.Header.Add("Content-Type", "application/json")
+	rw.Header().Set("Content-Type", "application/json")
 	rw.Write(buf.Bytes())
 }
 
@@ -62,7 +62,7 @@ func (h *Handler) GetMetricByJson(rw http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(buf)
 	encoder.Encode(metric)
 	InfoLog.Printf("Requested metric %s", metric.ID)
-	r.Header.Add("Content-Type", "application/json")
+	rw.Header().Set("Content-Type", "application/json")
 	rw.Write(buf.Bytes())
 }
 
