@@ -109,7 +109,6 @@ func PushMetrics(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
 			metrics.ErrorLog.Println(err)
 			panic(1)
 		}
-		fmt.Println(resp.Header.Values("Content-Type"))
 		defer resp.Body.Close()
 	}
 }
@@ -122,7 +121,6 @@ func GetMetricsValues(client *http.Client, endpoint string, mtrcs *metrics.Metri
 			metrics.ErrorLog.Println(err)
 			panic(1)
 		}
-		fmt.Println(resp.Header.Values("Content-Type"))
 		defer resp.Body.Close()
 	}
 }

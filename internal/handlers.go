@@ -36,14 +36,13 @@ func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
-	updatedData, err := h.collector.UpdateMetricFromJson(metricData)
+	updatedData, err := h.collector.UpdateMetricFromJson(&metricData)
 	if err != nil {
 		panic("Error occured during metric update from json")
 	}
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
 	encoder.Encode(updatedData)
-	InfoLog.Printf("Updated metric %s", updatedData.ID)
 	rw.Header().Set("Content-Type", "application/json")
 	rw.Write(buf.Bytes())
 }
@@ -61,7 +60,6 @@ func (h *Handler) GetMetricByJson(rw http.ResponseWriter, r *http.Request) {
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
 	encoder.Encode(metric)
-	InfoLog.Printf("Requested metric %s", metric.ID)
 	rw.Header().Set("Content-Type", "application/json")
 	rw.Write(buf.Bytes())
 }
