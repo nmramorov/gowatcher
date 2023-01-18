@@ -145,6 +145,7 @@ func main() {
 		timeDiffSec := int(tickedTime.Sub(startTime).Seconds())
 		if timeDiffSec%pollInterval == 0 {
 			collector.UpdateMetrics()
+			fmt.Println(collector.GetMetrics().CounterMetrics)
 			metrics.InfoLog.Println("Metrics have been updated")
 		}
 		if timeDiffSec%reportInterval == 0 {
