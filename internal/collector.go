@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"fmt"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -89,9 +88,9 @@ func (col *Collector) GetMetricJson(requestedMetric *JSONMetrics) (*JSONMetrics,
 
 	case "counter":
 		res := col.metrics.CounterMetrics[requestedMetric.ID]
-		if requestedMetric.ID == "PollCount" {
-			fmt.Printf("PollCount: %d\n", res)
-		}
+		// if requestedMetric.ID == "PollCount" {
+		// 	fmt.Printf("PollCount: %d\n", res)
+		// }
 		result.Delta = (*int64)(&res)
 	default:
 		return requestedMetric, ErrorMetricNotFound
