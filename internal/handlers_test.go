@@ -350,6 +350,8 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 	GaugeVal := 0.0
 	var CountVal int64 = 0
+	var PollCount1 int64 = 2
+	var PollCount2 int64 = 3
 
 	type want struct {
 		code     int
@@ -396,6 +398,36 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 				MType: "counter",
 			},
 		},
+		{
+			name: "Positive test Counter 2",
+			want: want{
+				code: 200,
+				response: JSONMetrics{
+					ID:    "PollCount",
+					MType: "counter",
+					Delta: &PollCount1,
+				},
+			},
+			args: arguments{
+				ID:    "PollCount",
+				MType: "counter",
+			},
+		},
+		{
+			name: "Positive test Counter 3",
+			want: want{
+				code: 200,
+				response: JSONMetrics{
+					ID:    "PollCount",
+					MType: "counter",
+					Delta: &PollCount2,
+				},
+			},
+			args: arguments{
+				ID:    "PollCount",
+				MType: "counter",
+			},
+		},
 	}
 
 	metricsHandler := NewHandler()
@@ -414,6 +446,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 				panic("Test error: error with unmarshalling JSON POST /value method")
 			}
 			assert.Equal(t, tt.want.response, result)
+			metricsHandler.collector.UpdateMetrics()
 		})
 	}
 }

@@ -62,35 +62,41 @@ func (col *Collector) String(value interface{}) (string, error) {
 }
 
 func (col *Collector) UpdateMetricFromJson(newMetric *JSONMetrics) (*JSONMetrics, error) {
+	result := JSONMetrics{}
 	switch newMetric.MType {
 	case "gauge":
 		col.metrics.GaugeMetrics[newMetric.ID] = Gauge(*newMetric.Value)
 		val := col.metrics.GaugeMetrics[newMetric.ID]
-		newMetric.Value = (*float64)(&val)
+		result.Value = (*float64)(&val)
 	case "counter":
 		col.metrics.CounterMetrics[newMetric.ID] = col.metrics.CounterMetrics[newMetric.ID] + Counter(*newMetric.Delta)
 		delta := col.metrics.CounterMetrics[newMetric.ID]
-		newMetric.Delta = (*int64)(&delta)
+		result.Delta = (*int64)(&delta)
 	default:
-		return newMetric, ErrorMetricNotFound
+		return &result, ErrorMetricNotFound
 	}
-	return newMetric, nil
+	result.MType = newMetric.MType
+	result.ID = newMetric.ID
+	return &result, nil
 }
 
 func (col *Collector) GetMetricJson(requestedMetric *JSONMetrics) (*JSONMetrics, error) {
+	result := JSONMetrics{}
 	switch requestedMetric.MType {
 	case "gauge":
 		res := col.metrics.GaugeMetrics[requestedMetric.ID]
-		requestedMetric.Value = (*float64)(&res)
+		result.Value = (*float64)(&res)
 
 	case "counter":
 		res := col.metrics.CounterMetrics[requestedMetric.ID]
 		if requestedMetric.ID == "PollCount" {
 			fmt.Printf("PollCount: %d\n", res)
 		}
-		requestedMetric.Delta = (*int64)(&res)
+		result.Delta = (*int64)(&res)
 	default:
 		return requestedMetric, ErrorMetricNotFound
 	}
-	return requestedMetric, nil
+	result.MType = requestedMetric.MType
+	result.ID = requestedMetric.ID
+	return &result, nil
 }
