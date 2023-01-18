@@ -64,8 +64,12 @@ func (col *Collector) UpdateMetricFromJson(newMetric *JSONMetrics) (*JSONMetrics
 	switch newMetric.MType {
 	case "gauge":
 		col.metrics.GaugeMetrics[newMetric.ID] = Gauge(*newMetric.Value)
+		val := col.metrics.GaugeMetrics[newMetric.ID]
+		newMetric.Value = (*float64)(&val)
 	case "counter":
 		col.metrics.CounterMetrics[newMetric.ID] = col.metrics.CounterMetrics[newMetric.ID] + Counter(*newMetric.Delta)
+		delta := col.metrics.CounterMetrics[newMetric.ID]
+		newMetric.Delta = (*int64)(&delta)
 	default:
 		return newMetric, ErrorMetricNotFound
 	}
