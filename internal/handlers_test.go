@@ -335,12 +335,83 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			urlPath := "/update"
+			urlPath := "/update/"
 			statusCode, body := testRequestJson(t, ts, "POST", urlPath, tt.args)
 			assert.Equal(t, tt.want.code, statusCode)
 			result := JSONMetrics{}
 			if err := json.Unmarshal(body, &result); err != nil {
 				panic("Test error: error with unmarshalling JSON POST /update method")
+			}
+			assert.Equal(t, tt.want.response, result)
+		})
+	}
+}
+
+func TestPOSTValueMetricsHandlerJson(t *testing.T) {
+	GaugeVal := 0.0
+	var CountVal int64 = 0
+
+	type want struct {
+		code     int
+		response JSONMetrics
+	}
+	type arguments struct {
+		ID    string   `json:"id"`
+		MType string   `json:"type"`
+		Delta *int64   `json:"delta,omitempty"`
+		Value *float64 `json:"value,omitempty"`
+	}
+	tests := []struct {
+		name string
+		want want
+		args arguments
+	}{
+		{
+			name: "Positive test Gauge 1",
+			want: want{
+				code: 200,
+				response: JSONMetrics{
+					ID:    "GaugeMetric",
+					MType: "gauge",
+					Value: &GaugeVal,
+				},
+			},
+			args: arguments{
+				ID:    "GaugeMetric",
+				MType: "gauge",
+			},
+		},
+		{
+			name: "Positive test Counter 1",
+			want: want{
+				code: 200,
+				response: JSONMetrics{
+					ID:    "CounterMetric",
+					MType: "counter",
+					Delta: &CountVal,
+				},
+			},
+			args: arguments{
+				ID:    "CounterMetric",
+				MType: "counter",
+			},
+		},
+	}
+
+	metricsHandler := NewHandler()
+
+	ts := httptest.NewServer(metricsHandler)
+
+	defer ts.Close()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			urlPath := "/value/"
+			statusCode, body := testRequestJson(t, ts, "POST", urlPath, tt.args)
+			assert.Equal(t, tt.want.code, statusCode)
+			result := JSONMetrics{}
+			if err := json.Unmarshal(body, &result); err != nil {
+				panic("Test error: error with unmarshalling JSON POST /value method")
 			}
 			assert.Equal(t, tt.want.response, result)
 		})

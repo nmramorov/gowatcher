@@ -71,3 +71,18 @@ func (col *Collector) UpdateMetricFromJson(newMetric JSONMetrics) (JSONMetrics, 
 	}
 	return newMetric, nil
 }
+
+func (col *Collector) GetMetricJson(requestedMetric *JSONMetrics) (*JSONMetrics, error) {
+	switch requestedMetric.MType {
+	case "gauge":
+		res := col.metrics.GaugeMetrics[requestedMetric.ID]
+		requestedMetric.Value = (*float64)(&res)
+
+	case "counter":
+		res := col.metrics.CounterMetrics[requestedMetric.ID]
+		requestedMetric.Delta = (*int64)(&res)
+	default:
+		return requestedMetric, ErrorMetricNotFound
+	}
+	return requestedMetric, nil
+}

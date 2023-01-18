@@ -31,7 +31,8 @@ func NewHandler() *Handler {
 	h.Get("/", h.ListMetricsHTML)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
-	h.Post("/update", h.UpdateMetricsJson)
+	h.Post("/update/", h.UpdateMetricsJson)
+	h.Post("/value/", h.GetMetricByJson)
 
 	return h
 }
@@ -49,6 +50,22 @@ func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
 	encoder.Encode(updatedData)
+	rw.Write(buf.Bytes())
+}
+
+func (h *Handler) GetMetricByJson(rw http.ResponseWriter, r *http.Request) {
+	metricData := JSONMetrics{}
+	if err := json.NewDecoder(r.Body).Decode(&metricData); err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+	metric, err := h.collector.GetMetricJson(&metricData)
+	if err != nil {
+		panic("Error occured during metric getting from json")
+	}
+	buf := bytes.NewBuffer([]byte{})
+	encoder := json.NewEncoder(buf)
+	encoder.Encode(metric)
 	rw.Write(buf.Bytes())
 }
 
