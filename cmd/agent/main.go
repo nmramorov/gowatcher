@@ -119,7 +119,7 @@ func GetMetricsValues(client *http.Client, endpoint string, mtrcs *metrics.Metri
 		resp, err := client.Do(request)
 		if err != nil {
 			metrics.ErrorLog.Println(err)
-			panic(1)
+			// panic(1)
 		}
 		defer resp.Body.Close()
 	}
