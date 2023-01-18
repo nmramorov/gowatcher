@@ -107,7 +107,7 @@ func PushMetrics(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
 		resp, err := client.Do(request)
 		if err != nil {
 			metrics.ErrorLog.Println(err)
-			panic(1)
+			// panic(1)
 		}
 		defer resp.Body.Close()
 	}
