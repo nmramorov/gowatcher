@@ -106,24 +106,34 @@ func CreateValueRequestsJSON(endpoint string, mtrcs *metrics.Metrics) []*http.Re
 }
 
 func PushMetrics(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
+	defer func() {
+		if p := recover(); p != nil {
+			metrics.ErrorLog.Println(p)
+		}
+	}()
 	requests := CreateUpdateRequestsJSON(endpoint, mtrcs)
 	for _, request := range requests {
 		resp, err := client.Do(request)
 		if err != nil {
 			metrics.ErrorLog.Println(err)
-			// panic(1)
+			panic(1)
 		}
 		defer resp.Body.Close()
 	}
 }
 
 func GetMetricsValues(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
+	defer func() {
+		if p := recover(); p != nil {
+			metrics.ErrorLog.Println(p)
+		}
+	}()
 	requests := CreateValueRequestsJSON(endpoint, mtrcs)
 	for _, request := range requests {
 		resp, err := client.Do(request)
 		if err != nil {
 			metrics.ErrorLog.Println(err)
-			// panic(1)
+			panic(1)
 		}
 		defer resp.Body.Close()
 	}
