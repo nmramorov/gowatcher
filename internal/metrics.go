@@ -57,10 +57,10 @@ func UpdateMetrics(m runtime.MemStats, counter int) *Metrics {
 			"StackSys":      Gauge(m.StackSys),
 			"Sys":           Gauge(m.Sys),
 			"TotalAlloc":    Gauge(m.TotalAlloc),
+			"RandomValue":   Gauge(rand.Float64()),
 		},
 		CounterMetrics: map[string]Counter{
-			"PollCount":   Counter(counter),
-			"RandomValue": Counter(rand.Int63()),
+			"PollCount": Counter(counter),
 		},
 	}
 }
@@ -95,10 +95,10 @@ func NewMetrics() *Metrics {
 			"StackSys":      Gauge(0.0),
 			"Sys":           Gauge(0.0),
 			"TotalAlloc":    Gauge(0.0),
+			"RandomValue":   Gauge(rand.Float64()),
 		},
 		CounterMetrics: map[string]Counter{
-			"PollCount":   Counter(0),
-			"RandomValue": Counter(rand.Int63()),
+			"PollCount": Counter(0),
 		},
 	}
 }
