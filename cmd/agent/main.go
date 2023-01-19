@@ -34,7 +34,6 @@ func CreateRequests(endpoint string, mtrcs *metrics.Metrics) []*http.Request {
 func CreateUpdateRequestsJSON(endpoint string, mtrcs *metrics.Metrics) []*http.Request {
 	var requests []*http.Request
 	for k, v := range mtrcs.GaugeMetrics {
-		metrics.InfoLog.Println(k, v)
 		body := bytes.NewBuffer([]byte{})
 		encoder := json.NewEncoder(body)
 		val := (*float64)(&v)
@@ -52,7 +51,6 @@ func CreateUpdateRequestsJSON(endpoint string, mtrcs *metrics.Metrics) []*http.R
 		requests = append(requests, req)
 	}
 	for k, v := range mtrcs.CounterMetrics {
-		metrics.InfoLog.Println(k, v)
 		body := bytes.NewBuffer([]byte{})
 		encoder := json.NewEncoder(body)
 		val := (*int64)(&v)

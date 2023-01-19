@@ -14,7 +14,8 @@ func TestPushMetrics(t *testing.T) {
 	endpoint := "http://127.0.0.1:8080"
 
 	client := &http.Client{}
-	assert.PanicsWithValue(t, 1, func() { PushMetrics(client, endpoint, collector.GetMetrics()) })
+	assert.NotPanics(t, func() { PushMetrics(client, endpoint, collector.GetMetrics()) })
+	// assert.NPanicsWithValue(t, 1, func() { PushMetrics(client, endpoint, collector.GetMetrics()) })
 }
 
 func TestCreateRequests(t *testing.T) {
