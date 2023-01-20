@@ -12,9 +12,12 @@ func TestEnvConfig(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	assert.Equal(t, testConfig.Address, `localhost:8080`)
+	assert.Equal(t, testConfig.Address, `127.0.0.1:8080`)
 	assert.Equal(t, testConfig.ReportInterval, `10s`)
 	assert.Equal(t, testConfig.PollInterval, `2s`)
+	assert.Equal(t, testConfig.StoreInterval, 300)
+	assert.Equal(t, testConfig.StoreFile, "/tmp/devops-metrics-db.json")
+	assert.Equal(t, testConfig.Restore, true)
 }
 
 func TestEnvConfigIntervalConvertion(t *testing.T) {
