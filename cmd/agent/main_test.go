@@ -15,7 +15,6 @@ func TestPushMetrics(t *testing.T) {
 
 	client := &http.Client{}
 	assert.NotPanics(t, func() { PushMetrics(client, endpoint, collector.GetMetrics()) })
-	// assert.NPanicsWithValue(t, 1, func() { PushMetrics(client, endpoint, collector.GetMetrics()) })
 }
 
 func TestCreateRequests(t *testing.T) {

@@ -8,10 +8,14 @@ import (
 
 func main() {
 	metrics.InfoLog.Println("Initializing web server...")
+	config, err := metrics.NewConfig()
+	if err != nil {
+		panic(err)
+	}
 	metricsHandler := metrics.NewHandler()
 
 	server := &http.Server{
-		Addr:    "127.0.0.1:8080",
+		Addr:    config.Address,
 		Handler: metricsHandler,
 	}
 

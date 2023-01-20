@@ -138,12 +138,25 @@ func GetMetricsValues(client *http.Client, endpoint string, mtrcs *metrics.Metri
 }
 
 func main() {
-	var pollInterval = 2
-	var reportInterval = 10
+	config, err := metrics.NewConfig()
+	if err != nil {
+		metrics.ErrorLog.Println("error happend in agent during ENV config creation...")
+		panic(err)
+	}
+	pollInterval, err := config.GetNumericInterval("PollInterval")
+	if err != nil {
+		metrics.ErrorLog.Println("error happend in agent during PollInterval value convertion...")
+		panic(err)
+	}
+	reportInterval, err := config.GetNumericInterval("ReportInterval")
+	if err != nil {
+		metrics.ErrorLog.Println("error happend in agent during ReportInterval value convertion...")
+		panic(err)
+	}
 
 	var collector = metrics.NewCollector()
 
-	endpoint := "http://127.0.0.1:8080"
+	endpoint := "http://" + config.Address
 
 	client := &http.Client{}
 	metrics.InfoLog.Println("Client initialized...")
@@ -154,7 +167,7 @@ func main() {
 	for {
 		tickedTime := <-ticker.C
 
-		timeDiffSec := int(tickedTime.Sub(startTime).Seconds())
+		timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
 		if timeDiffSec%pollInterval == 0 {
 			collector.UpdateMetrics()
 			fmt.Println(collector.GetMetrics().CounterMetrics)
@@ -167,5 +180,4 @@ func main() {
 			metrics.InfoLog.Println("Metrics update has been received")
 		}
 	}
-
 }
