@@ -9,14 +9,14 @@ import (
 	"internal/metrics"
 )
 
-func GetMetricsHandler(config *metrics.EnvConfig) *metrics.Handler {
+func GetMetricsHandler(options *metrics.ServerCLIOptions) *metrics.Handler {
 	path, err := filepath.Abs(".")
 	if err != nil {
 		panic(err)
 	}
-	if config.Restore {
+	if options.Restore {
 		metrics.InfoLog.Println("Restoring configuration from file...")
-		reader, err := metrics.NewFileReader(path + config.StoreFile)
+		reader, err := metrics.NewFileReader(path + options.StoreFile)
 		defer func() {
 			err := reader.Close()
 			if err != nil {
@@ -40,12 +40,12 @@ func GetMetricsHandler(config *metrics.EnvConfig) *metrics.Handler {
 	}
 }
 
-func StartSavingToDisk(config *metrics.EnvConfig, handler *metrics.Handler) {
+func StartSavingToDisk(options *metrics.ServerCLIOptions, handler *metrics.Handler) {
 	path, err := filepath.Abs(".")
 	if err != nil {
 		panic(err)
 	}
-	writer, err := metrics.NewFileWriter(path + config.StoreFile)
+	writer, err := metrics.NewFileWriter(path + options.StoreFile)
 	defer func() {
 		err := writer.Close()
 		if err != nil {
@@ -60,11 +60,7 @@ func StartSavingToDisk(config *metrics.EnvConfig, handler *metrics.Handler) {
 	for {
 		tickedTime := <-ticker.C
 		timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
-		interval, err := config.GetNumericInterval("StoreInterval")
-		if err != nil {
-			panic(err)
-		}
-		if timeDiffSec%int64(interval) == 0 {
+		if timeDiffSec%int64(options.StoreInterval) == 0 {
 			fmt.Println()
 			err := writer.WriteJson(handler.GetCurrentMetrics())
 			if err != nil {
@@ -78,17 +74,15 @@ func StartSavingToDisk(config *metrics.EnvConfig, handler *metrics.Handler) {
 
 func main() {
 	metrics.InfoLog.Println("Initializing web server...")
-	config, err := metrics.NewConfig()
-	if err != nil {
-		panic(err)
-	}
-	metricsHandler := GetMetricsHandler(config)
-	if config.StoreFile != "" {
-		go StartSavingToDisk(config, metricsHandler)
+	args := metrics.NewServerOptions()
+
+	metricsHandler := GetMetricsHandler(args)
+	if args.StoreFile != "" {
+		go StartSavingToDisk(args, metricsHandler)
 	}
 
 	server := &http.Server{
-		Addr:    config.Address,
+		Addr:    args.Address,
 		Handler: metricsHandler,
 	}
 

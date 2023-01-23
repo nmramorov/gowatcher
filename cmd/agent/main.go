@@ -138,25 +138,11 @@ func GetMetricsValues(client *http.Client, endpoint string, mtrcs *metrics.Metri
 }
 
 func main() {
-	config, err := metrics.NewConfig()
-	if err != nil {
-		metrics.ErrorLog.Println("error happend in agent during ENV config creation...")
-		panic(err)
-	}
-	pollInterval, err := config.GetNumericInterval("PollInterval")
-	if err != nil {
-		metrics.ErrorLog.Println("error happend in agent during PollInterval value convertion...")
-		panic(err)
-	}
-	reportInterval, err := config.GetNumericInterval("ReportInterval")
-	if err != nil {
-		metrics.ErrorLog.Println("error happend in agent during ReportInterval value convertion...")
-		panic(err)
-	}
+	args := metrics.NewAgentOptions()
 
 	var collector = metrics.NewCollector()
 
-	endpoint := "http://" + config.Address
+	endpoint := "http://" + args.Address
 
 	client := &http.Client{}
 	metrics.InfoLog.Println("Client initialized...")
@@ -168,12 +154,12 @@ func main() {
 		tickedTime := <-ticker.C
 
 		timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
-		if timeDiffSec%pollInterval == 0 {
+		if timeDiffSec%int64(args.PollInterval) == 0 {
 			collector.UpdateMetrics()
 			fmt.Println(collector.GetMetrics().CounterMetrics)
 			metrics.InfoLog.Println("Metrics have been updated")
 		}
-		if timeDiffSec%reportInterval == 0 {
+		if timeDiffSec%int64(args.ReportInterval) == 0 {
 			PushMetrics(client, endpoint, collector.GetMetrics())
 			metrics.InfoLog.Println("Metrics have been pushed")
 			GetMetricsValues(client, endpoint, collector.GetMetrics())
