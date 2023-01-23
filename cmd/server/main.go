@@ -60,7 +60,11 @@ func StartSavingToDisk(config *metrics.EnvConfig, handler *metrics.Handler) {
 	for {
 		tickedTime := <-ticker.C
 		timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
-		if timeDiffSec%int64(config.StoreInterval) == 0 {
+		interval, err := config.GetNumericInterval("StoreInterval")
+		if err != nil {
+			panic(err)
+		}
+		if timeDiffSec%int64(interval) == 0 {
 			fmt.Println()
 			err := writer.WriteJson(handler.GetCurrentMetrics())
 			if err != nil {

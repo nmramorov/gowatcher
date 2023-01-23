@@ -11,7 +11,7 @@ type EnvConfig struct {
 	Address        string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
 	ReportInterval string `env:"REPORT_INTERVAL" envDefault:"10s"`
 	PollInterval   string `env:"POLL_INTERVAL" envDefault:"2s"`
-	StoreInterval  int    `env:"STORE_INTERVAL" envDefault:"300"`
+	StoreInterval  string `env:"STORE_INTERVAL" envDefault:"300s"`
 	StoreFile      string `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
 	Restore        bool   `env:"RESTORE" envDefault:"true"`
 }
@@ -35,6 +35,11 @@ func (e *EnvConfig) GetNumericInterval(intervalName string) (int64, error) {
 		stringValue := strings.Split(e.PollInterval, `s`)[0]
 		value, err := strconv.ParseInt(stringValue, 10, 64)
 		return value, err
+	case "StoreInterval":
+		stringValue := strings.Split(e.StoreInterval, `s`)[0]
+		value, err := strconv.ParseInt(stringValue, 10, 64)
+		return value, err
 	}
+
 	return 0, ErrorWithIntervalConvertion
 }
