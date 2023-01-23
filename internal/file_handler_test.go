@@ -8,17 +8,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const testMetricStr string = `
-id:1,
-type:counter,
-delta:4\n
-id:1,
-type:counter,
-delta:4\n
-`
-
 func TestFileReaderWriter(t *testing.T) {
 	filename := "test.json"
+	testCountersMap := map[string]Counter{"PollCount": 1}
+	testGaugeMap := map[string]Gauge{"RandomValue": 222.22, "Alloc": 11.11, "Frees": 33.3}
+	testMetric := Metrics{
+		CounterMetrics: testCountersMap,
+		GaugeMetrics:   testGaugeMap,
+	}
 	defer func() {
 		err := os.Remove(filename)
 		if err != nil {
@@ -45,17 +42,11 @@ func TestFileReaderWriter(t *testing.T) {
 			panic(err)
 		}
 	}()
-	var testDelta int64 = 4
-	testMetric := JSONMetrics{
-		ID:    "1",
-		MType: "counter",
-		Delta: &testDelta,
-	}
 	assert.NotPanics(t, func() { testWriter.WriteJson(&testMetric) })
 	jsonContent, err := testReader.ReadJson()
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println(jsonContent)
-	assert.Equal(t, "\nid:1,\ntype:counter,\ndelta:4\\n\nid:1,\ntype:counter,\ndelta:4\\n\n", testMetricStr)
+	assert.Equal(t, jsonContent, &testMetric)
 }

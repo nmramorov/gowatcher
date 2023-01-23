@@ -26,11 +26,12 @@ func NewFileReader(fileName string) (*FileReader, error) {
 	}, nil
 }
 
-func (fr *FileReader) ReadJson() (*JSONMetrics, error) {
-	metric := &JSONMetrics{}
+func (fr *FileReader) ReadJson() (*Metrics, error) {
+	metric := &Metrics{}
 	if err := fr.decoder.Decode(&metric); err != nil {
 		return nil, err
 	}
+	InfoLog.Println(metric)
 	return metric, nil
 }
 
@@ -49,7 +50,7 @@ func NewFileWriter(fileName string) (*FileWriter, error) {
 	}, nil
 }
 
-func (fw *FileWriter) WriteJson(metric *JSONMetrics) error {
+func (fw *FileWriter) WriteJson(metric *Metrics) error {
 	return fw.encoder.Encode(&metric)
 }
 func (fw *FileWriter) Close() error {
