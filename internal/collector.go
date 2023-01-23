@@ -22,6 +22,13 @@ func NewCollector() *Collector {
 	}
 }
 
+func NewCollectorFromSavedFile(saved *Metrics) *Collector {
+	return &Collector{
+		metrics: saved,
+		updates: 0,
+	}
+}
+
 func (col *Collector) UpdateMetrics() {
 	var newstats runtime.MemStats
 	runtime.ReadMemStats(&newstats)

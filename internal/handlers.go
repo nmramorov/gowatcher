@@ -30,6 +30,20 @@ func NewHandler() *Handler {
 	return h
 }
 
+func NewHandlerFromSavedData(saved *Metrics) *Handler {
+	h := &Handler{
+		Mux:       chi.NewMux(),
+		collector: NewCollectorFromSavedFile(saved),
+	}
+	h.Get("/", h.ListMetricsHTML)
+	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
+	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
+	h.Post("/update/", h.UpdateMetricsJson)
+	h.Post("/value/", h.GetMetricByJson)
+
+	return h
+}
+
 func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 	metricData := JSONMetrics{}
 	if err := json.NewDecoder(r.Body).Decode(&metricData); err != nil {
@@ -141,4 +155,8 @@ func (h *Handler) ListMetricsHTML(w http.ResponseWriter, r *http.Request) {
 	<strong>Counter Metrics:</strong>\n {{range $key, $val := .CounterMetrics}} {{$key}} = {{$val}}\n {{end}}
 	`))
 	t.Execute(w, h.collector.metrics)
+}
+
+func (h *Handler) GetCurrentMetrics() *Metrics {
+	return h.collector.metrics
 }
