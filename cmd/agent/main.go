@@ -66,6 +66,7 @@ func CreateUpdateRequestsJSON(endpoint string, mtrcs *metrics.Metrics) []*http.R
 			metrics.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
 		}
 		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Accept-Encoding", "gzip")
 		requests = append(requests, req)
 	}
 	return requests
@@ -99,6 +100,7 @@ func CreateValueRequestsJSON(endpoint string, mtrcs *metrics.Metrics) []*http.Re
 			metrics.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
 		}
 		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Accept-Encoding", "gzip")
 		requests = append(requests, req)
 	}
 	return requests
