@@ -26,11 +26,6 @@ func GzipHandle(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		body := HandleGzipRequest(w, r)
-		_, err := w.Write(body)
-		if err != nil {
-			panic(err)
-		}
 		// создаём gzip.Writer поверх текущего w
 		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 		if err != nil {
@@ -45,27 +40,31 @@ func GzipHandle(next http.Handler) http.Handler {
 	})
 }
 
-func HandleGzipRequest(w http.ResponseWriter, r *http.Request) []byte {
-	// переменная reader будет равна r.Body или *gzip.Reader
-	var reader io.Reader
+func UngzipHandle(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// проверяем, что клиент поддерживает gzip-сжатие
+		var reader io.Reader
 
-	if r.Header.Get(`Content-Encoding`) == `gzip` {
-		gz, err := gzip.NewReader(r.Body)
+		if r.Header.Get(`Content-Encoding`) == `gzip` {
+			gz, err := gzip.NewReader(r.Body)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				panic(err)
+			}
+			reader = gz
+			defer gz.Close()
+		} else {
+			reader = r.Body
+		}
+
+		body, err := io.ReadAll(reader)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			panic(err)
 		}
-		reader = gz
-		defer gz.Close()
-	} else {
-		reader = r.Body
-	}
-
-	body, err := io.ReadAll(reader)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		panic(err)
-	}
-	InfoLog.Println(body)
-	return body
+		InfoLog.Println(body)
+		r.Body = io.NopCloser(reader)
+		// передаём обработчику страницы переменную типа gzipWriter для вывода данных
+		next.ServeHTTP(w, r)
+	})
 }
