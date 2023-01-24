@@ -8,12 +8,12 @@ import (
 )
 
 type EnvConfig struct {
-	Address        string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
-	ReportInterval string `env:"REPORT_INTERVAL" envDefault:"10s"`
-	PollInterval   string `env:"POLL_INTERVAL" envDefault:"2s"`
-	StoreInterval  string `env:"STORE_INTERVAL" envDefault:"300s"`
-	StoreFile      string `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
-	Restore        bool   `env:"RESTORE" envDefault:"true"`
+	Address        string `env:"ADDRESS"`
+	ReportInterval string `env:"REPORT_INTERVAL"`
+	PollInterval   string `env:"POLL_INTERVAL"`
+	StoreInterval  string `env:"STORE_INTERVAL"`
+	StoreFile      string `env:"STORE_FILE"`
+	Restore        bool   `env:"RESTORE"`
 }
 
 func NewConfig() (*EnvConfig, error) {
@@ -25,20 +25,38 @@ func NewConfig() (*EnvConfig, error) {
 	return &config, nil
 }
 
+func getMultiplier(intervalValue string) *int64 {
+	var multiplier int64
+	splitter := intervalValue[len(intervalValue)-1:]
+
+	switch splitter {
+	case `s`:
+		multiplier = 1
+	case `m`:
+		multiplier = 60
+	default:
+		multiplier = 1
+	}
+	return &multiplier
+}
+
 func (e *EnvConfig) GetNumericInterval(intervalName string) (int64, error) {
 	switch intervalName {
 	case "ReportInterval":
-		stringValue := strings.Split(e.ReportInterval, `s`)[0]
+		multiplier := getMultiplier(e.ReportInterval)
+		stringValue := strings.Split(e.ReportInterval, e.ReportInterval[len(e.ReportInterval)-1:])[0]
 		value, err := strconv.ParseInt(stringValue, 10, 64)
-		return value, err
+		return *multiplier * value, err
 	case "PollInterval":
-		stringValue := strings.Split(e.PollInterval, `s`)[0]
+		multiplier := getMultiplier(e.PollInterval)
+		stringValue := strings.Split(e.PollInterval, e.PollInterval[len(e.PollInterval)-1:])[0]
 		value, err := strconv.ParseInt(stringValue, 10, 64)
-		return value, err
+		return *multiplier * value, err
 	case "StoreInterval":
-		stringValue := strings.Split(e.StoreInterval, `s`)[0]
+		multiplier := getMultiplier(e.StoreInterval)
+		stringValue := strings.Split(e.StoreInterval, e.StoreInterval[len(e.StoreInterval)-1:])[0]
 		value, err := strconv.ParseInt(stringValue, 10, 64)
-		return value, err
+		return *multiplier * value, err
 	}
 
 	return 0, ErrorWithIntervalConvertion

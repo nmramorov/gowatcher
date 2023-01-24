@@ -12,12 +12,12 @@ func TestEnvConfig(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	assert.Equal(t, testConfig.Address, `127.0.0.1:8080`)
-	assert.Equal(t, testConfig.ReportInterval, `10s`)
-	assert.Equal(t, testConfig.PollInterval, `2s`)
-	assert.Equal(t, testConfig.StoreInterval, `300s`)
-	assert.Equal(t, testConfig.StoreFile, "/tmp/devops-metrics-db.json")
-	assert.Equal(t, testConfig.Restore, true)
+	assert.Equal(t, testConfig.Address, ``)
+	assert.Equal(t, testConfig.ReportInterval, ``)
+	assert.Equal(t, testConfig.PollInterval, ``)
+	assert.Equal(t, testConfig.StoreInterval, ``)
+	assert.Equal(t, testConfig.StoreFile, "")
+	assert.Equal(t, testConfig.Restore, false)
 }
 
 func TestEnvConfigIntervalConvertion(t *testing.T) {
@@ -25,12 +25,14 @@ func TestEnvConfigIntervalConvertion(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
+	testConfig.PollInterval = "2s"
+	testConfig.ReportInterval = "10m"
 	reportInterval, err := testConfig.GetNumericInterval("ReportInterval")
 	fmt.Println(reportInterval)
 	if err != nil {
 		panic(err)
 	}
-	assert.Equal(t, reportInterval, int64(10))
+	assert.Equal(t, reportInterval, int64(600))
 	pollInterval, err := testConfig.GetNumericInterval("PollInterval")
 	if err != nil {
 		panic(err)

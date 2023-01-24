@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -60,7 +61,7 @@ func StartSavingToDisk(options *metrics.ServerCLIOptions, handler *metrics.Handl
 	for {
 		tickedTime := <-ticker.C
 		timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
-		if timeDiffSec%int64(options.StoreInterval) == 0 {
+		if timeDiffSec%int64(300) == 0 {
 			fmt.Println()
 			err := writer.WriteJson(handler.GetCurrentMetrics())
 			if err != nil {
@@ -74,7 +75,19 @@ func StartSavingToDisk(options *metrics.ServerCLIOptions, handler *metrics.Handl
 
 func main() {
 	metrics.InfoLog.Println("Initializing web server...")
-	args := metrics.NewServerOptions()
+	var address = flag.String("a", "localhost:8080", "server address")
+	var restore = flag.Bool("r", true, "restore metrics from file")
+	var storeInterval = flag.String("i", "300s", "period between file save")
+	var storeFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
+	flag.Parse()
+
+	args := &metrics.ServerCLIOptions{
+		Address:       *address,
+		Restore:       *restore,
+		StoreInterval: *storeInterval,
+		StoreFile:     *storeFile,
+	}
+	fmt.Println(args)
 
 	metricsHandler := GetMetricsHandler(args)
 	if args.StoreFile != "" {

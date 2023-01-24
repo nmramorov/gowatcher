@@ -1,59 +1,48 @@
 package metrics
 
 import (
-	"github.com/spf13/pflag"
+	"strconv"
+	"strings"
 )
 
 type ServerCLIOptions struct {
 	Address       string
 	Restore       bool
-	StoreInterval int
+	StoreInterval string
 	StoreFile     string
 }
 
 type AgentCLIOptions struct {
 	Address        string
-	ReportInterval int
-	PollInterval   int
+	ReportInterval string
+	PollInterval   string
 }
 
-func getConfig() *EnvConfig {
-	config, err := NewConfig()
-	if err != nil {
-		ErrorLog.Printf("Error during server arguments handling: %e", err)
-		panic(err)
+func (scli *ServerCLIOptions) GetNumericInterval(intervalName string) (int64, error) {
+	switch intervalName {
+	case "StoreInterval":
+		multiplier := getMultiplier(scli.StoreInterval)
+		stringValue := strings.Split(scli.StoreInterval, scli.StoreInterval[len(scli.StoreInterval)-1:])[0]
+		value, err := strconv.ParseInt(stringValue, 10, 64)
+		return *multiplier * value, err
 	}
-	return config
+
+	return 0, ErrorWithIntervalConvertion
 }
 
-func NewServerOptions() *ServerCLIOptions {
-	config := getConfig()
-	storeInterval, err := config.GetNumericInterval("StoreInterval")
-	if err != nil {
-		panic(err)
-	}
-	return &ServerCLIOptions{
-		Address:       *pflag.String("a", config.Address, "server address"),
-		Restore:       *pflag.Bool("r", config.Restore, "restore metrics from file"),
-		StoreInterval: *pflag.Int("i", int(storeInterval), "period between file save"),
-		StoreFile:     *pflag.String("f", config.StoreFile, "name of file where metrics stored"),
-	}
-}
-
-func NewAgentOptions() *AgentCLIOptions {
-	config := getConfig()
-	pollInterval, err := config.GetNumericInterval("PollInterval")
-	if err != nil {
-		panic(err)
-	}
-	reportInterval, err := config.GetNumericInterval("ReportInterval")
-	if err != nil {
-		panic(err)
+func (acli *AgentCLIOptions) GetNumericInterval(intervalName string) (int64, error) {
+	switch intervalName {
+	case "ReportInterval":
+		multiplier := getMultiplier(acli.ReportInterval)
+		stringValue := strings.Split(acli.ReportInterval, acli.ReportInterval[len(acli.ReportInterval)-1:])[0]
+		value, err := strconv.ParseInt(stringValue, 10, 64)
+		return *multiplier * value, err
+	case "PollInterval":
+		multiplier := getMultiplier(acli.PollInterval)
+		stringValue := strings.Split(acli.PollInterval, acli.PollInterval[len(acli.PollInterval)-1:])[0]
+		value, err := strconv.ParseInt(stringValue, 10, 64)
+		return *multiplier * value, err
 	}
 
-	return &AgentCLIOptions{
-		Address:        *pflag.String("a", config.Address, "server address"),
-		PollInterval:   *pflag.Int("p", int(pollInterval), "metrics poll interval"),
-		ReportInterval: *pflag.Int("r", int(reportInterval), "metrics report interval"),
-	}
+	return 0, ErrorWithIntervalConvertion
 }
