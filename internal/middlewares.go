@@ -39,32 +39,3 @@ func GzipHandle(next http.Handler) http.Handler {
 		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
 	})
 }
-
-// func UngzipHandle(next http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		// проверяем, что клиент поддерживает gzip-сжатие
-// 		var reader io.Reader
-
-// 		if r.Header.Get(`Content-Encoding`) == `gzip` {
-// 			gz, err := gzip.NewReader(r.Body)
-// 			if err != nil {
-// 				http.Error(w, err.Error(), http.StatusInternalServerError)
-// 				panic(err)
-// 			}
-// 			reader = gz
-// 			defer gz.Close()
-// 		} else {
-// 			reader = r.Body
-// 		}
-
-// 		body, err := io.ReadAll(reader)
-// 		if err != nil {
-// 			http.Error(w, err.Error(), http.StatusInternalServerError)
-// 			panic(err)
-// 		}
-// 		InfoLog.Println(body)
-// 		r.Body = io.NopCloser(reader)
-// 		// передаём обработчику страницы переменную типа gzipWriter для вывода данных
-// 		next.ServeHTTP(w, r)
-// 	})
-// }

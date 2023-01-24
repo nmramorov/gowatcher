@@ -73,19 +73,11 @@ func (col *Collector) UpdateMetricFromJson(newMetric *JSONMetrics) (*JSONMetrics
 	case "gauge":
 		col.metrics.GaugeMetrics[newMetric.ID] = Gauge(*newMetric.Value)
 		val := col.metrics.GaugeMetrics[newMetric.ID]
-		if newMetric.ID == "RandomValue" {
-			InfoLog.Printf("RandomValue received: %f\n", Gauge(*newMetric.Value))
-			InfoLog.Printf("RandomValue to return: %f\n", val)
-		}
 		result.Value = (*float64)(&val)
 	case "counter":
 
 		col.metrics.CounterMetrics[newMetric.ID] = col.metrics.CounterMetrics[newMetric.ID] + Counter(*newMetric.Delta)
 		delta := col.metrics.CounterMetrics[newMetric.ID]
-		if newMetric.ID == "PollCount" {
-			InfoLog.Printf("PollCount received: %d\n", Counter(*newMetric.Delta))
-			InfoLog.Printf("PollCount to return: %d\n", delta)
-		}
 		result.Delta = (*int64)(&delta)
 	default:
 		return &result, ErrorMetricNotFound
@@ -100,9 +92,6 @@ func (col *Collector) GetMetricJson(requestedMetric *JSONMetrics) (*JSONMetrics,
 	switch requestedMetric.MType {
 	case "gauge":
 		res := col.metrics.GaugeMetrics[requestedMetric.ID]
-		if requestedMetric.ID == "RandomValue" {
-			InfoLog.Printf("RandomValue: %f\n", res)
-		}
 		result.Value = (*float64)(&res)
 
 	case "counter":

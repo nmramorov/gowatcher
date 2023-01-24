@@ -123,7 +123,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(config)
 	metrics.InfoLog.Println("Initializing web server...")
 	var address = flag.String("a", "localhost:8080", "server address")
 	var restore = flag.Bool("r", true, "restore metrics from file")
@@ -137,9 +136,7 @@ func main() {
 		StoreInterval: *storeInterval,
 		StoreFile:     *storeFile,
 	}
-	fmt.Println(args)
 	serverConfig := GetServerConfig(config, args)
-	fmt.Println(serverConfig)
 
 	metricsHandler := GetMetricsHandler(serverConfig)
 	if serverConfig.StoreFile != "" {
