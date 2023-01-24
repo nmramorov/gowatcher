@@ -10,7 +10,7 @@ import (
 	"internal/metrics"
 )
 
-func GetMetricsHandler(options *metrics.ServerCLIOptions) *metrics.Handler {
+func GetMetricsHandler(options *ServerConfig) *metrics.Handler {
 	path, err := filepath.Abs(".")
 	if err != nil {
 		panic(err)
@@ -73,7 +73,55 @@ func StartSavingToDisk(options *metrics.ServerCLIOptions, handler *metrics.Handl
 
 }
 
+type ServerConfig struct {
+	Address       string
+	Restore       bool
+	StoreInterval int
+	StoreFile     string
+}
+
+func GetServerConfig(config *metrics.EnvConfig, args *metrics.ServerCLIOptions) *ServerConfig {
+	serverConfig := ServerConfig{}
+	if config.Address == "" {
+		serverConfig.Address = args.Address
+	} else {
+		serverConfig.Address = config.Address
+	}
+	if config.Restore {
+		serverConfig.Restore = config.Restore
+	} else {
+		serverConfig.Restore = args.Restore
+	}
+	if config.StoreFile != "" {
+		serverConfig.StoreFile = config.StoreFile
+	} else {
+		serverConfig.StoreFile = args.StoreFile
+	}
+	if config.StoreInterval == "" {
+		serverConfig.StoreInterval = func() int {
+			store, err := args.GetNumericInterval("StoreInterval")
+			if err != nil {
+				panic(err)
+			}
+			return int(store)
+		}()
+	} else {
+		serverConfig.StoreInterval = func() int {
+			store, err := config.GetNumericInterval("StoreInterval")
+			if err != nil {
+				panic(err)
+			}
+			return int(store)
+		}()
+	}
+	return &serverConfig
+}
+
 func main() {
+	config, err := metrics.NewConfig()
+	if err != nil {
+		panic(err)
+	}
 	metrics.InfoLog.Println("Initializing web server...")
 	var address = flag.String("a", "localhost:8080", "server address")
 	var restore = flag.Bool("r", true, "restore metrics from file")
@@ -87,9 +135,9 @@ func main() {
 		StoreInterval: *storeInterval,
 		StoreFile:     *storeFile,
 	}
-	fmt.Println(args)
+	serverConfig := GetServerConfig(config, args)
 
-	metricsHandler := GetMetricsHandler(args)
+	metricsHandler := GetMetricsHandler(serverConfig)
 	if args.StoreFile != "" {
 		go StartSavingToDisk(args, metricsHandler)
 	}
