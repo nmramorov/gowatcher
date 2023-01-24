@@ -21,7 +21,8 @@ func NewHandler() *Handler {
 		Mux:       chi.NewMux(),
 		collector: NewCollector(),
 	}
-
+	h.Use(GzipHandle)
+	h.Use(UngzipHandle)
 	h.Get("/", h.ListMetricsHTML)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
