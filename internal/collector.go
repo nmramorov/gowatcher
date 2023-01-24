@@ -79,8 +79,13 @@ func (col *Collector) UpdateMetricFromJson(newMetric *JSONMetrics) (*JSONMetrics
 		}
 		result.Value = (*float64)(&val)
 	case "counter":
+
 		col.metrics.CounterMetrics[newMetric.ID] = col.metrics.CounterMetrics[newMetric.ID] + Counter(*newMetric.Delta)
 		delta := col.metrics.CounterMetrics[newMetric.ID]
+		if newMetric.ID == "PollCount" {
+			InfoLog.Printf("PollCount received: %d\n", Counter(*newMetric.Delta))
+			InfoLog.Printf("PollCount to return: %d\n", delta)
+		}
 		result.Delta = (*int64)(&delta)
 	default:
 		return &result, ErrorMetricNotFound
