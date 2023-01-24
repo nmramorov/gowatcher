@@ -42,7 +42,7 @@ func GetMetricsHandler(options *ServerConfig) *metrics.Handler {
 	}
 }
 
-func StartSavingToDisk(options *metrics.ServerCLIOptions, handler *metrics.Handler) {
+func StartSavingToDisk(options *ServerConfig, handler *metrics.Handler) {
 	path, err := filepath.Abs(".")
 	if err != nil {
 		panic(err)
@@ -62,8 +62,8 @@ func StartSavingToDisk(options *metrics.ServerCLIOptions, handler *metrics.Handl
 	for {
 		tickedTime := <-ticker.C
 		timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
-		if timeDiffSec%int64(300) == 0 {
-			fmt.Println()
+		if timeDiffSec%int64(options.StoreInterval) == 0 {
+			fmt.Printf("Writing to file %s", path+options.StoreFile)
 			err := writer.WriteJson(handler.GetCurrentMetrics())
 			if err != nil {
 				metrics.ErrorLog.Printf("Error happened during saving metrics to JSON: %e", err)
@@ -98,7 +98,7 @@ func GetServerConfig(config *metrics.EnvConfig, args *metrics.ServerCLIOptions) 
 	} else {
 		serverConfig.StoreFile = args.StoreFile
 	}
-	if config.StoreInterval == "" {
+	if config.StoreInterval == "300s" {
 		serverConfig.StoreInterval = func() int {
 			store, err := args.GetNumericInterval("StoreInterval")
 			if err != nil {
@@ -127,7 +127,7 @@ func main() {
 	metrics.InfoLog.Println("Initializing web server...")
 	var address = flag.String("a", "localhost:8080", "server address")
 	var restore = flag.Bool("r", true, "restore metrics from file")
-	var storeInterval = flag.String("i", "300s", "period between file save")
+	var storeInterval = flag.String("i", "30s", "period between file save")
 	var storeFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
 	flag.Parse()
 
@@ -137,12 +137,14 @@ func main() {
 		StoreInterval: *storeInterval,
 		StoreFile:     *storeFile,
 	}
+	fmt.Println(args)
 	serverConfig := GetServerConfig(config, args)
 	fmt.Println(serverConfig)
 
 	metricsHandler := GetMetricsHandler(serverConfig)
 	if serverConfig.StoreFile != "" {
-		go StartSavingToDisk(args, metricsHandler)
+		go StartSavingToDisk(serverConfig, metricsHandler)
+		metrics.InfoLog.Println("Initialized file saving")
 	}
 
 	server := &http.Server{
