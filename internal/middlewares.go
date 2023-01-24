@@ -26,7 +26,11 @@ func GzipHandle(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-
+		body := HandleGzipRequest(w, r)
+		_, err := w.Write(body)
+		if err != nil {
+			panic(err)
+		}
 		// создаём gzip.Writer поверх текущего w
 		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 		if err != nil {
@@ -39,4 +43,29 @@ func GzipHandle(next http.Handler) http.Handler {
 		// передаём обработчику страницы переменную типа gzipWriter для вывода данных
 		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
 	})
+}
+
+func HandleGzipRequest(w http.ResponseWriter, r *http.Request) []byte {
+	// переменная reader будет равна r.Body или *gzip.Reader
+	var reader io.Reader
+
+	if r.Header.Get(`Content-Encoding`) == `gzip` {
+		gz, err := gzip.NewReader(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			panic(err)
+		}
+		reader = gz
+		defer gz.Close()
+	} else {
+		reader = r.Body
+	}
+
+	body, err := io.ReadAll(reader)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		panic(err)
+	}
+	InfoLog.Println(body)
+	return body
 }
