@@ -82,7 +82,7 @@ type ServerConfig struct {
 
 func GetServerConfig(config *metrics.EnvConfig, args *metrics.ServerCLIOptions) *ServerConfig {
 	serverConfig := ServerConfig{}
-	if config.Address == "" {
+	if config.Address == "127.0.0.1:8080" {
 		serverConfig.Address = args.Address
 	} else {
 		serverConfig.Address = config.Address
@@ -92,7 +92,7 @@ func GetServerConfig(config *metrics.EnvConfig, args *metrics.ServerCLIOptions) 
 	} else {
 		serverConfig.Restore = args.Restore
 	}
-	if config.StoreFile != "" {
+	if config.StoreFile != "/tmp/devops-metrics-db.json" {
 		serverConfig.StoreFile = config.StoreFile
 	} else {
 		serverConfig.StoreFile = args.StoreFile
@@ -136,6 +136,7 @@ func main() {
 		StoreFile:     *storeFile,
 	}
 	serverConfig := GetServerConfig(config, args)
+	fmt.Println(serverConfig)
 
 	metricsHandler := GetMetricsHandler(serverConfig)
 	if args.StoreFile != "" {
