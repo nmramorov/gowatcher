@@ -29,6 +29,7 @@ func GetMetricsHandler(options *ServerConfig) *metrics.Handler {
 			panic(err)
 		}
 		storedMetrics, err := reader.ReadJson()
+		metrics.InfoLog.Println(storedMetrics)
 		if err != nil {
 			metrics.ErrorLog.Printf("Error happend during JSON reading: %e", err)
 			return metrics.NewHandler()
@@ -150,6 +151,5 @@ func main() {
 	}
 
 	metrics.InfoLog.Println("Web server is ready to accept connections...")
-	fmt.Println(server)
 	server.ListenAndServe()
 }
