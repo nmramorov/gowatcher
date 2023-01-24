@@ -22,7 +22,7 @@ func NewHandler() *Handler {
 		collector: NewCollector(),
 	}
 	h.Use(GzipHandle)
-	h.Use(UngzipHandle)
+	// h.Use(UngzipHandle)
 	h.Get("/", h.ListMetricsHTML)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
@@ -38,7 +38,7 @@ func NewHandlerFromSavedData(saved *Metrics) *Handler {
 		collector: NewCollectorFromSavedFile(saved),
 	}
 	h.Use(GzipHandle)
-	h.Use(UngzipHandle)
+	// h.Use(UngzipHandle)
 	h.Get("/", h.ListMetricsHTML)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
