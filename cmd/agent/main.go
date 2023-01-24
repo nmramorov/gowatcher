@@ -146,7 +146,7 @@ type AgentConfig struct {
 
 func GetAgentConfig(config *metrics.EnvConfig, args *metrics.AgentCLIOptions) *AgentConfig {
 	agentConfig := AgentConfig{}
-	if config.Address == "" {
+	if config.Address == "127.0.0.1:8080" {
 		agentConfig.Address = args.Address
 	} else {
 		agentConfig.Address = config.Address
