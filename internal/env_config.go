@@ -8,12 +8,12 @@ import (
 )
 
 type EnvConfig struct {
-	Address        string `env:"ADDRESS"`
-	ReportInterval string `env:"REPORT_INTERVAL"`
-	PollInterval   string `env:"POLL_INTERVAL"`
-	StoreInterval  string `env:"STORE_INTERVAL"`
-	StoreFile      string `env:"STORE_FILE"`
-	Restore        bool   `env:"RESTORE"`
+	Address        string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
+	ReportInterval string `env:"REPORT_INTERVAL" envDefault:"10s"`
+	PollInterval   string `env:"POLL_INTERVAL" envDefault:"2s"`
+	StoreInterval  string `env:"STORE_INTERVAL" envDefault:"300s"`
+	StoreFile      string `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
+	Restore        bool   `env:"RESTORE" envDefault:"true"`
 }
 
 func NewConfig() (*EnvConfig, error) {
