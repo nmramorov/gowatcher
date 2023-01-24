@@ -158,6 +158,7 @@ func (h *Handler) ListMetricsHTML(w http.ResponseWriter, r *http.Request) {
 	<strong>Gauge Metrics:</strong>\n {{range $key, $val := .GaugeMetrics}} {{$key}} = {{$val}}\n {{end}}
 	<strong>Counter Metrics:</strong>\n {{range $key, $val := .CounterMetrics}} {{$key}} = {{$val}}\n {{end}}
 	`))
+	w.Header().Set("Content-Type", "text/html")
 	t.Execute(w, h.collector.metrics)
 }
 
