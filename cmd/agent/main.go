@@ -191,7 +191,6 @@ func main() {
 	}
 
 	agentConfig := GetAgentConfig(config, args)
-	fmt.Println(agentConfig)
 
 	var collector = metrics.NewCollector()
 
@@ -209,7 +208,6 @@ func main() {
 		timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
 		if timeDiffSec%int64(agentConfig.PollInterval) == 0 {
 			collector.UpdateMetrics()
-			fmt.Println(collector.GetMetrics().CounterMetrics)
 			metrics.InfoLog.Println("Metrics have been updated")
 		}
 		if timeDiffSec%int64(agentConfig.PollInterval) == 0 {
