@@ -7,20 +7,36 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+const (
+	ADDRESS         string = "127.0.0.1"
+	REPORT_INTERVAL        = "10s"
+	POLL_INTERVAL          = "2s"
+	STORE_INTERVAL         = "300s"
+	STORE_FILE             = "/tmp/devops-metrics-db.json"
+	RESTORE         bool   = true
+)
+
 type EnvConfig struct {
-	Address        string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
-	ReportInterval string `env:"REPORT_INTERVAL" envDefault:"10s"`
-	PollInterval   string `env:"POLL_INTERVAL" envDefault:"2s"`
-	StoreInterval  string `env:"STORE_INTERVAL" envDefault:"300s"`
-	StoreFile      string `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
-	Restore        bool   `env:"RESTORE" envDefault:"true"`
+	Address        string `env:"ADDRESS,required"`
+	ReportInterval string `env:"REPORT_INTERVAL,required"`
+	PollInterval   string `env:"POLL_INTERVAL,required"`
+	StoreInterval  string `env:"STORE_INTERVAL,required"`
+	StoreFile      string `env:"STORE_FILE,required"`
+	Restore        bool   `env:"RESTORE,required"`
 }
 
 func NewConfig() (*EnvConfig, error) {
 	var config EnvConfig
 	err := env.Parse(&config)
 	if err != nil {
-		return &config, ErrorWithEnvConfig
+		return &EnvConfig{
+			Address:        ADDRESS,
+			StoreInterval:  STORE_INTERVAL,
+			StoreFile:      STORE_FILE,
+			Restore:        RESTORE,
+			ReportInterval: REPORT_INTERVAL,
+			PollInterval:   POLL_INTERVAL,
+		}, ErrorWithEnvConfig
 	}
 	return &config, nil
 }

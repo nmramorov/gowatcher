@@ -1,5 +1,7 @@
 package metrics
 
+import "flag"
+
 type ServerConfig struct {
 	Address       string
 	Restore       bool
@@ -9,14 +11,18 @@ type ServerConfig struct {
 
 func GetServerConfig() *ServerConfig {
 	envConfig, err := NewConfig()
+	InfoLog.Println(envConfig, err)
 	if err != nil {
 		InfoLog.Println("could not get env for server config, getting data from cli...")
 		cliConfig := NewServerCliOptions()
-		return &ServerConfig{
-			Restore:       cliConfig.Restore,
-			Address:       cliConfig.Address,
-			StoreInterval: int(cliConfig.GetNumericInterval("StoreInterval")),
-			StoreFile:     cliConfig.StoreFile,
+		InfoLog.Println(flag.Parsed())
+		if flag.Parsed() {
+			return &ServerConfig{
+				Restore:       cliConfig.Restore,
+				Address:       cliConfig.Address,
+				StoreInterval: int(cliConfig.GetNumericInterval("StoreInterval")),
+				StoreFile:     cliConfig.StoreFile,
+			}
 		}
 	}
 	return &ServerConfig{
