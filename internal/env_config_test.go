@@ -1,17 +1,13 @@
 package metrics
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEnvConfig(t *testing.T) {
-	testConfig, err := NewConfig()
-	if err != nil {
-		panic(err)
-	}
+	testConfig, _ := NewConfig()
 	assert.Equal(t, testConfig.Address, `127.0.0.1:8080`)
 	assert.Equal(t, testConfig.ReportInterval, `10s`)
 	assert.Equal(t, testConfig.PollInterval, `2s`)
@@ -21,21 +17,11 @@ func TestEnvConfig(t *testing.T) {
 }
 
 func TestEnvConfigIntervalConvertion(t *testing.T) {
-	testConfig, err := NewConfig()
-	if err != nil {
-		panic(err)
-	}
+	testConfig, _ := NewConfig()
 	testConfig.PollInterval = "2s"
 	testConfig.ReportInterval = "10m"
 	reportInterval := testConfig.GetNumericInterval("ReportInterval")
-	fmt.Println(reportInterval)
-	if err != nil {
-		panic(err)
-	}
 	assert.Equal(t, reportInterval, int64(600))
 	pollInterval := testConfig.GetNumericInterval("PollInterval")
-	if err != nil {
-		panic(err)
-	}
 	assert.Equal(t, pollInterval, int64(2))
 }
