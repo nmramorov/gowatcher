@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -16,27 +17,79 @@ const (
 	RESTORE         bool   = true
 )
 
-type EnvConfig struct {
+type AgentEnvConfig struct {
 	Address        string `env:"ADDRESS,required"`
 	ReportInterval string `env:"REPORT_INTERVAL,required"`
 	PollInterval   string `env:"POLL_INTERVAL,required"`
-	StoreInterval  string `env:"STORE_INTERVAL,required"`
-	StoreFile      string `env:"STORE_FILE,required"`
-	Restore        bool   `env:"RESTORE,required"`
 }
 
-func NewConfig() (*EnvConfig, error) {
-	var config EnvConfig
+func checkAgentEnvs(envs *AgentEnvConfig) *AgentEnvConfig {
+	var addr string = ADDRESS
+	var pollint string = POLL_INTERVAL
+	var reportint string = REPORT_INTERVAL
+	if envs.Address != ADDRESS && envs.Address != "" {
+		addr = envs.Address
+	}
+	if envs.ReportInterval != REPORT_INTERVAL && envs.ReportInterval != "" {
+		reportint = envs.ReportInterval
+	}
+	if envs.PollInterval != POLL_INTERVAL && envs.PollInterval != "" {
+		pollint = envs.PollInterval
+	}
+	return &AgentEnvConfig{
+		Address:        addr,
+		PollInterval:   pollint,
+		ReportInterval: reportint,
+	}
+}
+
+func NewAgentEnvConfig() (*AgentEnvConfig, error) {
+	var config AgentEnvConfig
 	err := env.Parse(&config)
 	if err != nil {
-		return &EnvConfig{
-			Address:        ADDRESS,
-			StoreInterval:  STORE_INTERVAL,
-			StoreFile:      STORE_FILE,
-			Restore:        RESTORE,
-			ReportInterval: REPORT_INTERVAL,
-			PollInterval:   POLL_INTERVAL,
-		}, ErrorWithEnvConfig
+		return checkAgentEnvs(&config), ErrorWithEnvConfig
+	}
+	return &config, nil
+}
+
+type ServerEnvConfig struct {
+	Address       string `env:"ADDRESS,required"`
+	StoreInterval string `env:"STORE_INTERVAL,required"`
+	StoreFile     string `env:"STORE_FILE,required"`
+	Restore       bool   `env:"RESTORE,required"`
+}
+
+func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
+	var addr string = ADDRESS
+	var storeint string = STORE_INTERVAL
+	var storefile string = STORE_FILE
+	var rest bool = RESTORE
+	if envs.Address != ADDRESS && envs.Address != "" {
+		addr = envs.Address
+	} 
+	if !envs.Restore {
+		rest = envs.Restore
+	}
+	if envs.StoreFile != STORE_FILE {
+		storefile = envs.StoreFile
+	}
+	if envs.StoreInterval != STORE_INTERVAL && envs.StoreInterval != "" {
+		storeint = envs.StoreInterval
+	}
+	return &ServerEnvConfig{
+		Address:       addr,
+		StoreInterval: storeint,
+		StoreFile:     storefile,
+		Restore:       rest,
+	}
+}
+
+func NewServerEnvConfig() (*ServerEnvConfig, error) {
+	var config ServerEnvConfig
+	err := env.Parse(&config)
+	fmt.Println(config)
+	if err != nil {
+		return checkServerEnvs(&config), ErrorWithEnvConfig
 	}
 	return &config, nil
 }
@@ -56,7 +109,7 @@ func getMultiplier(intervalValue string) *int64 {
 	return &multiplier
 }
 
-func (e *EnvConfig) GetNumericInterval(intervalName string) int64 {
+func (e *AgentEnvConfig) GetNumericInterval(intervalName string) int64 {
 	switch intervalName {
 	case "ReportInterval":
 		multiplier := getMultiplier(e.ReportInterval)
@@ -68,6 +121,13 @@ func (e *EnvConfig) GetNumericInterval(intervalName string) int64 {
 		stringValue := strings.Split(e.PollInterval, e.PollInterval[len(e.PollInterval)-1:])[0]
 		value, _ := strconv.ParseInt(stringValue, 10, 64)
 		return *multiplier * value
+	}
+	return 0
+}
+
+func (e *ServerEnvConfig) GetNumericInterval(intervalName string) int64 {
+	fmt.Println(e.StoreInterval)
+	switch intervalName {
 	case "StoreInterval":
 		multiplier := getMultiplier(e.StoreInterval)
 		stringValue := strings.Split(e.StoreInterval, e.StoreInterval[len(e.StoreInterval)-1:])[0]

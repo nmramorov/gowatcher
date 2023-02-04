@@ -13,7 +13,7 @@ type ServerConfig struct {
 }
 
 func GetServerConfig() *ServerConfig {
-	envConfig, err := NewConfig()
+	envConfig, err := NewServerEnvConfig()
 	InfoLog.Println(envConfig, err)
 	if err != nil {
 		InfoLog.Println("could not get env for server config, getting data from cli...")
@@ -77,7 +77,7 @@ type AgentConfig struct {
 }
 
 func GetAgentConfig() *AgentConfig {
-	envConfig, err := NewConfig()
+	envConfig, err := NewAgentEnvConfig()
 	if err != nil {
 		InfoLog.Println("could not get env for server config, getting data from cli...")
 		cliConfig := NewAgentCliOptions()
