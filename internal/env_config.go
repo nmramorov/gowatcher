@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	ADDRESS         string = "127.0.0.1"
+	ADDRESS         string = "127.0.0.1:8080"
 	REPORT_INTERVAL        = "10s"
 	POLL_INTERVAL          = "2s"
 	STORE_INTERVAL         = "300s"

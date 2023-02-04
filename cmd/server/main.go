@@ -9,10 +9,11 @@ import (
 	"internal/metrics"
 )
 
-func GetMetricsHandler(options *metrics.ServerConfig) *metrics.Handler {
+func GetMetricsHandler(options *metrics.ServerConfig) (*metrics.Handler, error) {
 	path, err := filepath.Abs(".")
 	if err != nil {
-		panic(err)
+		metrics.ErrorLog.Printf("no file to save exist: %e", err)
+		return nil, err
 	}
 	if options.Restore {
 		metrics.InfoLog.Println("Restoring configuration from file...")
@@ -25,24 +26,25 @@ func GetMetricsHandler(options *metrics.ServerConfig) *metrics.Handler {
 		}()
 		if err != nil {
 			metrics.ErrorLog.Printf("Error happend creating File Reader: %e", err)
-			panic(err)
+			return nil, err
 		}
 		storedMetrics, err := reader.ReadJson()
 		if err != nil {
 			metrics.ErrorLog.Printf("Error happend during JSON reading: %e", err)
-			return metrics.NewHandler()
+			return metrics.NewHandler(), nil
 		}
 		metricsHandler := metrics.NewHandlerFromSavedData(storedMetrics)
 		metrics.InfoLog.Println("Configuration restored.")
-		return metricsHandler
+		return metricsHandler, nil
 	}
-	return metrics.NewHandler()
+	return metrics.NewHandler(), nil
 }
 
-func StartSavingToDisk(options *metrics.ServerConfig, handler *metrics.Handler) {
+func StartSavingToDisk(options *metrics.ServerConfig, handler *metrics.Handler) error {
 	path, err := filepath.Abs(".")
 	if err != nil {
-		panic(err)
+		metrics.ErrorLog.Printf("no file to save exist: %e", err)
+		return err
 	}
 	writer, err := metrics.NewFileWriter(path + options.StoreFile)
 	defer func() {
@@ -53,6 +55,7 @@ func StartSavingToDisk(options *metrics.ServerConfig, handler *metrics.Handler) 
 	}()
 	if err != nil {
 		metrics.ErrorLog.Printf("Error with file writer: %e", err)
+		return err
 	}
 	ticker := time.NewTicker(1 * time.Second)
 	startTime := time.Now()
@@ -68,7 +71,6 @@ func StartSavingToDisk(options *metrics.ServerConfig, handler *metrics.Handler) 
 			metrics.InfoLog.Println("Metrics successfully saved to file")
 		}
 	}
-
 }
 
 func main() {
@@ -91,7 +93,7 @@ func main() {
 	// }
 	serverConfig := metrics.GetServerConfig()
 
-	metricsHandler := GetMetricsHandler(serverConfig)
+	metricsHandler, _ := GetMetricsHandler(serverConfig)
 	fmt.Println(serverConfig)
 	if serverConfig.StoreFile != "" {
 		go StartSavingToDisk(serverConfig, metricsHandler)
