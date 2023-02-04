@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"flag"
 	"strconv"
 	"strings"
 )
@@ -45,4 +46,31 @@ func (acli *AgentCLIOptions) GetNumericInterval(intervalName string) (int64, err
 	}
 
 	return 0, ErrorWithIntervalConvertion
+}
+
+func NewServerCliOptions() *ServerCLIOptions {
+	var address = flag.String("a", "localhost:8080", "server address")
+	var restore = flag.Bool("r", true, "restore metrics from file")
+	var storeInterval = flag.String("i", "30s", "period between file save")
+	var storeFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
+	flag.Parse()
+
+	return &ServerCLIOptions{
+		Address:       *address,
+		Restore:       *restore,
+		StoreInterval: *storeInterval,
+		StoreFile:     *storeFile,
+	}
+}
+
+func NewAgentCliOptions() *AgentCLIOptions {
+	var address = flag.String("a", "localhost:8080", "server address")
+	var reportInterval = flag.String("r", "10s", "report interval time")
+	var pollInterval = flag.String("p", "2s", "poll interval time")
+	flag.Parse()
+	return &AgentCLIOptions{
+		Address:        *address,
+		ReportInterval: *reportInterval,
+		PollInterval:   *pollInterval,
+	}
 }

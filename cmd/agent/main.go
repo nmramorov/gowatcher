@@ -125,56 +125,6 @@ func GetMetricsValues(client *http.Client, endpoint string, mtrcs *metrics.Metri
 	}
 }
 
-type AgentConfig struct {
-	Address        string
-	ReportInterval int
-	PollInterval   int
-}
-
-func GetAgentConfig(config *metrics.EnvConfig, args *metrics.AgentCLIOptions) *AgentConfig {
-	agentConfig := AgentConfig{}
-	if config.Address == "127.0.0.1:8080" {
-		agentConfig.Address = args.Address
-	} else {
-		agentConfig.Address = config.Address
-	}
-	if config.PollInterval == "" {
-		agentConfig.PollInterval = func() int {
-			poll, err := args.GetNumericInterval("PollInterval")
-			if err != nil {
-				panic(err)
-			}
-			return int(poll)
-		}()
-	} else {
-		agentConfig.PollInterval = func() int {
-			poll, err := config.GetNumericInterval("PollInterval")
-			if err != nil {
-				panic(err)
-			}
-			return int(poll)
-		}()
-	}
-	if config.ReportInterval == "" {
-		agentConfig.ReportInterval = func() int {
-			rep, err := args.GetNumericInterval("ReportInterval")
-			if err != nil {
-				panic(err)
-			}
-			return int(rep)
-		}()
-	} else {
-		agentConfig.ReportInterval = func() int {
-			rep, err := config.GetNumericInterval("ReportInterval")
-			if err != nil {
-				panic(err)
-			}
-			return int(rep)
-		}()
-	}
-	return &agentConfig
-}
-
 func main() {
 	config, err := metrics.NewConfig()
 	if err != nil {
@@ -190,7 +140,7 @@ func main() {
 		PollInterval:   *pollInterval,
 	}
 
-	agentConfig := GetAgentConfig(config, args)
+	agentConfig := metrics.GetAgentConfig(config, args)
 
 	var collector = metrics.NewCollector()
 

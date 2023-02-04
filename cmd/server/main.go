@@ -10,7 +10,7 @@ import (
 	"internal/metrics"
 )
 
-func GetMetricsHandler(options *ServerConfig) *metrics.Handler {
+func GetMetricsHandler(options *metrics.ServerConfig) *metrics.Handler {
 	path, err := filepath.Abs(".")
 	if err != nil {
 		panic(err)
@@ -37,12 +37,11 @@ func GetMetricsHandler(options *ServerConfig) *metrics.Handler {
 		metricsHandler := metrics.NewHandlerFromSavedData(storedMetrics)
 		metrics.InfoLog.Println("Configuration restored.")
 		return metricsHandler
-	} else {
-		return metrics.NewHandler()
 	}
+	return metrics.NewHandler()
 }
 
-func StartSavingToDisk(options *ServerConfig, handler *metrics.Handler) {
+func StartSavingToDisk(options *metrics.ServerConfig, handler *metrics.Handler) {
 	path, err := filepath.Abs(".")
 	if err != nil {
 		panic(err)
@@ -74,50 +73,6 @@ func StartSavingToDisk(options *ServerConfig, handler *metrics.Handler) {
 
 }
 
-type ServerConfig struct {
-	Address       string
-	Restore       bool
-	StoreInterval int
-	StoreFile     string
-}
-
-func GetServerConfig(config *metrics.EnvConfig, args *metrics.ServerCLIOptions) *ServerConfig {
-	serverConfig := ServerConfig{}
-	if config.Address == "127.0.0.1:8080" {
-		serverConfig.Address = args.Address
-	} else {
-		serverConfig.Address = config.Address
-	}
-	if config.Restore {
-		serverConfig.Restore = config.Restore
-	} else {
-		serverConfig.Restore = args.Restore
-	}
-	if config.StoreFile != "/tmp/devops-metrics-db.json" {
-		serverConfig.StoreFile = config.StoreFile
-	} else {
-		serverConfig.StoreFile = args.StoreFile
-	}
-	if config.StoreInterval == "300s" {
-		serverConfig.StoreInterval = func() int {
-			store, err := args.GetNumericInterval("StoreInterval")
-			if err != nil {
-				panic(err)
-			}
-			return int(store)
-		}()
-	} else {
-		serverConfig.StoreInterval = func() int {
-			store, err := config.GetNumericInterval("StoreInterval")
-			if err != nil {
-				panic(err)
-			}
-			return int(store)
-		}()
-	}
-	return &serverConfig
-}
-
 func main() {
 	config, err := metrics.NewConfig()
 	if err != nil {
@@ -136,7 +91,7 @@ func main() {
 		StoreInterval: *storeInterval,
 		StoreFile:     *storeFile,
 	}
-	serverConfig := GetServerConfig(config, args)
+	serverConfig := metrics.GetServerConfig(config, args)
 
 	metricsHandler := GetMetricsHandler(serverConfig)
 	if serverConfig.StoreFile != "" {
