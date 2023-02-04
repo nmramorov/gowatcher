@@ -40,24 +40,24 @@ func getMultiplier(intervalValue string) *int64 {
 	return &multiplier
 }
 
-func (e *EnvConfig) GetNumericInterval(intervalName string) (int64, error) {
+func (e *EnvConfig) GetNumericInterval(intervalName string) int64 {
 	switch intervalName {
 	case "ReportInterval":
 		multiplier := getMultiplier(e.ReportInterval)
 		stringValue := strings.Split(e.ReportInterval, e.ReportInterval[len(e.ReportInterval)-1:])[0]
-		value, err := strconv.ParseInt(stringValue, 10, 64)
-		return *multiplier * value, err
+		value, _ := strconv.ParseInt(stringValue, 10, 64)
+		return *multiplier * value
 	case "PollInterval":
 		multiplier := getMultiplier(e.PollInterval)
 		stringValue := strings.Split(e.PollInterval, e.PollInterval[len(e.PollInterval)-1:])[0]
-		value, err := strconv.ParseInt(stringValue, 10, 64)
-		return *multiplier * value, err
+		value, _ := strconv.ParseInt(stringValue, 10, 64)
+		return *multiplier * value
 	case "StoreInterval":
 		multiplier := getMultiplier(e.StoreInterval)
 		stringValue := strings.Split(e.StoreInterval, e.StoreInterval[len(e.StoreInterval)-1:])[0]
-		value, err := strconv.ParseInt(stringValue, 10, 64)
-		return *multiplier * value, err
+		value, _ := strconv.ParseInt(stringValue, 10, 64)
+		return *multiplier * value
 	}
 
-	return 0, ErrorWithIntervalConvertion
+	return 0
 }

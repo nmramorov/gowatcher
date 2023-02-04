@@ -19,16 +19,16 @@ type AgentCLIOptions struct {
 	PollInterval   string
 }
 
-func (scli *ServerCLIOptions) GetNumericInterval(intervalName string) (int64, error) {
+func (scli *ServerCLIOptions) GetNumericInterval(intervalName string) int64 {
 	switch intervalName {
 	case "StoreInterval":
 		multiplier := getMultiplier(scli.StoreInterval)
 		stringValue := strings.Split(scli.StoreInterval, scli.StoreInterval[len(scli.StoreInterval)-1:])[0]
-		value, err := strconv.ParseInt(stringValue, 10, 64)
-		return *multiplier * value, err
+		value, _ := strconv.ParseInt(stringValue, 10, 64)
+		return *multiplier * value
 	}
 
-	return 0, ErrorWithIntervalConvertion
+	return 0
 }
 
 func (acli *AgentCLIOptions) GetNumericInterval(intervalName string) (int64, error) {

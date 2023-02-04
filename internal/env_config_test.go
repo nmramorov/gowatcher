@@ -27,13 +27,13 @@ func TestEnvConfigIntervalConvertion(t *testing.T) {
 	}
 	testConfig.PollInterval = "2s"
 	testConfig.ReportInterval = "10m"
-	reportInterval, err := testConfig.GetNumericInterval("ReportInterval")
+	reportInterval := testConfig.GetNumericInterval("ReportInterval")
 	fmt.Println(reportInterval)
 	if err != nil {
 		panic(err)
 	}
 	assert.Equal(t, reportInterval, int64(600))
-	pollInterval, err := testConfig.GetNumericInterval("PollInterval")
+	pollInterval := testConfig.GetNumericInterval("PollInterval")
 	if err != nil {
 		panic(err)
 	}
