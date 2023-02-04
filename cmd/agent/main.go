@@ -32,78 +32,65 @@ func CreateRequests(endpoint string, mtrcs *metrics.Metrics) []*http.Request {
 	return requests
 }
 
-func CreateUpdateRequestsJSON(endpoint string, mtrcs *metrics.Metrics) []*http.Request {
+func createBody(metricType, path, key string, value interface{}) *bytes.Buffer {
+	body := bytes.NewBuffer([]byte{})
+	encoder := json.NewEncoder(body)
+	var toEncode metrics.JSONMetrics
+	switch metricType {
+	case "gauge":
+		toEncode.MType = "gauge"
+		toEncode.ID = key
+		gaugeVal := value.(metrics.Gauge)
+		val := (*float64)(&gaugeVal)
+		toEncode.Value = val
+	case "counter":
+		toEncode.MType = "counter"
+		toEncode.ID = key
+		counterVal := value.(metrics.Counter)
+		val := (*int64)(&counterVal)
+		toEncode.Delta = val
+	}
+	toEncode.ID = key
+	if path == "/value/" {
+		toEncode.Delta = nil
+		toEncode.Value = nil
+	}
+	encoder.Encode(&toEncode)
+	return body
+}
+
+func createGaugeRequests(endpoint, path string, gaugeMetrics map[string]metrics.Gauge) []*http.Request {
 	var requests []*http.Request
-	for k, v := range mtrcs.GaugeMetrics {
-		body := bytes.NewBuffer([]byte{})
-		encoder := json.NewEncoder(body)
-		val := (*float64)(&v)
-		toEncode := metrics.JSONMetrics{
-			ID:    k,
-			MType: "gauge",
-			Value: val,
-		}
-		encoder.Encode(&toEncode)
-		req, err := http.NewRequest(http.MethodPost, endpoint+"/update/", body)
+	for k, v := range gaugeMetrics {
+		body := createBody("gauge", path, k, v)
+		req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
 		if err != nil {
 			metrics.ErrorLog.Printf("Could not do POST request for gauge with params: %s %f", k, v)
 		}
 		req.Header.Add("Content-Type", "application/json")
-		requests = append(requests, req)
-	}
-	for k, v := range mtrcs.CounterMetrics {
-		body := bytes.NewBuffer([]byte{})
-		encoder := json.NewEncoder(body)
-		val := (*int64)(&v)
-		toEncode := metrics.JSONMetrics{
-			ID:    k,
-			MType: "counter",
-			Delta: val,
-		}
-		encoder.Encode(&toEncode)
-		req, err := http.NewRequest(http.MethodPost, endpoint+"/update/", body)
-		if err != nil {
-			metrics.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
-		}
-		req.Header.Add("Content-Type", "application/json")
-		req.Header.Add("Accept-Encoding", "gzip")
 		requests = append(requests, req)
 	}
 	return requests
 }
 
-func CreateValueRequestsJSON(endpoint string, mtrcs *metrics.Metrics) []*http.Request {
+func createCounterRequests(endpoint, path string, counterMetrics map[string]metrics.Counter) []*http.Request {
 	var requests []*http.Request
-	for k, v := range mtrcs.GaugeMetrics {
-		body := bytes.NewBuffer([]byte{})
-		encoder := json.NewEncoder(body)
-		encoder.Encode(&metrics.JSONMetrics{
-			ID:    k,
-			MType: "gauge",
-		})
-		req, err := http.NewRequest(http.MethodPost, endpoint+"/value/", body)
-		if err != nil {
-			metrics.ErrorLog.Printf("Could not do POST request for gauge with params: %s %f", k, v)
-		}
-		req.Header.Add("Content-Type", "application/json")
-		requests = append(requests, req)
-	}
-	for k, v := range mtrcs.CounterMetrics {
-		body := bytes.NewBuffer([]byte{})
-		encoder := json.NewEncoder(body)
-		encoder.Encode(&metrics.JSONMetrics{
-			ID:    k,
-			MType: "counter",
-		})
-		req, err := http.NewRequest(http.MethodPost, endpoint+"/value/", body)
+	for k, v := range counterMetrics {
+		body := createBody("counter", path, k, v)
+		req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
 		if err != nil {
 			metrics.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
 		}
 		req.Header.Add("Content-Type", "application/json")
-		req.Header.Add("Accept-Encoding", "gzip")
 		requests = append(requests, req)
 	}
 	return requests
+}
+
+func generateMetricsRequests(endpoint, path string, src *metrics.Metrics) []*http.Request {
+	gaugeRequests := createGaugeRequests(endpoint, path, src.GaugeMetrics)
+	counterRequests := createCounterRequests(endpoint, path, src.CounterMetrics)
+	return append(gaugeRequests, counterRequests...)
 }
 
 func PushMetrics(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
@@ -112,12 +99,11 @@ func PushMetrics(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
 			metrics.ErrorLog.Println(p)
 		}
 	}()
-	requests := CreateUpdateRequestsJSON(endpoint, mtrcs)
+	requests := generateMetricsRequests(endpoint, "/update/", mtrcs)
 	for _, request := range requests {
 		resp, err := client.Do(request)
 		if err != nil {
 			metrics.ErrorLog.Println(err)
-			panic(1)
 		}
 		defer resp.Body.Close()
 	}
@@ -129,12 +115,11 @@ func GetMetricsValues(client *http.Client, endpoint string, mtrcs *metrics.Metri
 			metrics.ErrorLog.Println(p)
 		}
 	}()
-	requests := CreateValueRequestsJSON(endpoint, mtrcs)
+	requests := generateMetricsRequests(endpoint, "/value/", mtrcs)
 	for _, request := range requests {
 		resp, err := client.Do(request)
 		if err != nil {
 			metrics.ErrorLog.Println(err)
-			panic(1)
 		}
 		defer resp.Body.Close()
 	}
