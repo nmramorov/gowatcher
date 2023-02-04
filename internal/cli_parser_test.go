@@ -44,10 +44,7 @@ func TestAgentCLI(t *testing.T) {
 	assert.Equal(t, "localhost:4444", args.Address)
 	assert.Equal(t, "11s", args.ReportInterval)
 	assert.Equal(t, 300, func() int {
-		poll, err := args.GetNumericInterval("PollInterval")
-		if err != nil {
-			panic(err)
-		}
+		poll := args.GetNumericInterval("PollInterval")
 		return int(poll)
 	}())
 }

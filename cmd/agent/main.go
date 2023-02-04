@@ -140,6 +140,7 @@ func main() {
 	// }
 
 	agentConfig := metrics.GetAgentConfig()
+	fmt.Println(agentConfig)
 
 	var collector = metrics.NewCollector()
 

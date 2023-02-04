@@ -31,21 +31,21 @@ func (scli *ServerCLIOptions) GetNumericInterval(intervalName string) int64 {
 	return 0
 }
 
-func (acli *AgentCLIOptions) GetNumericInterval(intervalName string) (int64, error) {
+func (acli *AgentCLIOptions) GetNumericInterval(intervalName string) int64 {
 	switch intervalName {
 	case "ReportInterval":
 		multiplier := getMultiplier(acli.ReportInterval)
 		stringValue := strings.Split(acli.ReportInterval, acli.ReportInterval[len(acli.ReportInterval)-1:])[0]
-		value, err := strconv.ParseInt(stringValue, 10, 64)
-		return *multiplier * value, err
+		value, _ := strconv.ParseInt(stringValue, 10, 64)
+		return *multiplier * value
 	case "PollInterval":
 		multiplier := getMultiplier(acli.PollInterval)
 		stringValue := strings.Split(acli.PollInterval, acli.PollInterval[len(acli.PollInterval)-1:])[0]
-		value, err := strconv.ParseInt(stringValue, 10, 64)
-		return *multiplier * value, err
+		value, _ := strconv.ParseInt(stringValue, 10, 64)
+		return *multiplier * value
 	}
 
-	return 0, ErrorWithIntervalConvertion
+	return 0
 }
 
 func NewServerCliOptions() *ServerCLIOptions {
@@ -68,6 +68,7 @@ func NewAgentCliOptions() *AgentCLIOptions {
 	var reportInterval = flag.String("r", "10s", "report interval time")
 	var pollInterval = flag.String("p", "2s", "poll interval time")
 	flag.Parse()
+
 	return &AgentCLIOptions{
 		Address:        *address,
 		ReportInterval: *reportInterval,

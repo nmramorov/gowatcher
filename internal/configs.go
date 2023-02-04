@@ -1,6 +1,9 @@
 package metrics
 
-import "flag"
+import (
+	"flag"
+	"fmt"
+)
 
 type ServerConfig struct {
 	Address       string
@@ -15,8 +18,8 @@ func GetServerConfig() *ServerConfig {
 	if err != nil {
 		InfoLog.Println("could not get env for server config, getting data from cli...")
 		cliConfig := NewServerCliOptions()
-		InfoLog.Println(flag.Parsed())
-		if flag.Parsed() {
+		InfoLog.Println(flag.NFlag())
+		if flag.NFlag() == 4 {
 			return &ServerConfig{
 				Restore:       cliConfig.Restore,
 				Address:       cliConfig.Address,
@@ -77,11 +80,14 @@ func GetAgentConfig() *AgentConfig {
 	envConfig, err := NewConfig()
 	if err != nil {
 		InfoLog.Println("could not get env for server config, getting data from cli...")
-		cliConfig := NewServerCliOptions()
-		return &AgentConfig{
-			Address:        cliConfig.Address,
-			PollInterval:   int(cliConfig.GetNumericInterval("PollInterval")),
-			ReportInterval: int(cliConfig.GetNumericInterval("ReportInterval")),
+		cliConfig := NewAgentCliOptions()
+		fmt.Println(flag.NFlag())
+		if flag.NFlag() == 3 {
+			return &AgentConfig{
+				Address:        cliConfig.Address,
+				PollInterval:   int(cliConfig.GetNumericInterval("PollInterval")),
+				ReportInterval: int(cliConfig.GetNumericInterval("ReportInterval")),
+			}
 		}
 	}
 	return &AgentConfig{
