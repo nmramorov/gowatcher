@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -64,6 +63,7 @@ type ServerEnvConfig struct {
 	StoreInterval string `env:"STORE_INTERVAL,required"`
 	StoreFile     string `env:"STORE_FILE,required"`
 	Restore       string `env:"RESTORE,required"`
+	Key           string `env:"KEY"`
 }
 
 func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
@@ -71,6 +71,7 @@ func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
 	var storeint string = STORE_INTERVAL
 	var storefile string = STORE_FILE
 	var rest string = RESTORE
+	var key string = KEY
 	if envs.Address != ADDRESS && envs.Address != "" {
 		addr = envs.Address
 	}
@@ -83,11 +84,15 @@ func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
 	if envs.StoreInterval != STORE_INTERVAL && envs.StoreInterval != "" {
 		storeint = envs.StoreInterval
 	}
+	if envs.Key != "" {
+		key = envs.Key
+	}
 	return &ServerEnvConfig{
 		Address:       addr,
 		StoreInterval: storeint,
 		StoreFile:     storefile,
 		Restore:       rest,
+		Key:           key,
 	}
 }
 
@@ -132,7 +137,6 @@ func (e *AgentEnvConfig) GetNumericInterval(intervalName string) int64 {
 }
 
 func (e *ServerEnvConfig) GetNumericInterval(intervalName string) int64 {
-	fmt.Println(e.StoreInterval)
 	switch intervalName {
 	case "StoreInterval":
 		multiplier := getMultiplier(e.StoreInterval)
