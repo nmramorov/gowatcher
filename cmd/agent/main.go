@@ -124,7 +124,7 @@ func GetMetricsValues(client *http.Client, endpoint string, mtrcs *metrics.Metri
 	}
 }
 
-func main() {
+func main() {  
 	agentConfig := metrics.GetAgentConfig()
 	fmt.Println(agentConfig)
 
