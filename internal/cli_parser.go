@@ -17,6 +17,7 @@ type AgentCLIOptions struct {
 	Address        string
 	ReportInterval string
 	PollInterval   string
+	Key            string
 }
 
 func (scli *ServerCLIOptions) GetNumericInterval(intervalName string) int64 {
@@ -67,11 +68,13 @@ func NewAgentCliOptions() *AgentCLIOptions {
 	var address = flag.String("a", "localhost:8080", "server address")
 	var reportInterval = flag.String("r", "10s", "report interval time")
 	var pollInterval = flag.String("p", "2s", "poll interval time")
+	var key = flag.String("k", "", "key to calculate hash")
 	flag.Parse()
 
 	return &AgentCLIOptions{
 		Address:        *address,
 		ReportInterval: *reportInterval,
 		PollInterval:   *pollInterval,
+		Key:            *key,
 	}
 }

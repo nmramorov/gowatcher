@@ -15,18 +15,21 @@ const (
 	STORE_INTERVAL  string = "300s"
 	STORE_FILE      string = "/tmp/devops-metrics-db.json"
 	RESTORE         string = "default"
+	KEY             string = ""
 )
 
 type AgentEnvConfig struct {
 	Address        string `env:"ADDRESS,required"`
 	ReportInterval string `env:"REPORT_INTERVAL,required"`
 	PollInterval   string `env:"POLL_INTERVAL,required"`
+	Key            string `env:"KEY"`
 }
 
 func checkAgentEnvs(envs *AgentEnvConfig) *AgentEnvConfig {
 	var addr string = ADDRESS
 	var pollint string = POLL_INTERVAL
 	var reportint string = REPORT_INTERVAL
+	var key string = KEY
 	if envs.Address != ADDRESS && envs.Address != "" {
 		addr = envs.Address
 	}
@@ -36,10 +39,14 @@ func checkAgentEnvs(envs *AgentEnvConfig) *AgentEnvConfig {
 	if envs.PollInterval != POLL_INTERVAL && envs.PollInterval != "" {
 		pollint = envs.PollInterval
 	}
+	if envs.Key != "" {
+		key = envs.Key
+	}
 	return &AgentEnvConfig{
 		Address:        addr,
 		PollInterval:   pollint,
 		ReportInterval: reportint,
+		Key:            key,
 	}
 }
 

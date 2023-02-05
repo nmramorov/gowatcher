@@ -29,16 +29,18 @@ func TestServerCLI(t *testing.T) {
 }
 
 func TestAgentCLI(t *testing.T) {
-	os.Args = []string{"main.go", "-a", "localhost:4444", "-r=11s", "-p=5m"}
+	os.Args = []string{"main.go", "-a", "localhost:4444", "-r=11s", "-p=5m", "-k=sadfsdfsdf"}
 	var address = flag.String("a", "localhost:8080", "server address")
 	var reportInterval = flag.String("r", "10s", "report interval time")
 	var pollInterval = flag.String("p", "2s", "poll interval time")
+	var key = flag.String("k", "", "key to calculate hash")
 	flag.Parse()
 
 	args := &AgentCLIOptions{
 		Address:        *address,
 		ReportInterval: *reportInterval,
 		PollInterval:   *pollInterval,
+		Key:            *key,
 	}
 
 	assert.Equal(t, "localhost:4444", args.Address)
@@ -47,6 +49,7 @@ func TestAgentCLI(t *testing.T) {
 		poll := args.GetNumericInterval("PollInterval")
 		return int(poll)
 	}())
+	assert.Equal(t, "sadfsdfsdf", args.Key)
 }
 
 func TestServerCLIDefaults(t *testing.T) {
@@ -72,13 +75,16 @@ func TestAgentCLIDefaults(t *testing.T) {
 	var address = flag.String("a", "localhost:8080", "server address")
 	var reportInterval = flag.String("r", "10s", "report interval time")
 	var pollInterval = flag.String("p", "2s", "poll interval time")
+	var key = flag.String("k", "", "key to calculate hash")
 	flag.Parse()
 	args := &AgentCLIOptions{
 		Address:        *address,
 		ReportInterval: *reportInterval,
 		PollInterval:   *pollInterval,
+		Key: *key,
 	}
 	assert.Equal(t, "localhost:8080", args.Address)
 	assert.Equal(t, "10s", args.ReportInterval)
 	assert.Equal(t, "2s", args.PollInterval)
+	assert.Equal(t, "", args.Key)
 }
