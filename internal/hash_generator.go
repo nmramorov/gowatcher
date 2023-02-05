@@ -22,3 +22,9 @@ func (gen *HashGenerator) GenerateHash(metricType, id string, value interface{})
 	dst := h.Sum(nil)
 	return string(dst)
 }
+
+func NewHashGenerator(key string) *HashGenerator {
+	return &HashGenerator{
+		secretkey: key,
+	}
+}
