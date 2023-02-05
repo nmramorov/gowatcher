@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 )
 
@@ -20,7 +21,7 @@ func (gen *HashGenerator) GenerateHash(metricType, id string, value interface{})
 	h := sha256.New()
 	h.Write([]byte(hashString))
 	dst := h.Sum(nil)
-	return string(dst)
+	return hex.EncodeToString(dst)
 }
 
 func NewHashGenerator(key string) *HashGenerator {

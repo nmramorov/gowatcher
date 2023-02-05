@@ -160,7 +160,7 @@ func TestPOSTMetricsHandlerNoJson(t *testing.T) {
 		},
 	}
 
-	metricsHandler := NewHandler()
+	metricsHandler := NewHandler("")
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -246,7 +246,7 @@ func TestGETMetricsHandler(t *testing.T) {
 			},
 		},
 	}
-	metricsHandler := NewHandler()
+	metricsHandler := NewHandler("")
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -263,7 +263,7 @@ func TestGETMetricsHandler(t *testing.T) {
 }
 
 func TestHTML(t *testing.T) {
-	metricsHandler := NewHandler()
+	metricsHandler := NewHandler("")
 	metricsHandler.collector.UpdateMetrics()
 
 	ts := httptest.NewServer(metricsHandler)
@@ -327,7 +327,7 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 		},
 	}
 
-	metricsHandler := NewHandler()
+	metricsHandler := NewHandler("")
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -430,7 +430,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 		},
 	}
 
-	metricsHandler := NewHandler()
+	metricsHandler := NewHandler("")
 
 	ts := httptest.NewServer(metricsHandler)
 

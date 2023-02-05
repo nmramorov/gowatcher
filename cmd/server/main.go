@@ -31,13 +31,13 @@ func GetMetricsHandler(options *metrics.ServerConfig) (*metrics.Handler, error) 
 		storedMetrics, err := reader.ReadJson()
 		if err != nil {
 			metrics.ErrorLog.Printf("Error happend during JSON reading: %e", err)
-			return metrics.NewHandler(), nil
+			return metrics.NewHandler(options.Key), nil
 		}
 		metricsHandler := metrics.NewHandlerFromSavedData(storedMetrics)
 		metrics.InfoLog.Println("Configuration restored.")
 		return metricsHandler, nil
 	}
-	return metrics.NewHandler(), nil
+	return metrics.NewHandler(options.Key), nil
 }
 
 func StartSavingToDisk(options *metrics.ServerConfig, handler *metrics.Handler) error {

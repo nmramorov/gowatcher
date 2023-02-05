@@ -103,7 +103,7 @@ func TestServer(t *testing.T) {
 			},
 		},
 	}
-	metricsHandler := metrics.NewHandler()
+	metricsHandler := metrics.NewHandler("")
 
 	ts := httptest.NewServer(metricsHandler)
 

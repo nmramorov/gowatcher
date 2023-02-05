@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -14,12 +15,14 @@ import (
 type Handler struct {
 	*chi.Mux
 	collector *Collector
+	secretkey string
 }
 
-func NewHandler() *Handler {
+func NewHandler(key string) *Handler {
 	h := &Handler{
 		Mux:       chi.NewMux(),
 		collector: NewCollector(),
+		secretkey: key,
 	}
 	h.Use(GzipHandle)
 	h.Get("/", h.ListMetricsHTML)
@@ -46,11 +49,45 @@ func NewHandlerFromSavedData(saved *Metrics) *Handler {
 	return h
 }
 
+func (h *Handler) checkHash(rw http.ResponseWriter, metricData *JSONMetrics) {
+	var hash string
+	generator := NewHashGenerator(h.secretkey)
+	switch metricData.MType {
+	case "gauge":
+		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Value)
+	case "counter":
+		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Delta)
+	}
+	if hash != metricData.Hash {
+		ErrorLog.Printf("wrong hash for %s", metricData.ID)
+		http.Error(rw, "wrong hash", http.StatusBadRequest)
+		return
+	}
+	InfoLog.Printf("hash is valid for %s", metricData.ID)
+}
+
+func (h *Handler) getHash(metricData *JSONMetrics) string {
+	var hash string
+	generator := NewHashGenerator(h.secretkey)
+	switch metricData.MType {
+	case "gauge":
+		value := &metricData.Value
+		hash = generator.GenerateHash(metricData.MType, metricData.ID, value)
+	case "counter":
+		delta := &metricData.Delta
+		hash = generator.GenerateHash(metricData.MType, metricData.ID, delta)
+	}
+	return hash
+}
+
 func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 	metricData := JSONMetrics{}
 	if err := json.NewDecoder(r.Body).Decode(&metricData); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
+	}
+	if h.secretkey != "" {
+		h.checkHash(rw, &metricData)
 	}
 	updatedData, err := h.collector.UpdateMetricFromJson(&metricData)
 	if err != nil {
@@ -73,6 +110,11 @@ func (h *Handler) GetMetricByJson(rw http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic("Error occured during metric getting from json")
 	}
+	var hash string
+	if h.secretkey != "" {
+		hash = h.getHash(metric)
+	}
+	metric.Hash = hash
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
 	encoder.Encode(metric)
