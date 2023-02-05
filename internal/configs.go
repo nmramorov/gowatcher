@@ -5,6 +5,7 @@ type ServerConfig struct {
 	Restore       bool
 	StoreInterval int
 	StoreFile     string
+	Key           string
 }
 
 func checkServerConfig(envs *ServerEnvConfig, clies *ServerCLIOptions) *ServerConfig {
@@ -14,6 +15,7 @@ func checkServerConfig(envs *ServerEnvConfig, clies *ServerCLIOptions) *ServerCo
 	var cliRest string = clies.Restore
 	var rest bool
 	var storeintNumeric int = int(clies.GetNumericInterval("StoreInterval"))
+	var key string = clies.Key
 	if envs.Address != ADDRESS && envs.Address != addr {
 		addr = envs.Address
 	}
@@ -37,11 +39,15 @@ func checkServerConfig(envs *ServerEnvConfig, clies *ServerCLIOptions) *ServerCo
 	if envs.StoreInterval != STORE_INTERVAL && envs.StoreInterval != "" && envs.StoreInterval != storeint {
 		storeintNumeric = int(envs.GetNumericInterval("StoreInterval"))
 	}
+	if envs.Key != "" && envs.Key != key {
+		key = envs.Key
+	}
 	return &ServerConfig{
 		Address:       addr,
 		StoreInterval: storeintNumeric,
 		StoreFile:     storefile,
 		Restore:       rest,
+		Key:           key,
 	}
 }
 
