@@ -93,6 +93,7 @@ func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic("Error occured during metric update from json")
 	}
+	updatedData.Hash = h.getHash(updatedData)
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
 	encoder.Encode(updatedData)
