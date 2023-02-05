@@ -10,11 +10,11 @@ import (
 
 const (
 	ADDRESS         string = "127.0.0.1:8080"
-	REPORT_INTERVAL        = "10s"
-	POLL_INTERVAL          = "2s"
-	STORE_INTERVAL         = "300s"
-	STORE_FILE             = "/tmp/devops-metrics-db.json"
-	RESTORE         bool   = true
+	REPORT_INTERVAL string = "10s"
+	POLL_INTERVAL   string = "2s"
+	STORE_INTERVAL  string = "300s"
+	STORE_FILE      string = "/tmp/devops-metrics-db.json"
+	RESTORE         string = "default"
 )
 
 type AgentEnvConfig struct {
@@ -56,21 +56,21 @@ type ServerEnvConfig struct {
 	Address       string `env:"ADDRESS,required"`
 	StoreInterval string `env:"STORE_INTERVAL,required"`
 	StoreFile     string `env:"STORE_FILE,required"`
-	Restore       bool   `env:"RESTORE,required"`
+	Restore       string `env:"RESTORE,required"`
 }
 
 func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
 	var addr string = ADDRESS
 	var storeint string = STORE_INTERVAL
 	var storefile string = STORE_FILE
-	var rest bool = RESTORE
+	var rest string = RESTORE
 	if envs.Address != ADDRESS && envs.Address != "" {
 		addr = envs.Address
-	} 
-	if !envs.Restore {
+	}
+	if envs.Restore != "default" && envs.Restore != "" {
 		rest = envs.Restore
 	}
-	if envs.StoreFile != STORE_FILE {
+	if envs.StoreFile != STORE_FILE && envs.StoreFile != "" {
 		storefile = envs.StoreFile
 	}
 	if envs.StoreInterval != STORE_INTERVAL && envs.StoreInterval != "" {
@@ -87,7 +87,6 @@ func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
 func NewServerEnvConfig() (*ServerEnvConfig, error) {
 	var config ServerEnvConfig
 	err := env.Parse(&config)
-	fmt.Println(config)
 	if err != nil {
 		return checkServerEnvs(&config), ErrorWithEnvConfig
 	}

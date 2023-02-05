@@ -11,7 +11,7 @@ func TestEnvConfig(t *testing.T) {
 	assert.Equal(t, testConfig.Address, `127.0.0.1:8080`)
 	assert.Equal(t, testConfig.StoreInterval, `300s`)
 	assert.Equal(t, testConfig.StoreFile, "/tmp/devops-metrics-db.json")
-	assert.Equal(t, testConfig.Restore, true)
+	assert.Equal(t, testConfig.Restore, "default")
 }
 
 func TestEnvConfigIntervalConvertion(t *testing.T) {

@@ -12,6 +12,44 @@ type ServerConfig struct {
 	StoreFile     string
 }
 
+func checkServerConfig(envs *ServerEnvConfig, clies *ServerCLIOptions) *ServerConfig {
+	var addr string = clies.Address
+	var storeint string = clies.StoreInterval
+	var storefile string = clies.StoreFile
+	var cliRest string = clies.Restore
+	var rest bool
+	var storeintNumeric int = int(clies.GetNumericInterval("StoreInterval"))
+	if envs.Address != ADDRESS && envs.Address != addr {
+		addr = envs.Address
+	}
+	if envs.Restore != "default" && envs.Restore != "" {
+		if envs.Restore == "true" {
+			rest = true
+		} else {
+			rest = false
+		}
+	}
+	if envs.Restore == "default" && cliRest != "default" {
+		if cliRest == "true" {
+			rest = true
+		} else {
+			rest = false
+		}
+	}
+	if envs.StoreFile != STORE_FILE && envs.StoreFile != storefile {
+		storefile = envs.StoreFile
+	}
+	if envs.StoreInterval != STORE_INTERVAL && envs.StoreInterval != "" && envs.StoreInterval != storeint {
+		storeintNumeric = int(envs.GetNumericInterval("StoreInterval"))
+	}
+	return &ServerConfig{
+		Address:       addr,
+		StoreInterval: storeintNumeric,
+		StoreFile:     storefile,
+		Restore:       rest,
+	}
+}
+
 func GetServerConfig() *ServerConfig {
 	envConfig, err := NewServerEnvConfig()
 	InfoLog.Println(envConfig, err)
@@ -19,17 +57,24 @@ func GetServerConfig() *ServerConfig {
 		InfoLog.Println("could not get env for server config, getting data from cli...")
 		cliConfig := NewServerCliOptions()
 		InfoLog.Println(flag.NFlag())
-		if flag.NFlag() == 4 {
-			return &ServerConfig{
-				Restore:       cliConfig.Restore,
-				Address:       cliConfig.Address,
-				StoreInterval: int(cliConfig.GetNumericInterval("StoreInterval")),
-				StoreFile:     cliConfig.StoreFile,
-			}
-		}
+		// if flag.NFlag() == 4 {
+		// 	return &ServerConfig{
+		// 		Restore:       cliConfig.Restore,
+		// 		Address:       cliConfig.Address,
+		// 		StoreInterval: int(cliConfig.GetNumericInterval("StoreInterval")),
+		// 		StoreFile:     cliConfig.StoreFile,
+		// 	}
+		// }
+		return checkServerConfig(envConfig, cliConfig)
+	}
+	var rest bool
+	if envConfig.Restore == "true" {
+		rest = true
+	} else {
+		rest = false
 	}
 	return &ServerConfig{
-		Restore:       envConfig.Restore,
+		Restore:       rest,
 		Address:       envConfig.Address,
 		StoreInterval: int(envConfig.GetNumericInterval("StoreInterval")),
 		StoreFile:     envConfig.StoreFile,

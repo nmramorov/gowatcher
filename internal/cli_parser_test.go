@@ -9,9 +9,9 @@ import (
 )
 
 func TestServerCLI(t *testing.T) {
-	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=false", "-i=5m", "-f=/tmp/wmSoUM"}
+	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM"}
 	var address = flag.String("a", "localhost:8080", "server address")
-	var restore = flag.Bool("r", true, "restore metrics from file")
+	var restore = flag.String("r", "default", "restore metrics from file")
 	var storeInterval = flag.String("i", "300s", "period between file save")
 	var storeFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
 	flag.Parse()
@@ -23,7 +23,7 @@ func TestServerCLI(t *testing.T) {
 		StoreFile:     *storeFile,
 	}
 	assert.Equal(t, "localhost:38731", args.Address)
-	assert.Equal(t, false, args.Restore)
+	assert.Equal(t, "true", args.Restore)
 	assert.Equal(t, "5m", args.StoreInterval)
 	assert.Equal(t, "/tmp/wmSoUM", args.StoreFile)
 }
@@ -51,7 +51,7 @@ func TestAgentCLI(t *testing.T) {
 
 func TestServerCLIDefaults(t *testing.T) {
 	var address = flag.String("a", "localhost:8080", "server address")
-	var restore = flag.Bool("r", true, "restore metrics from file")
+	var restore = flag.String("r", "default", "restore metrics from file")
 	var storeInterval = flag.String("i", "300s", "period between file save")
 	var storeFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
 	flag.Parse()
@@ -63,7 +63,7 @@ func TestServerCLIDefaults(t *testing.T) {
 		StoreFile:     *storeFile,
 	}
 	assert.Equal(t, "localhost:8080", args.Address)
-	assert.Equal(t, true, args.Restore)
+	assert.Equal(t, "default", args.Restore)
 	assert.Equal(t, "/tmp/devops-metrics-db.json", args.StoreFile)
 	assert.Equal(t, "300s", args.StoreInterval)
 }

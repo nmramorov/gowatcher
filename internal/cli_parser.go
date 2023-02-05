@@ -8,7 +8,7 @@ import (
 
 type ServerCLIOptions struct {
 	Address       string
-	Restore       bool
+	Restore       string
 	StoreInterval string
 	StoreFile     string
 }
@@ -50,7 +50,7 @@ func (acli *AgentCLIOptions) GetNumericInterval(intervalName string) int64 {
 
 func NewServerCliOptions() *ServerCLIOptions {
 	var address = flag.String("a", "localhost:8080", "server address")
-	var restore = flag.Bool("r", true, "restore metrics from file")
+	var restore = flag.String("r", "default", "restore metrics from file")
 	var storeInterval = flag.String("i", "30s", "period between file save")
 	var storeFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
 	flag.Parse()
