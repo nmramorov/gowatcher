@@ -74,23 +74,6 @@ func StartSavingToDisk(options *metrics.ServerConfig, handler *metrics.Handler) 
 }
 
 func main() {
-	// config, err := metrics.NewConfig()
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// metrics.InfoLog.Println("Initializing web server...")
-	// var address = flag.String("a", "localhost:8080", "server address")
-	// var restore = flag.Bool("r", true, "restore metrics from file")
-	// var storeInterval = flag.String("i", "30s", "period between file save")
-	// var storeFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
-	// flag.Parse()
-
-	// args := &metrics.ServerCLIOptions{
-	// 	Address:       *address,
-	// 	Restore:       *restore,
-	// 	StoreInterval: *storeInterval,
-	// 	StoreFile:     *storeFile,
-	// }
 	serverConfig := metrics.GetServerConfig()
 
 	metricsHandler, _ := GetMetricsHandler(serverConfig)

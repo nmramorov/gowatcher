@@ -125,20 +125,6 @@ func GetMetricsValues(client *http.Client, endpoint string, mtrcs *metrics.Metri
 }
 
 func main() {
-	// config, err := metrics.NewConfig()
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// var address = flag.String("a", "localhost:8080", "server address")
-	// var reportInterval = flag.String("r", "10s", "report interval time")
-	// var pollInterval = flag.String("p", "2s", "poll interval time")
-	// flag.Parse()
-	// args := &metrics.AgentCLIOptions{
-	// 	Address:        *address,
-	// 	ReportInterval: *reportInterval,
-	// 	PollInterval:   *pollInterval,
-	// }
-
 	agentConfig := metrics.GetAgentConfig()
 	fmt.Println(agentConfig)
 
