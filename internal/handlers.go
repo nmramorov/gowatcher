@@ -74,11 +74,9 @@ func (h *Handler) getHash(metricData *JSONMetrics) string {
 	generator := NewHashGenerator(h.secretkey)
 	switch metricData.MType {
 	case "gauge":
-		value := &metricData.Value
-		hash = generator.GenerateHash(metricData.MType, metricData.ID, value)
+		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Value)
 	case "counter":
-		delta := &metricData.Delta
-		hash = generator.GenerateHash(metricData.MType, metricData.ID, delta)
+		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Delta)
 	}
 	return hash
 }
