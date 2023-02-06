@@ -13,6 +13,7 @@ func TestEnvConfig(t *testing.T) {
 	assert.Equal(t, testConfig.StoreFile, "/tmp/devops-metrics-db.json")
 	assert.Equal(t, testConfig.Restore, "default")
 	assert.Equal(t, testConfig.Key, "")
+	assert.Equal(t, testConfig.Database, "")
 }
 
 func TestEnvConfigIntervalConvertion(t *testing.T) {
@@ -23,5 +24,4 @@ func TestEnvConfigIntervalConvertion(t *testing.T) {
 	assert.Equal(t, reportInterval, int64(600))
 	pollInterval := testConfig.GetNumericInterval("PollInterval")
 	assert.Equal(t, pollInterval, int64(2))
-	assert.Equal(t, "", testConfig.Key)
 }

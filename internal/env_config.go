@@ -15,6 +15,7 @@ const (
 	STORE_FILE      string = "/tmp/devops-metrics-db.json"
 	RESTORE         string = "default"
 	KEY             string = ""
+	DATABASE_DSN    string = ""
 )
 
 type AgentEnvConfig struct {
@@ -64,6 +65,7 @@ type ServerEnvConfig struct {
 	StoreFile     string `env:"STORE_FILE,required"`
 	Restore       string `env:"RESTORE,required"`
 	Key           string `env:"KEY"`
+	Database      string `env:"DATABASE_DSN"`
 }
 
 func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
@@ -72,6 +74,7 @@ func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
 	var storefile string = STORE_FILE
 	var rest string = RESTORE
 	var key string = KEY
+	var db string = DATABASE_DSN
 	if envs.Address != ADDRESS && envs.Address != "" {
 		addr = envs.Address
 	}
@@ -87,12 +90,16 @@ func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
 	if envs.Key != "" {
 		key = envs.Key
 	}
+	if envs.Database != "" {
+		db = envs.Database
+	}
 	return &ServerEnvConfig{
 		Address:       addr,
 		StoreInterval: storeint,
 		StoreFile:     storefile,
 		Restore:       rest,
 		Key:           key,
+		Database:      db,
 	}
 }
 
