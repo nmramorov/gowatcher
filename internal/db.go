@@ -22,15 +22,16 @@ type Cursor struct {
 	Context context.Context
 }
 
-func NewCursor(link, adaptor string) *Cursor {
+func NewCursor(link, adaptor string) (*Cursor, error) {
 	db, err := sql.Open(adaptor, link)
 	if err != nil {
 		ErrorLog.Printf("Unable to connect to database: %v\n", err)
+		return nil, err
 	}
 	return &Cursor{
 		Db:      db,
 		Context: context.Background(),
-	}
+	}, nil
 }
 
 func (c *Cursor) Close() {

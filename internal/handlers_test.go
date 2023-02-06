@@ -159,7 +159,7 @@ func TestPOSTMetricsHandlerNoJson(t *testing.T) {
 			},
 		},
 	}
-	MOCKCURSOR := NewCursor("", "pgx")
+	MOCKCURSOR, _ := NewCursor("", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
@@ -246,7 +246,7 @@ func TestGETMetricsHandler(t *testing.T) {
 			},
 		},
 	}
-	MOCKCURSOR := NewCursor("", "pgx")
+	MOCKCURSOR, _ := NewCursor("", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
@@ -264,7 +264,7 @@ func TestGETMetricsHandler(t *testing.T) {
 }
 
 func TestHTML(t *testing.T) {
-	MOCKCURSOR := NewCursor("", "pgx")
+	MOCKCURSOR, _ := NewCursor("", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 	metricsHandler.collector.UpdateMetrics()
 
@@ -331,7 +331,7 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 		},
 	}
 
-	MOCKCURSOR := NewCursor("", "pgx")
+	MOCKCURSOR, _ := NewCursor("", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
@@ -435,7 +435,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 		},
 	}
 
-	MOCKCURSOR := NewCursor("", "pgx")
+	MOCKCURSOR, _ := NewCursor("", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
@@ -474,7 +474,7 @@ func TestPing(t *testing.T) {
 			},
 		},
 	}
-	MOCKCURSOR := NewCursor("", "pgx")
+	MOCKCURSOR, _ := NewCursor("", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)

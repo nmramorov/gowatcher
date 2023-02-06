@@ -10,7 +10,7 @@ import (
 )
 
 func GetMetricsHandler(options *metrics.ServerConfig) (*metrics.Handler, error) {
-	cursor := metrics.NewCursor(options.Database, "pgx")
+	cursor, _ := metrics.NewCursor(options.Database, "pgx")
 	path, err := filepath.Abs(".")
 	if err != nil {
 		metrics.ErrorLog.Printf("no file to save exist: %e", err)
@@ -79,7 +79,10 @@ func main() {
 
 	metricsHandler, _ := GetMetricsHandler(serverConfig)
 	fmt.Println(serverConfig)
-	if serverConfig.StoreFile != "" {
+	if serverConfig.Database != "" {
+		metricsHandler.InitDb()
+	}
+	if serverConfig.StoreFile != "" && serverConfig.Database == "" {
 		go StartSavingToDisk(serverConfig, metricsHandler)
 		metrics.InfoLog.Println("Initialized file saving")
 	}

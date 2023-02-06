@@ -230,3 +230,7 @@ func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (h *Handler) InitDb() error {
+	return h.cursor.InitDb()
+}
