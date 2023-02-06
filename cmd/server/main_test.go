@@ -103,7 +103,8 @@ func TestServer(t *testing.T) {
 			},
 		},
 	}
-	metricsHandler := metrics.NewHandler("")
+	MOCK_CURSOR := metrics.NewCursor("")
+	metricsHandler := metrics.NewHandler("", MOCK_CURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 

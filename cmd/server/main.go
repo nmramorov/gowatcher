@@ -10,6 +10,7 @@ import (
 )
 
 func GetMetricsHandler(options *metrics.ServerConfig) (*metrics.Handler, error) {
+	cursor := metrics.NewCursor(options.Database)
 	path, err := filepath.Abs(".")
 	if err != nil {
 		metrics.ErrorLog.Printf("no file to save exist: %e", err)
@@ -31,13 +32,13 @@ func GetMetricsHandler(options *metrics.ServerConfig) (*metrics.Handler, error) 
 		storedMetrics, err := reader.ReadJson()
 		if err != nil {
 			metrics.ErrorLog.Printf("Error happend during JSON reading: %e", err)
-			return metrics.NewHandler(options.Key), nil
+			return metrics.NewHandler(options.Key, cursor), nil
 		}
-		metricsHandler := metrics.NewHandlerFromSavedData(storedMetrics)
+		metricsHandler := metrics.NewHandlerFromSavedData(storedMetrics, options.Key, cursor)
 		metrics.InfoLog.Println("Configuration restored.")
 		return metricsHandler, nil
 	}
-	return metrics.NewHandler(options.Key), nil
+	return metrics.NewHandler(options.Key, cursor), nil
 }
 
 func StartSavingToDisk(options *metrics.ServerConfig, handler *metrics.Handler) error {

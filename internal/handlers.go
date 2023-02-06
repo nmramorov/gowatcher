@@ -39,10 +39,12 @@ func NewHandler(key string, newCursor *Cursor) *Handler {
 	return h
 }
 
-func NewHandlerFromSavedData(saved *Metrics) *Handler {
+func NewHandlerFromSavedData(saved *Metrics, secretkey string, cursor *Cursor) *Handler {
 	h := &Handler{
 		Mux:       chi.NewMux(),
 		collector: NewCollectorFromSavedFile(saved),
+		secretkey: secretkey,
+		cursor:    cursor,
 	}
 	h.Use(GzipHandle)
 	h.Get("/", h.ListMetricsHTML)
