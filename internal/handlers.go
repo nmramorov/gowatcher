@@ -86,6 +86,7 @@ func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
+	InfoLog.Println(metricData)
 	if h.secretkey != "" {
 		h.checkHash(rw, &metricData)
 	}
