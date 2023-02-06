@@ -8,13 +8,22 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+type DbInterface interface {
+	InitDb() error
+	Update(*JSONMetrics) error
+	Get(string) (*JSONMetrics, error)
+	Close()
+	Ping()
+}
+
 type Cursor struct {
+	DbInterface
 	Db      *sql.DB
 	Context context.Context
 }
 
-func NewCursor(link string) *Cursor {
-	db, err := sql.Open("pgx", link)
+func NewCursor(link, adaptor string) *Cursor {
+	db, err := sql.Open(adaptor, link)
 	if err != nil {
 		ErrorLog.Printf("Unable to connect to database: %v\n", err)
 	}
@@ -36,4 +45,29 @@ func (c *Cursor) Ping() bool {
 		return false
 	}
 	return true
+}
+
+func (c *Cursor) InitDb() error {
+	_, err := c.Db.Exec(CREATE_GAUGE_TABLE)
+	if err != nil {
+		ErrorLog.Printf("error creating gaugemetrics table %e", err)
+		return err
+	}
+	InfoLog.Println("gaugemetrics table was created")
+	_, err = c.Db.Exec(CREATE_COUNTER_TABLE)
+	if err != nil {
+		ErrorLog.Printf("error creating countermetrics table %e", err)
+		return err
+	}
+	InfoLog.Println("countermetrics table was created")
+
+	return nil
+}
+
+func (c *Cursor) Update(incomingMetrics *JSONMetrics) error {
+	return nil
+}
+
+func Get(metricName string) (*JSONMetrics, error) {
+	return nil, nil
 }

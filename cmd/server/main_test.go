@@ -103,7 +103,7 @@ func TestServer(t *testing.T) {
 			},
 		},
 	}
-	MOCK_CURSOR := metrics.NewCursor("")
+	MOCK_CURSOR := metrics.NewCursor("", "pgx")
 	metricsHandler := metrics.NewHandler("", MOCK_CURSOR)
 
 	ts := httptest.NewServer(metricsHandler)

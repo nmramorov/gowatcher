@@ -159,7 +159,7 @@ func TestPOSTMetricsHandlerNoJson(t *testing.T) {
 			},
 		},
 	}
-	MOCKCURSOR := NewCursor("")
+	MOCKCURSOR := NewCursor("", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
@@ -246,7 +246,7 @@ func TestGETMetricsHandler(t *testing.T) {
 			},
 		},
 	}
-	MOCKCURSOR := NewCursor("")
+	MOCKCURSOR := NewCursor("", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
@@ -264,7 +264,7 @@ func TestGETMetricsHandler(t *testing.T) {
 }
 
 func TestHTML(t *testing.T) {
-	MOCKCURSOR := NewCursor("")
+	MOCKCURSOR := NewCursor("", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 	metricsHandler.collector.UpdateMetrics()
 
@@ -303,6 +303,7 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 					ID:    "GaugeMetric",
 					MType: "gauge",
 					Value: &GaugeVal,
+					Hash: "b80631b192b6e327725bf20e38fb0ca59cf84026515fbc8b3e2a9727ace1e313",
 				},
 			},
 			args: arguments{
@@ -319,6 +320,7 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 					ID:    "CounterMetric",
 					MType: "counter",
 					Delta: &CountVal,
+					Hash: "34e44bc45730d6ead6c5959c68a8d591f932afac6522a71df1bea414deb21fdd",
 				},
 			},
 			args: arguments{
@@ -329,7 +331,7 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 		},
 	}
 
-	MOCKCURSOR := NewCursor("")
+	MOCKCURSOR := NewCursor("", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
@@ -433,7 +435,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 		},
 	}
 
-	MOCKCURSOR := NewCursor("")
+	MOCKCURSOR := NewCursor("", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
@@ -472,7 +474,7 @@ func TestPing(t *testing.T) {
 			},
 		},
 	}
-	MOCKCURSOR := NewCursor("")
+	MOCKCURSOR := NewCursor("", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
