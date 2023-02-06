@@ -82,7 +82,7 @@ func main() {
 	if serverConfig.Database != "" {
 		metricsHandler.InitDb()
 	}
-	if serverConfig.StoreFile != "" && serverConfig.Database == "" {
+	if serverConfig.StoreFile != "" {
 		go StartSavingToDisk(serverConfig, metricsHandler)
 		metrics.InfoLog.Println("Initialized file saving")
 	}
