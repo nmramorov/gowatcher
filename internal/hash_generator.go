@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -18,7 +19,7 @@ func (gen *HashGenerator) GenerateHash(metricType, id string, value interface{})
 	case "counter":
 		hashString = fmt.Sprintf("%s:counter:%d", id, value) + gen.secretkey
 	}
-	h := sha256.New()
+	h := hmac.New(sha256.New, []byte(gen.secretkey))
 	h.Write([]byte(hashString))
 	dst := h.Sum(nil)
 	return hex.EncodeToString(dst)
