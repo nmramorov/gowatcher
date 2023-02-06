@@ -90,6 +90,7 @@ func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 		h.checkHash(rw, &metricData)
 	}
 	updatedData, err := h.collector.UpdateMetricFromJson(&metricData)
+	InfoLog.Println(updatedData)
 	if err != nil {
 		panic("Error occured during metric update from json")
 	}
