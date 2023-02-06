@@ -12,6 +12,7 @@ type ServerCLIOptions struct {
 	StoreInterval string
 	StoreFile     string
 	Key           string
+	Database      string
 }
 
 type AgentCLIOptions struct {
@@ -56,6 +57,7 @@ func NewServerCliOptions() *ServerCLIOptions {
 	var storeInterval = flag.String("i", "30s", "period between file save")
 	var storeFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
 	var key = flag.String("k", "", "key to calculate hash")
+	var database = flag.String("d", "", "database link")
 	flag.Parse()
 
 	return &ServerCLIOptions{
@@ -64,6 +66,7 @@ func NewServerCliOptions() *ServerCLIOptions {
 		StoreInterval: *storeInterval,
 		StoreFile:     *storeFile,
 		Key:           *key,
+		Database:      *database,
 	}
 }
 
