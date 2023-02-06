@@ -2,6 +2,8 @@ package metrics
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"encoding/hex"
 	"encoding/json"
 	"html/template"
 	"net/http"
@@ -58,7 +60,8 @@ func (h *Handler) checkHash(rw http.ResponseWriter, metricData *JSONMetrics) {
 	case "counter":
 		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Delta)
 	}
-	if hash != metricData.Hash {
+	d, _ := hex.DecodeString(hash)
+	if hmac.Equal(d, []byte(metricData.Hash)) {
 		ErrorLog.Printf("wrong hash for %s", metricData.ID)
 		http.Error(rw, "wrong hash", http.StatusBadRequest)
 		return
