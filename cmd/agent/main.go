@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -29,25 +31,106 @@ func CreateRequests(endpoint string, mtrcs *metrics.Metrics) []*http.Request {
 	return requests
 }
 
+func createBody(metricType, path, key string, value interface{}) *bytes.Buffer {
+	body := bytes.NewBuffer([]byte{})
+	encoder := json.NewEncoder(body)
+	var toEncode metrics.JSONMetrics
+	switch metricType {
+	case "gauge":
+		toEncode.MType = "gauge"
+		toEncode.ID = key
+		gaugeVal := value.(metrics.Gauge)
+		val := (*float64)(&gaugeVal)
+		toEncode.Value = val
+	case "counter":
+		toEncode.MType = "counter"
+		toEncode.ID = key
+		counterVal := value.(metrics.Counter)
+		val := (*int64)(&counterVal)
+		toEncode.Delta = val
+	}
+	toEncode.ID = key
+	if path == "/value/" {
+		toEncode.Delta = nil
+		toEncode.Value = nil
+	}
+	encoder.Encode(&toEncode)
+	return body
+}
+
+func createGaugeRequests(endpoint, path string, gaugeMetrics map[string]metrics.Gauge) []*http.Request {
+	var requests []*http.Request
+	for k, v := range gaugeMetrics {
+		body := createBody("gauge", path, k, v)
+		req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
+		if err != nil {
+			metrics.ErrorLog.Printf("Could not do POST request for gauge with params: %s %f", k, v)
+		}
+		req.Header.Add("Content-Type", "application/json")
+		requests = append(requests, req)
+	}
+	return requests
+}
+
+func createCounterRequests(endpoint, path string, counterMetrics map[string]metrics.Counter) []*http.Request {
+	var requests []*http.Request
+	for k, v := range counterMetrics {
+		body := createBody("counter", path, k, v)
+		req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
+		if err != nil {
+			metrics.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
+		}
+		req.Header.Add("Content-Type", "application/json")
+		requests = append(requests, req)
+	}
+	return requests
+}
+
+func generateMetricsRequests(endpoint, path string, src *metrics.Metrics) []*http.Request {
+	gaugeRequests := createGaugeRequests(endpoint, path, src.GaugeMetrics)
+	counterRequests := createCounterRequests(endpoint, path, src.CounterMetrics)
+	return append(gaugeRequests, counterRequests...)
+}
+
 func PushMetrics(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
-	requests := CreateRequests(endpoint, mtrcs)
+	defer func() {
+		if p := recover(); p != nil {
+			metrics.ErrorLog.Println(p)
+		}
+	}()
+	requests := generateMetricsRequests(endpoint, "/update/", mtrcs)
 	for _, request := range requests {
 		resp, err := client.Do(request)
 		if err != nil {
 			metrics.ErrorLog.Println(err)
-			panic(1)
+		}
+		defer resp.Body.Close()
+	}
+}
+
+func GetMetricsValues(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
+	defer func() {
+		if p := recover(); p != nil {
+			metrics.ErrorLog.Println(p)
+		}
+	}()
+	requests := generateMetricsRequests(endpoint, "/value/", mtrcs)
+	for _, request := range requests {
+		resp, err := client.Do(request)
+		if err != nil {
+			metrics.ErrorLog.Println(err)
 		}
 		defer resp.Body.Close()
 	}
 }
 
 func main() {
-	var pollInterval = 2
-	var reportInterval = 10
+	agentConfig := metrics.GetAgentConfig()
+	fmt.Println(agentConfig)
 
 	var collector = metrics.NewCollector()
 
-	endpoint := "http://127.0.0.1:8080"
+	endpoint := "http://" + agentConfig.Address
 
 	client := &http.Client{}
 	metrics.InfoLog.Println("Client initialized...")
@@ -58,15 +141,16 @@ func main() {
 	for {
 		tickedTime := <-ticker.C
 
-		timeDiffSec := int(tickedTime.Sub(startTime).Seconds())
-		if timeDiffSec%pollInterval == 0 {
+		timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
+		if timeDiffSec%int64(agentConfig.PollInterval) == 0 {
 			collector.UpdateMetrics()
 			metrics.InfoLog.Println("Metrics have been updated")
 		}
-		if timeDiffSec%reportInterval == 0 {
+		if timeDiffSec%int64(agentConfig.PollInterval) == 0 {
 			PushMetrics(client, endpoint, collector.GetMetrics())
 			metrics.InfoLog.Println("Metrics have been pushed")
+			GetMetricsValues(client, endpoint, collector.GetMetrics())
+			metrics.InfoLog.Println("Metrics update has been received")
 		}
 	}
-
 }

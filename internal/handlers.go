@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"bytes"
+	"encoding/json"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -19,11 +21,63 @@ func NewHandler() *Handler {
 		Mux:       chi.NewMux(),
 		collector: NewCollector(),
 	}
+	h.Use(GzipHandle)
 	h.Get("/", h.ListMetricsHTML)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
+	h.Post("/update/", h.UpdateMetricsJson)
+	h.Post("/value/", h.GetMetricByJson)
 
 	return h
+}
+
+func NewHandlerFromSavedData(saved *Metrics) *Handler {
+	h := &Handler{
+		Mux:       chi.NewMux(),
+		collector: NewCollectorFromSavedFile(saved),
+	}
+	h.Use(GzipHandle)
+	h.Get("/", h.ListMetricsHTML)
+	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
+	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
+	h.Post("/update/", h.UpdateMetricsJson)
+	h.Post("/value/", h.GetMetricByJson)
+
+	return h
+}
+
+func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
+	metricData := JSONMetrics{}
+	if err := json.NewDecoder(r.Body).Decode(&metricData); err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+	updatedData, err := h.collector.UpdateMetricFromJson(&metricData)
+	if err != nil {
+		panic("Error occured during metric update from json")
+	}
+	buf := bytes.NewBuffer([]byte{})
+	encoder := json.NewEncoder(buf)
+	encoder.Encode(updatedData)
+	rw.Header().Set("Content-Type", "application/json")
+	rw.Write(buf.Bytes())
+}
+
+func (h *Handler) GetMetricByJson(rw http.ResponseWriter, r *http.Request) {
+	metricData := JSONMetrics{}
+	if err := json.NewDecoder(r.Body).Decode(&metricData); err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+	metric, err := h.collector.GetMetricJson(&metricData)
+	if err != nil {
+		panic("Error occured during metric getting from json")
+	}
+	buf := bytes.NewBuffer([]byte{})
+	encoder := json.NewEncoder(buf)
+	encoder.Encode(metric)
+	rw.Header().Set("Content-Type", "application/json")
+	rw.Write(buf.Bytes())
 }
 
 func (h *Handler) GetMetricByTypeAndName(rw http.ResponseWriter, r *http.Request) {
@@ -102,5 +156,10 @@ func (h *Handler) ListMetricsHTML(w http.ResponseWriter, r *http.Request) {
 	<strong>Gauge Metrics:</strong>\n {{range $key, $val := .GaugeMetrics}} {{$key}} = {{$val}}\n {{end}}
 	<strong>Counter Metrics:</strong>\n {{range $key, $val := .CounterMetrics}} {{$key}} = {{$val}}\n {{end}}
 	`))
+	w.Header().Set("Content-Type", "text/html")
 	t.Execute(w, h.collector.metrics)
+}
+
+func (h *Handler) GetCurrentMetrics() *Metrics {
+	return h.collector.metrics
 }
