@@ -18,16 +18,19 @@ type Handler struct {
 	*chi.Mux
 	collector *Collector
 	secretkey string
+	cursor    *Cursor
 }
 
-func NewHandler(key string) *Handler {
+func NewHandler(key string, newCursor *Cursor) *Handler {
 	h := &Handler{
 		Mux:       chi.NewMux(),
 		collector: NewCollector(),
 		secretkey: key,
+		cursor:    newCursor,
 	}
 	h.Use(GzipHandle)
 	h.Get("/", h.ListMetricsHTML)
+	h.Get("/ping", h.HandlePing)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
 	h.Post("/update/", h.UpdateMetricsJson)
@@ -43,6 +46,7 @@ func NewHandlerFromSavedData(saved *Metrics) *Handler {
 	}
 	h.Use(GzipHandle)
 	h.Get("/", h.ListMetricsHTML)
+	h.Get("/ping", h.HandlePing)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
 	h.Post("/update/", h.UpdateMetricsJson)
@@ -211,4 +215,16 @@ func (h *Handler) ListMetricsHTML(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetCurrentMetrics() *Metrics {
 	return h.collector.metrics
+}
+
+func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
+	isAvailable := h.cursor.Ping()
+	defer h.cursor.Close()
+	switch isAvailable {
+	case true:
+		w.Write([]byte(`{"status":"ok"}`))
+	case false:
+		http.Error(w, "error with db", http.StatusInternalServerError)
+		return
+	}
 }

@@ -159,8 +159,8 @@ func TestPOSTMetricsHandlerNoJson(t *testing.T) {
 			},
 		},
 	}
-
-	metricsHandler := NewHandler("")
+	MOCKCURSOR := NewCursor("")
+	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -246,7 +246,8 @@ func TestGETMetricsHandler(t *testing.T) {
 			},
 		},
 	}
-	metricsHandler := NewHandler("")
+	MOCKCURSOR := NewCursor("")
+	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -263,7 +264,8 @@ func TestGETMetricsHandler(t *testing.T) {
 }
 
 func TestHTML(t *testing.T) {
-	metricsHandler := NewHandler("")
+	MOCKCURSOR := NewCursor("")
+	metricsHandler := NewHandler("", MOCKCURSOR)
 	metricsHandler.collector.UpdateMetrics()
 
 	ts := httptest.NewServer(metricsHandler)
@@ -327,7 +329,8 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 		},
 	}
 
-	metricsHandler := NewHandler("")
+	MOCKCURSOR := NewCursor("")
+	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -430,7 +433,8 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 		},
 	}
 
-	metricsHandler := NewHandler("")
+	MOCKCURSOR := NewCursor("")
+	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -449,4 +453,39 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 			metricsHandler.collector.UpdateMetrics()
 		})
 	}
+}
+
+func TestPing(t *testing.T) {
+	type want struct {
+		code     int
+		response string
+	}
+	tests := []struct {
+		name string
+		want want
+	}{
+		{
+			name: "Negative test Ping",
+			want: want{
+				code:     500,
+				response: ``,
+			},
+		},
+	}
+	MOCKCURSOR := NewCursor("")
+	metricsHandler := NewHandler("", MOCKCURSOR)
+
+	ts := httptest.NewServer(metricsHandler)
+
+	defer ts.Close()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			urlPath := "/ping"
+			statusCode, resp := testRequest(t, ts, "GET", urlPath)
+			fmt.Println(resp)
+			assert.Equal(t, tt.want.code, statusCode)
+		})
+	}
+
 }
