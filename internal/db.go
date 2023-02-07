@@ -56,13 +56,13 @@ func (c *Cursor) Ping() bool {
 }
 
 func (c *Cursor) InitDb() error {
-	_, err := c.Db.Exec(CREATE_GAUGE_TABLE)
+	_, err := c.Db.Exec(CreateGaugeTable)
 	if err != nil {
 		ErrorLog.Printf("error creating gaugemetrics table %e", err)
 		return err
 	}
 	InfoLog.Println("gaugemetrics table was created")
-	_, err = c.Db.Exec(CREATE_COUNTER_TABLE)
+	_, err = c.Db.Exec(CreateCounterTable)
 	if err != nil {
 		ErrorLog.Printf("error creating countermetrics table %e", err)
 		return err
@@ -75,12 +75,12 @@ func (c *Cursor) InitDb() error {
 func (c *Cursor) Add(incomingMetrics *JSONMetrics) error {
 	switch incomingMetrics.MType {
 	case "gauge":
-		if row := c.Db.QueryRowContext(c.Context, INSERT_INTO_GAUGE, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Value); row.Err() != nil {
+		if row := c.Db.QueryRowContext(c.Context, InsertIntoGauge, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Value); row.Err() != nil {
 			ErrorLog.Printf("error adding gauge row %s to db: %e", incomingMetrics.ID, row.Err())
 			return row.Err()
 		}
 	case "counter":
-		if row := c.Db.QueryRowContext(c.Context, INSERT_INTO_COUNTER, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Delta); row.Err() != nil {
+		if row := c.Db.QueryRowContext(c.Context, InsertIntoCounter, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Delta); row.Err() != nil {
 			ErrorLog.Printf("error adding counter row %s to db: %e", incomingMetrics.ID, row.Err())
 			return row.Err()
 		}
@@ -94,7 +94,7 @@ func (c *Cursor) Get(metricToFind *JSONMetrics) (*JSONMetrics, error) {
 	var row *sql.Row
 	switch metricToFind.MType {
 	case "gauge":
-		if row = c.Db.QueryRowContext(c.Context, SELECT_FROM_GAUGE, metricToFind.ID); row.Err() != nil {
+		if row = c.Db.QueryRowContext(c.Context, SelectFromGauge, metricToFind.ID); row.Err() != nil {
 			ErrorLog.Printf("error getting gauge row %s to db: %e", metricToFind.ID, row.Err())
 			return nil, row.Err()
 		}
@@ -104,7 +104,7 @@ func (c *Cursor) Get(metricToFind *JSONMetrics) (*JSONMetrics, error) {
 			return nil, err
 		}
 	case "counter":
-		if row = c.Db.QueryRowContext(c.Context, SELECT_FROM_COUNTER, metricToFind.ID); row.Err() != nil {
+		if row = c.Db.QueryRowContext(c.Context, SelectFromCounter, metricToFind.ID); row.Err() != nil {
 			ErrorLog.Printf("error getting counter row %s to db: %e", metricToFind.ID, row.Err())
 			return nil, row.Err()
 		}
