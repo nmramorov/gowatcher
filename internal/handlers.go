@@ -93,18 +93,21 @@ func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
-	InfoLog.Println(metricData)
+	// InfoLog.Println(metricData)
 	if h.secretkey != "" {
 		h.checkHash(rw, &metricData)
 	}
 	updatedData, err := h.collector.UpdateMetricFromJson(&metricData)
-	InfoLog.Println(updatedData)
+	if h.cursor.IsValid {
+		h.cursor.Add(updatedData)
+	}
+	// InfoLog.Println(updatedData)
 	if err != nil {
 		panic("Error occured during metric update from json")
 	}
-	InfoLog.Println(metricData.Hash)
-	InfoLog.Println(h.getHash(&metricData))
-	InfoLog.Println(h.getHash(updatedData))
+	// InfoLog.Println(metricData.Hash)
+	// InfoLog.Println(h.getHash(&metricData))
+	// InfoLog.Println(h.getHash(updatedData))
 	updatedData.Hash = h.getHash(updatedData)
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
@@ -119,9 +122,15 @@ func (h *Handler) GetMetricByJson(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
-	metric, err := h.collector.GetMetricJson(&metricData)
-	if err != nil {
-		panic("Error occured during metric getting from json")
+	var metric *JSONMetrics
+	var err error
+	if h.cursor.IsValid {
+		metric, _ = h.cursor.Get(&metricData)
+	} else {
+		metric, err = h.collector.GetMetricJson(&metricData)
+		if err != nil {
+			panic("Error occured during metric getting from json")
+		}
 	}
 	var hash string
 	if h.secretkey != "" {
