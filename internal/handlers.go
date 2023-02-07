@@ -131,6 +131,10 @@ func (h *Handler) GetMetricByJson(rw http.ResponseWriter, r *http.Request) {
 		metric, err = h.cursor.Get(&metricData)
 		if err != nil {
 			ErrorLog.Println("could not get data from db...")
+			metric, err = h.collector.GetMetricJson(&metricData)
+			if err != nil {
+				panic("Error occured during metric getting from json")
+			}
 		}
 	} else {
 		metric, err = h.collector.GetMetricJson(&metricData)
