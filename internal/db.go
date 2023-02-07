@@ -14,6 +14,7 @@ type DbInterface interface {
 	Get(string) (*JSONMetrics, error)
 	Close()
 	Ping()
+	UpdateBatch()
 }
 
 type Cursor struct {
@@ -75,14 +76,14 @@ func (c *Cursor) InitDb() error {
 func (c *Cursor) Add(incomingMetrics *JSONMetrics) error {
 	switch incomingMetrics.MType {
 	case "gauge":
-		if row := c.Db.QueryRowContext(c.Context, InsertIntoGauge, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Value); row.Err() != nil {
-			ErrorLog.Printf("error adding gauge row %s to db: %e", incomingMetrics.ID, row.Err())
-			return row.Err()
+		if _, err := c.Db.ExecContext(c.Context, InsertIntoGauge, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Value); err != nil {
+			ErrorLog.Printf("error adding gauge row %s to db: %e", incomingMetrics.ID, err)
+			return err
 		}
 	case "counter":
-		if row := c.Db.QueryRowContext(c.Context, InsertIntoCounter, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Delta); row.Err() != nil {
-			ErrorLog.Printf("error adding counter row %s to db: %e", incomingMetrics.ID, row.Err())
-			return row.Err()
+		if _, err := c.Db.ExecContext(c.Context, InsertIntoCounter, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Delta); err != nil {
+			ErrorLog.Printf("error adding counter row %s to db: %e", incomingMetrics.ID, err)
+			return err
 		}
 	}
 	InfoLog.Printf("added %s data to db...", incomingMetrics.ID)

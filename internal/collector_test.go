@@ -68,3 +68,35 @@ func TestStringFromGauge(t *testing.T) {
 	strAlloc := fmt.Sprint(alloc)
 	assert.GreaterOrEqual(t, strAlloc, "0")
 }
+
+func TestUpdateBatch(t *testing.T) {
+	var newCollector = NewCollector()
+	var alloc float64 = 2.2
+	var pollCount int64 = 44444
+	var myVal float64 = 3333.3333
+	newCollector.UpdateMetrics()
+	toUpdate := []*JSONMetrics{
+		{
+			ID:    "Alloc",
+			MType: "gauge",
+			Value: &alloc,
+			Delta: nil,
+		},
+		{
+			ID:    "PollCount",
+			MType: "counter",
+			Value: nil,
+			Delta: &pollCount,
+		},
+		{
+			ID:    "MyMetric",
+			MType: "gauge",
+			Value: &myVal,
+			Delta: nil,
+		},
+	}
+	assert.NotPanics(t, func() { newCollector.UpdateBatch(toUpdate) })
+	assert.Equal(t, alloc, float64(newCollector.metrics.GaugeMetrics["Alloc"]))
+	assert.Equal(t, pollCount + 1, int64(newCollector.metrics.CounterMetrics["PollCount"]))
+	assert.Equal(t, myVal, float64(newCollector.metrics.GaugeMetrics["MyMetric"]))
+}

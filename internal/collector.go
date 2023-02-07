@@ -102,5 +102,17 @@ func (col *Collector) GetMetricJson(requestedMetric *JSONMetrics) (*JSONMetrics,
 	}
 	result.MType = requestedMetric.MType
 	result.ID = requestedMetric.ID
+
 	return &result, nil
+}
+
+func (col *Collector) UpdateBatch(metrics []*JSONMetrics) error {
+	for _, metric := range metrics {
+		_, err := col.UpdateMetricFromJson(metric)
+		if err != nil {
+			ErrorLog.Printf("could not update metric as batch part: %e", err)
+			return err
+		}
+	}
+	return nil
 }

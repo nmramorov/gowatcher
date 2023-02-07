@@ -253,3 +253,32 @@ func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) InitDb() error {
 	return h.cursor.InitDb()
 }
+
+// func (h *Handler) UpdateJSONBatch(rw http.ResponseWriter, r *http.Request) {
+// 	var metricsBatch []JSONMetrics
+// 	if err := json.NewDecoder(r.Body).Decode(&metricsBatch); err != nil {
+// 		http.Error(rw, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
+// 	updatedData, err := h.collector.UpdateMetricFromJsonBatch(&metricBatch)
+// 	if h.cursor.IsValid {
+// 		err := h.cursor.AddBatch(updatedData)
+// 		if err != nil {
+// 			ErrorLog.Println("could not add batch data to db...")
+// 		}
+// 	}
+// 	// InfoLog.Println(updatedData)
+// 	if err != nil {
+// 		panic("Error occured during metric update from json")
+// 	}
+// 	// InfoLog.Println(metricData.Hash)
+// 	// InfoLog.Println(h.getHash(&metricData))
+// 	// InfoLog.Println(h.getHash(updatedData))
+// 	// updatedData.Hash = h.getHash(updatedData)
+// 	// buf := bytes.NewBuffer([]byte{})
+// 	// encoder := json.NewEncoder(buf)
+// 	// encoder.Encode(updatedData)
+// 	// rw.Header().Set("Content-Type", "application/json")
+// 	// rw.Write(buf.Bytes())
+// 	rw.Write([]byte(`{"status":"ok"}`))
+// }

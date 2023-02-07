@@ -31,6 +31,10 @@ func CreateRequests(endpoint string, mtrcs *metrics.Metrics) []*http.Request {
 	return requests
 }
 
+// func createRequestsBatch(endpoint string, mtrcs []*metrics.Metrics) *http.Request {
+	
+// }
+
 func createBody(metricType, path, key, secretkey string, value interface{}) *bytes.Buffer {
 	var hash string
 	if secretkey != "" {
