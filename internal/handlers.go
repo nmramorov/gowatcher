@@ -74,7 +74,7 @@ func (h *Handler) checkHash(rw http.ResponseWriter, metricData *JSONMetrics) {
 		http.Error(rw, "wrong hash", http.StatusBadRequest)
 		return
 	}
-	InfoLog.Printf("hash is valid for %s", metricData.ID)
+	// InfoLog.Printf("hash is valid for %s", metricData.ID)
 }
 
 func (h *Handler) getHash(metricData *JSONMetrics) string {
@@ -285,5 +285,6 @@ func (h *Handler) UpdateJSONBatch(rw http.ResponseWriter, r *http.Request) {
 	// encoder.Encode(updatedData)
 	// rw.Header().Set("Content-Type", "application/json")
 	// rw.Write(buf.Bytes())
+	InfoLog.Println("received and worker with metrics batch")
 	rw.Write([]byte(`{"status":"ok"}`))
 }

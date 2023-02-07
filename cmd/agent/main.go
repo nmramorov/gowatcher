@@ -31,9 +31,42 @@ func CreateRequests(endpoint string, mtrcs *metrics.Metrics) []*http.Request {
 	return requests
 }
 
-// func createRequestsBatch(endpoint string, mtrcs []*metrics.Metrics) *http.Request {
-	
-// }
+func createBatch(src *metrics.Metrics) []*metrics.JSONMetrics {
+	var batch []*metrics.JSONMetrics
+	for k, v := range src.GaugeMetrics {
+		batch = append(batch, &metrics.JSONMetrics{
+			ID:    k,
+			MType: "gauge",
+			Value: (*float64)(&v),
+		})
+	}
+	for k, v := range src.CounterMetrics {
+		batch = append(batch, &metrics.JSONMetrics{
+			ID:    k,
+			MType: "counter",
+			Delta: (*int64)(&v),
+		})
+	}
+	return batch
+}
+
+func encodeBatch(batch []*metrics.JSONMetrics) *bytes.Buffer {
+	body := bytes.NewBuffer([]byte{})
+	encoder := json.NewEncoder(body)
+	encoder.Encode(&batch)
+	return body
+}
+
+func createRequestsBatch(endpoint, path string, src *metrics.Metrics) *http.Request {
+	batch := createBatch(src)
+	body := encodeBatch(batch)
+	req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
+	if err != nil {
+		metrics.ErrorLog.Println("Could not do POST batch request")
+	}
+	req.Header.Add("Content-Type", "application/json")
+	return req
+}
 
 func createBody(metricType, path, key, secretkey string, value interface{}) *bytes.Buffer {
 	var hash string
@@ -119,6 +152,20 @@ func PushMetrics(client *http.Client, endpoint string, mtrcs *metrics.Metrics, k
 	}
 }
 
+func PushMetricsBatch(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
+	defer func() {
+		if p := recover(); p != nil {
+			metrics.ErrorLog.Println(p)
+		}
+	}()
+	request := createRequestsBatch(endpoint, "/updates/", mtrcs)
+	resp, err := client.Do(request)
+	if err != nil {
+		metrics.ErrorLog.Println(err)
+	}
+	defer resp.Body.Close()
+}
+
 func GetMetricsValues(client *http.Client, endpoint, key string, mtrcs *metrics.Metrics) {
 	defer func() {
 		if p := recover(); p != nil {
@@ -160,6 +207,8 @@ func main() {
 		if timeDiffSec%int64(agentConfig.PollInterval) == 0 {
 			PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key)
 			metrics.InfoLog.Println("Metrics have been pushed")
+			PushMetricsBatch(client, endpoint, collector.GetMetrics())
+			metrics.InfoLog.Println("Batch metrics were pushed")
 			GetMetricsValues(client, endpoint, agentConfig.Key, collector.GetMetrics())
 			metrics.InfoLog.Println("Metrics update has been received")
 		}
