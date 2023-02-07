@@ -29,11 +29,16 @@ func NewCursor(link, adaptor string) (*Cursor, error) {
 		ErrorLog.Printf("Unable to connect to database: %v\n", err)
 		return nil, err
 	}
-	return &Cursor{
+	new := &Cursor{
 		Db:      db,
 		Context: context.Background(),
 		IsValid: true,
-	}, nil
+	}
+	valid := new.Ping()
+	if !valid {
+		new.IsValid = false
+	}
+	return new, nil
 }
 
 func (c *Cursor) Close() {

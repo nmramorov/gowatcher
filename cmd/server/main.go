@@ -10,7 +10,11 @@ import (
 )
 
 func GetMetricsHandler(options *metrics.ServerConfig) (*metrics.Handler, error) {
-	cursor, _ := metrics.NewCursor(options.Database, "pgx")
+	cursor, err := metrics.NewCursor(options.Database, "pgx")
+	if err != nil {
+		cursor.IsValid = false
+	}
+	fmt.Println(cursor)
 	path, err := filepath.Abs(".")
 	if err != nil {
 		metrics.ErrorLog.Printf("no file to save exist: %e", err)
