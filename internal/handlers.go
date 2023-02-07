@@ -74,7 +74,6 @@ func (h *Handler) checkHash(rw http.ResponseWriter, metricData *JSONMetrics) {
 		http.Error(rw, "wrong hash", http.StatusBadRequest)
 		return
 	}
-	// InfoLog.Printf("hash is valid for %s", metricData.ID)
 }
 
 func (h *Handler) getHash(metricData *JSONMetrics) string {
@@ -95,7 +94,6 @@ func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// InfoLog.Println(metricData)
 	if h.secretkey != "" {
 		h.checkHash(rw, &metricData)
 	}
@@ -106,13 +104,9 @@ func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 			ErrorLog.Println("could not add data to db...")
 		}
 	}
-	// InfoLog.Println(updatedData)
 	if err != nil {
 		panic("Error occured during metric update from json")
 	}
-	// InfoLog.Println(metricData.Hash)
-	// InfoLog.Println(h.getHash(&metricData))
-	// InfoLog.Println(h.getHash(updatedData))
 	updatedData.Hash = h.getHash(updatedData)
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
@@ -272,19 +266,9 @@ func (h *Handler) UpdateJSONBatch(rw http.ResponseWriter, r *http.Request) {
 			ErrorLog.Println("could not add batch data to db...")
 		}
 	}
-	// InfoLog.Println(updatedData)
 	if err != nil {
 		panic("Error occured during metric update from json")
 	}
-	// InfoLog.Println(metricData.Hash)
-	// InfoLog.Println(h.getHash(&metricData))
-	// InfoLog.Println(h.getHash(updatedData))
-	// updatedData.Hash = h.getHash(updatedData)
-	// buf := bytes.NewBuffer([]byte{})
-	// encoder := json.NewEncoder(buf)
-	// encoder.Encode(updatedData)
-	// rw.Header().Set("Content-Type", "application/json")
-	// rw.Write(buf.Bytes())
 	InfoLog.Println("received and worker with metrics batch")
 	rw.Write([]byte(`{"status":"ok"}`))
 }
