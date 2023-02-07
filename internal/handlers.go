@@ -35,6 +35,7 @@ func NewHandler(key string, newCursor *Cursor) *Handler {
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
 	h.Post("/update/", h.UpdateMetricsJson)
 	h.Post("/value/", h.GetMetricByJson)
+	h.Post("/updates/", h.UpdateJSONBatch)
 
 	return h
 }
@@ -53,6 +54,7 @@ func NewHandlerFromSavedData(saved *Metrics, secretkey string, cursor *Cursor) *
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
 	h.Post("/update/", h.UpdateMetricsJson)
 	h.Post("/value/", h.GetMetricByJson)
+	h.Post("/updates/", h.UpdateJSONBatch)
 
 	return h
 }
