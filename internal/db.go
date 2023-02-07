@@ -22,6 +22,7 @@ type Cursor struct {
 	Db      *sql.DB
 	Context context.Context
 	IsValid bool
+	buffer  []*JSONMetrics
 }
 
 func NewCursor(link, adaptor string) (*Cursor, error) {
@@ -34,6 +35,7 @@ func NewCursor(link, adaptor string) (*Cursor, error) {
 		Db:      db,
 		Context: context.Background(),
 		IsValid: true,
+		buffer:  make([]*JSONMetrics, 0, 100),
 	}
 	valid := new.Ping()
 	if !valid {
@@ -116,4 +118,66 @@ func (c *Cursor) Get(metricToFind *JSONMetrics) (*JSONMetrics, error) {
 		}
 	}
 	return foundMetric, nil
+}
+
+func (c *Cursor) AddBatch(metrics []*JSONMetrics) error {
+	c.buffer = append(c.buffer, metrics...)
+	if cap(c.buffer) == len(c.buffer) {
+		err := c.Flush()
+		if err != nil {
+			ErrorLog.Printf("cannot add record to the database")
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *Cursor) Flush() error {
+	// проверим на всякий случай
+	if c.Db == nil {
+		ErrorLog.Printf("You haven`t opened the database connection")
+	}
+	tx, err := c.Db.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmtGauge, err := tx.Prepare(InsertIntoGauge)
+	if err != nil {
+		return err
+	}
+	stmtCounter, err := tx.Prepare(InsertIntoCounter)
+	if err != nil {
+		return err
+	}
+	defer stmtGauge.Close()
+	defer stmtCounter.Close()
+
+	for _, v := range c.buffer {
+		switch v.MType {
+		case "gauge":
+			if _, err = stmtGauge.Exec(v.ID, v.MType, v.Value); err != nil {
+				if err = tx.Rollback(); err != nil {
+					ErrorLog.Fatalf("update drivers: unable to rollback: %v", err)
+				}
+				return err
+			}
+		case "counter":
+			if _, err = stmtCounter.Exec(v.ID, v.MType, v.Delta); err != nil {
+				if err = tx.Rollback(); err != nil {
+					ErrorLog.Fatalf("update drivers: unable to rollback: %v", err)
+				}
+				return err
+			}
+		}
+
+	}
+
+	if err := tx.Commit(); err != nil {
+		ErrorLog.Fatalf("update drivers: unable to commit: %v", err)
+		return err
+	}
+
+	c.buffer = c.buffer[:0]
+	return nil
 }
