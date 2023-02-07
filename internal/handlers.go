@@ -99,7 +99,10 @@ func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 	}
 	updatedData, err := h.collector.UpdateMetricFromJson(&metricData)
 	if h.cursor.IsValid {
-		h.cursor.Add(updatedData)
+		err := h.cursor.Add(updatedData)
+		if err != nil {
+			ErrorLog.Println("could not add data to db...")
+		}
 	}
 	// InfoLog.Println(updatedData)
 	if err != nil {
@@ -125,7 +128,10 @@ func (h *Handler) GetMetricByJson(rw http.ResponseWriter, r *http.Request) {
 	var metric *JSONMetrics
 	var err error
 	if h.cursor.IsValid {
-		metric, _ = h.cursor.Get(&metricData)
+		metric, err = h.cursor.Get(&metricData)
+		if err != nil {
+			ErrorLog.Println("could not get data from db...")
+		}
 	} else {
 		metric, err = h.collector.GetMetricJson(&metricData)
 		if err != nil {
