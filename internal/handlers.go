@@ -2,10 +2,13 @@ package metrics
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"encoding/hex"
 	"encoding/json"
 	"html/template"
 	"net/http"
 	"strconv"
+
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -14,36 +17,75 @@ import (
 type Handler struct {
 	*chi.Mux
 	collector *Collector
+	secretkey string
+	cursor    *Cursor
 }
 
-func NewHandler() *Handler {
+func NewHandler(key string, newCursor *Cursor) *Handler {
 	h := &Handler{
 		Mux:       chi.NewMux(),
 		collector: NewCollector(),
+		secretkey: key,
+		cursor:    newCursor,
 	}
 	h.Use(GzipHandle)
 	h.Get("/", h.ListMetricsHTML)
+	h.Get("/ping", h.HandlePing)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
 	h.Post("/update/", h.UpdateMetricsJson)
 	h.Post("/value/", h.GetMetricByJson)
+	h.Post("/updates/", h.UpdateJSONBatch)
 
 	return h
 }
 
-func NewHandlerFromSavedData(saved *Metrics) *Handler {
+func NewHandlerFromSavedData(saved *Metrics, secretkey string, cursor *Cursor) *Handler {
 	h := &Handler{
 		Mux:       chi.NewMux(),
 		collector: NewCollectorFromSavedFile(saved),
+		secretkey: secretkey,
+		cursor:    cursor,
 	}
 	h.Use(GzipHandle)
 	h.Get("/", h.ListMetricsHTML)
+	h.Get("/ping", h.HandlePing)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
 	h.Post("/update/", h.UpdateMetricsJson)
 	h.Post("/value/", h.GetMetricByJson)
+	h.Post("/updates/", h.UpdateJSONBatch)
 
 	return h
+}
+
+func (h *Handler) checkHash(rw http.ResponseWriter, metricData *JSONMetrics) {
+	var hash string
+	generator := NewHashGenerator(h.secretkey)
+	switch metricData.MType {
+	case "gauge":
+		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Value)
+	case "counter":
+		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Delta)
+	}
+	d, _ := hex.DecodeString(hash)
+	if hmac.Equal(d, []byte(metricData.Hash)) {
+		ErrorLog.Printf("wrong hash for %s", metricData.ID)
+		http.Error(rw, "wrong hash", http.StatusBadRequest)
+		return
+	}
+}
+
+func (h *Handler) getHash(metricData *JSONMetrics) string {
+	var hash string
+	generator := NewHashGenerator(h.secretkey)
+	switch metricData.MType {
+	case "gauge":
+		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Value)
+	case "counter":
+		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Delta)
+	}
+	return hash
 }
 
 func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
@@ -52,10 +94,20 @@ func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if h.secretkey != "" {
+		h.checkHash(rw, &metricData)
+	}
 	updatedData, err := h.collector.UpdateMetricFromJson(&metricData)
+	if h.cursor.IsValid {
+		err := h.cursor.Add(updatedData)
+		if err != nil {
+			ErrorLog.Println("could not add data to db...")
+		}
+	}
 	if err != nil {
 		panic("Error occured during metric update from json")
 	}
+	updatedData.Hash = h.getHash(updatedData)
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
 	encoder.Encode(updatedData)
@@ -69,10 +121,28 @@ func (h *Handler) GetMetricByJson(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
-	metric, err := h.collector.GetMetricJson(&metricData)
-	if err != nil {
-		panic("Error occured during metric getting from json")
+	var metric *JSONMetrics
+	var err error
+	if h.cursor.IsValid {
+		metric, err = h.cursor.Get(&metricData)
+		if err != nil {
+			ErrorLog.Println("could not get data from db...")
+			metric, err = h.collector.GetMetricJson(&metricData)
+			if err != nil {
+				panic("Error occured during metric getting from json")
+			}
+		}
+	} else {
+		metric, err = h.collector.GetMetricJson(&metricData)
+		if err != nil {
+			panic("Error occured during metric getting from json")
+		}
 	}
+	var hash string
+	if h.secretkey != "" {
+		hash = h.getHash(metric)
+	}
+	metric.Hash = hash
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
 	encoder.Encode(metric)
@@ -162,4 +232,43 @@ func (h *Handler) ListMetricsHTML(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetCurrentMetrics() *Metrics {
 	return h.collector.metrics
+}
+
+func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
+	isAvailable := h.cursor.Ping()
+	defer h.cursor.Close()
+	switch isAvailable {
+	case true:
+		w.Write([]byte(`{"status":"ok"}`))
+	case false:
+		http.Error(w, "error with db", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *Handler) InitDb() error {
+	return h.cursor.InitDb()
+}
+
+func (h *Handler) UpdateJSONBatch(rw http.ResponseWriter, r *http.Request) {
+	var metricsBatch []*JSONMetrics
+	if err := json.NewDecoder(r.Body).Decode(&metricsBatch); err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err := h.collector.UpdateBatch(metricsBatch)
+	if err != nil {
+		ErrorLog.Println("could not update batch...")
+	}
+	if h.cursor.IsValid {
+		err := h.cursor.AddBatch(metricsBatch)
+		if err != nil {
+			ErrorLog.Println("could not add batch data to db...")
+		}
+	}
+	if err != nil {
+		panic("Error occured during metric update from json")
+	}
+	InfoLog.Println("received and worker with metrics batch")
+	rw.Write([]byte(`{"status":"ok"}`))
 }

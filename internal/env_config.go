@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -15,18 +14,22 @@ const (
 	STORE_INTERVAL  string = "300s"
 	STORE_FILE      string = "/tmp/devops-metrics-db.json"
 	RESTORE         string = "default"
+	KEY             string = ""
+	DATABASE_DSN    string = ""
 )
 
 type AgentEnvConfig struct {
 	Address        string `env:"ADDRESS,required"`
 	ReportInterval string `env:"REPORT_INTERVAL,required"`
 	PollInterval   string `env:"POLL_INTERVAL,required"`
+	Key            string `env:"KEY"`
 }
 
 func checkAgentEnvs(envs *AgentEnvConfig) *AgentEnvConfig {
 	var addr string = ADDRESS
 	var pollint string = POLL_INTERVAL
 	var reportint string = REPORT_INTERVAL
+	var key string = KEY
 	if envs.Address != ADDRESS && envs.Address != "" {
 		addr = envs.Address
 	}
@@ -36,10 +39,14 @@ func checkAgentEnvs(envs *AgentEnvConfig) *AgentEnvConfig {
 	if envs.PollInterval != POLL_INTERVAL && envs.PollInterval != "" {
 		pollint = envs.PollInterval
 	}
+	if envs.Key != "" {
+		key = envs.Key
+	}
 	return &AgentEnvConfig{
 		Address:        addr,
 		PollInterval:   pollint,
 		ReportInterval: reportint,
+		Key:            key,
 	}
 }
 
@@ -57,6 +64,8 @@ type ServerEnvConfig struct {
 	StoreInterval string `env:"STORE_INTERVAL,required"`
 	StoreFile     string `env:"STORE_FILE,required"`
 	Restore       string `env:"RESTORE,required"`
+	Key           string `env:"KEY"`
+	Database      string `env:"DATABASE_DSN"`
 }
 
 func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
@@ -64,6 +73,8 @@ func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
 	var storeint string = STORE_INTERVAL
 	var storefile string = STORE_FILE
 	var rest string = RESTORE
+	var key string = KEY
+	var db string = DATABASE_DSN
 	if envs.Address != ADDRESS && envs.Address != "" {
 		addr = envs.Address
 	}
@@ -76,11 +87,19 @@ func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
 	if envs.StoreInterval != STORE_INTERVAL && envs.StoreInterval != "" {
 		storeint = envs.StoreInterval
 	}
+	if envs.Key != "" {
+		key = envs.Key
+	}
+	if envs.Database != "" {
+		db = envs.Database
+	}
 	return &ServerEnvConfig{
 		Address:       addr,
 		StoreInterval: storeint,
 		StoreFile:     storefile,
 		Restore:       rest,
+		Key:           key,
+		Database:      db,
 	}
 }
 
@@ -125,7 +144,6 @@ func (e *AgentEnvConfig) GetNumericInterval(intervalName string) int64 {
 }
 
 func (e *ServerEnvConfig) GetNumericInterval(intervalName string) int64 {
-	fmt.Println(e.StoreInterval)
 	switch intervalName {
 	case "StoreInterval":
 		multiplier := getMultiplier(e.StoreInterval)

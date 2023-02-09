@@ -1,14 +1,12 @@
 package metrics
 
-import (
-	"flag"
-)
-
 type ServerConfig struct {
 	Address       string
 	Restore       bool
 	StoreInterval int
 	StoreFile     string
+	Key           string
+	Database      string
 }
 
 func checkServerConfig(envs *ServerEnvConfig, clies *ServerCLIOptions) *ServerConfig {
@@ -18,6 +16,8 @@ func checkServerConfig(envs *ServerEnvConfig, clies *ServerCLIOptions) *ServerCo
 	var cliRest string = clies.Restore
 	var rest bool
 	var storeintNumeric int = int(clies.GetNumericInterval("StoreInterval"))
+	var key string = clies.Key
+	var db string = clies.Database
 	if envs.Address != ADDRESS && envs.Address != addr {
 		addr = envs.Address
 	}
@@ -41,11 +41,19 @@ func checkServerConfig(envs *ServerEnvConfig, clies *ServerCLIOptions) *ServerCo
 	if envs.StoreInterval != STORE_INTERVAL && envs.StoreInterval != "" && envs.StoreInterval != storeint {
 		storeintNumeric = int(envs.GetNumericInterval("StoreInterval"))
 	}
+	if envs.Key != "" && envs.Key != key {
+		key = envs.Key
+	}
+	if envs.Database != "" && envs.Database != db {
+		db = envs.Database
+	}
 	return &ServerConfig{
 		Address:       addr,
 		StoreInterval: storeintNumeric,
 		StoreFile:     storefile,
 		Restore:       rest,
+		Key:           key,
+		Database:      db,
 	}
 }
 
@@ -68,6 +76,7 @@ func GetServerConfig() *ServerConfig {
 		Address:       envConfig.Address,
 		StoreInterval: int(envConfig.GetNumericInterval("StoreInterval")),
 		StoreFile:     envConfig.StoreFile,
+		Database:      envConfig.Database,
 	}
 }
 
@@ -75,6 +84,34 @@ type AgentConfig struct {
 	Address        string
 	ReportInterval int
 	PollInterval   int
+	Key            string
+}
+
+func checkAgentConfig(envs *AgentEnvConfig, clies *AgentCLIOptions) *AgentConfig {
+	var addr string = clies.Address
+	var pollint string = clies.PollInterval
+	var reportint string = clies.ReportInterval
+	var key string = clies.Key
+	var reportintNumeric int = int(clies.GetNumericInterval("ReportInterval"))
+	var pollintNumeric int = int(clies.GetNumericInterval("PollInterval"))
+	if envs.Address != ADDRESS && envs.Address != addr {
+		addr = envs.Address
+	}
+	if envs.ReportInterval != REPORT_INTERVAL && envs.ReportInterval != "" && envs.ReportInterval != reportint {
+		reportintNumeric = int(envs.GetNumericInterval("ReportInterval"))
+	}
+	if envs.PollInterval != POLL_INTERVAL && envs.PollInterval != "" && envs.PollInterval != pollint {
+		pollintNumeric = int(envs.GetNumericInterval("PollInterval"))
+	}
+	if envs.Key != "" && envs.Key != key {
+		key = envs.Key
+	}
+	return &AgentConfig{
+		Address:        addr,
+		PollInterval:   pollintNumeric,
+		ReportInterval: reportintNumeric,
+		Key:            key,
+	}
 }
 
 func GetAgentConfig() *AgentConfig {
@@ -82,17 +119,12 @@ func GetAgentConfig() *AgentConfig {
 	if err != nil {
 		InfoLog.Println("could not get env for server config, getting data from cli...")
 		cliConfig := NewAgentCliOptions()
-		if flag.NFlag() == 3 {
-			return &AgentConfig{
-				Address:        cliConfig.Address,
-				PollInterval:   int(cliConfig.GetNumericInterval("PollInterval")),
-				ReportInterval: int(cliConfig.GetNumericInterval("ReportInterval")),
-			}
-		}
+		return checkAgentConfig(envConfig, cliConfig)
 	}
 	return &AgentConfig{
 		Address:        envConfig.Address,
 		PollInterval:   int(envConfig.GetNumericInterval("PollInterval")),
 		ReportInterval: int(envConfig.GetNumericInterval("ReportInterval")),
+		Key:            envConfig.Key,
 	}
 }

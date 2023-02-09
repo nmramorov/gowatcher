@@ -11,12 +11,15 @@ type ServerCLIOptions struct {
 	Restore       string
 	StoreInterval string
 	StoreFile     string
+	Key           string
+	Database      string
 }
 
 type AgentCLIOptions struct {
 	Address        string
 	ReportInterval string
 	PollInterval   string
+	Key            string
 }
 
 func (scli *ServerCLIOptions) GetNumericInterval(intervalName string) int64 {
@@ -53,6 +56,8 @@ func NewServerCliOptions() *ServerCLIOptions {
 	var restore = flag.String("r", "default", "restore metrics from file")
 	var storeInterval = flag.String("i", "30s", "period between file save")
 	var storeFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
+	var key = flag.String("k", "", "key to calculate hash")
+	var database = flag.String("d", "", "database link")
 	flag.Parse()
 
 	return &ServerCLIOptions{
@@ -60,6 +65,8 @@ func NewServerCliOptions() *ServerCLIOptions {
 		Restore:       *restore,
 		StoreInterval: *storeInterval,
 		StoreFile:     *storeFile,
+		Key:           *key,
+		Database:      *database,
 	}
 }
 
@@ -67,11 +74,13 @@ func NewAgentCliOptions() *AgentCLIOptions {
 	var address = flag.String("a", "localhost:8080", "server address")
 	var reportInterval = flag.String("r", "10s", "report interval time")
 	var pollInterval = flag.String("p", "2s", "poll interval time")
+	var key = flag.String("k", "", "key to calculate hash")
 	flag.Parse()
 
 	return &AgentCLIOptions{
 		Address:        *address,
 		ReportInterval: *reportInterval,
 		PollInterval:   *pollInterval,
+		Key:            *key,
 	}
 }

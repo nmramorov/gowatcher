@@ -159,8 +159,8 @@ func TestPOSTMetricsHandlerNoJson(t *testing.T) {
 			},
 		},
 	}
-
-	metricsHandler := NewHandler()
+	MOCKCURSOR, _ := NewCursor("", "pgx")
+	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -246,7 +246,8 @@ func TestGETMetricsHandler(t *testing.T) {
 			},
 		},
 	}
-	metricsHandler := NewHandler()
+	MOCKCURSOR, _ := NewCursor("", "pgx")
+	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -263,7 +264,8 @@ func TestGETMetricsHandler(t *testing.T) {
 }
 
 func TestHTML(t *testing.T) {
-	metricsHandler := NewHandler()
+	MOCKCURSOR, _ := NewCursor("", "pgx")
+	metricsHandler := NewHandler("", MOCKCURSOR)
 	metricsHandler.collector.UpdateMetrics()
 
 	ts := httptest.NewServer(metricsHandler)
@@ -301,6 +303,7 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 					ID:    "GaugeMetric",
 					MType: "gauge",
 					Value: &GaugeVal,
+					Hash: "b80631b192b6e327725bf20e38fb0ca59cf84026515fbc8b3e2a9727ace1e313",
 				},
 			},
 			args: arguments{
@@ -317,6 +320,7 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 					ID:    "CounterMetric",
 					MType: "counter",
 					Delta: &CountVal,
+					Hash: "34e44bc45730d6ead6c5959c68a8d591f932afac6522a71df1bea414deb21fdd",
 				},
 			},
 			args: arguments{
@@ -327,7 +331,8 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 		},
 	}
 
-	metricsHandler := NewHandler()
+	MOCKCURSOR, _ := NewCursor("", "pgx")
+	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -430,7 +435,8 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 		},
 	}
 
-	metricsHandler := NewHandler()
+	MOCKCURSOR, _ := NewCursor("", "pgx")
+	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -449,4 +455,39 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 			metricsHandler.collector.UpdateMetrics()
 		})
 	}
+}
+
+func TestPing(t *testing.T) {
+	type want struct {
+		code     int
+		response string
+	}
+	tests := []struct {
+		name string
+		want want
+	}{
+		{
+			name: "Negative test Ping",
+			want: want{
+				code:     500,
+				response: ``,
+			},
+		},
+	}
+	MOCKCURSOR, _ := NewCursor("", "pgx")
+	metricsHandler := NewHandler("", MOCKCURSOR)
+
+	ts := httptest.NewServer(metricsHandler)
+
+	defer ts.Close()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			urlPath := "/ping"
+			statusCode, resp := testRequest(t, ts, "GET", urlPath)
+			fmt.Println(resp)
+			assert.Equal(t, tt.want.code, statusCode)
+		})
+	}
+
 }

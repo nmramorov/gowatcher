@@ -31,7 +31,49 @@ func CreateRequests(endpoint string, mtrcs *metrics.Metrics) []*http.Request {
 	return requests
 }
 
-func createBody(metricType, path, key string, value interface{}) *bytes.Buffer {
+func createBatch(src *metrics.Metrics) []*metrics.JSONMetrics {
+	var batch []*metrics.JSONMetrics
+	for k, v := range src.GaugeMetrics {
+		batch = append(batch, &metrics.JSONMetrics{
+			ID:    k,
+			MType: "gauge",
+			Value: (*float64)(&v),
+		})
+	}
+	for k, v := range src.CounterMetrics {
+		batch = append(batch, &metrics.JSONMetrics{
+			ID:    k,
+			MType: "counter",
+			Delta: (*int64)(&v),
+		})
+	}
+	return batch
+}
+
+func encodeBatch(batch []*metrics.JSONMetrics) *bytes.Buffer {
+	body := bytes.NewBuffer([]byte{})
+	encoder := json.NewEncoder(body)
+	encoder.Encode(&batch)
+	return body
+}
+
+func createRequestsBatch(endpoint, path string, src *metrics.Metrics) *http.Request {
+	batch := createBatch(src)
+	body := encodeBatch(batch)
+	req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
+	if err != nil {
+		metrics.ErrorLog.Println("Could not do POST batch request")
+	}
+	req.Header.Add("Content-Type", "application/json")
+	return req
+}
+
+func createBody(metricType, path, key, secretkey string, value interface{}) *bytes.Buffer {
+	var hash string
+	if secretkey != "" {
+		generator := metrics.NewHashGenerator(secretkey)
+		hash = generator.GenerateHash(metricType, key, value)
+	}
 	body := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(body)
 	var toEncode metrics.JSONMetrics
@@ -42,12 +84,14 @@ func createBody(metricType, path, key string, value interface{}) *bytes.Buffer {
 		gaugeVal := value.(metrics.Gauge)
 		val := (*float64)(&gaugeVal)
 		toEncode.Value = val
+		toEncode.Hash = hash
 	case "counter":
 		toEncode.MType = "counter"
 		toEncode.ID = key
 		counterVal := value.(metrics.Counter)
 		val := (*int64)(&counterVal)
 		toEncode.Delta = val
+		toEncode.Hash = hash
 	}
 	toEncode.ID = key
 	if path == "/value/" {
@@ -58,10 +102,10 @@ func createBody(metricType, path, key string, value interface{}) *bytes.Buffer {
 	return body
 }
 
-func createGaugeRequests(endpoint, path string, gaugeMetrics map[string]metrics.Gauge) []*http.Request {
+func createGaugeRequests(endpoint, path, key string, gaugeMetrics map[string]metrics.Gauge) []*http.Request {
 	var requests []*http.Request
 	for k, v := range gaugeMetrics {
-		body := createBody("gauge", path, k, v)
+		body := createBody("gauge", path, k, key, v)
 		req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
 		if err != nil {
 			metrics.ErrorLog.Printf("Could not do POST request for gauge with params: %s %f", k, v)
@@ -72,10 +116,10 @@ func createGaugeRequests(endpoint, path string, gaugeMetrics map[string]metrics.
 	return requests
 }
 
-func createCounterRequests(endpoint, path string, counterMetrics map[string]metrics.Counter) []*http.Request {
+func createCounterRequests(endpoint, path, key string, counterMetrics map[string]metrics.Counter) []*http.Request {
 	var requests []*http.Request
 	for k, v := range counterMetrics {
-		body := createBody("counter", path, k, v)
+		body := createBody("counter", path, k, key, v)
 		req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
 		if err != nil {
 			metrics.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
@@ -86,19 +130,19 @@ func createCounterRequests(endpoint, path string, counterMetrics map[string]metr
 	return requests
 }
 
-func generateMetricsRequests(endpoint, path string, src *metrics.Metrics) []*http.Request {
-	gaugeRequests := createGaugeRequests(endpoint, path, src.GaugeMetrics)
-	counterRequests := createCounterRequests(endpoint, path, src.CounterMetrics)
+func generateMetricsRequests(endpoint, path, key string, src *metrics.Metrics) []*http.Request {
+	gaugeRequests := createGaugeRequests(endpoint, path, key, src.GaugeMetrics)
+	counterRequests := createCounterRequests(endpoint, path, key, src.CounterMetrics)
 	return append(gaugeRequests, counterRequests...)
 }
 
-func PushMetrics(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
+func PushMetrics(client *http.Client, endpoint string, mtrcs *metrics.Metrics, key string) {
 	defer func() {
 		if p := recover(); p != nil {
 			metrics.ErrorLog.Println(p)
 		}
 	}()
-	requests := generateMetricsRequests(endpoint, "/update/", mtrcs)
+	requests := generateMetricsRequests(endpoint, "/update/", key, mtrcs)
 	for _, request := range requests {
 		resp, err := client.Do(request)
 		if err != nil {
@@ -108,13 +152,27 @@ func PushMetrics(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
 	}
 }
 
-func GetMetricsValues(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
+func PushMetricsBatch(client *http.Client, endpoint string, mtrcs *metrics.Metrics) {
 	defer func() {
 		if p := recover(); p != nil {
 			metrics.ErrorLog.Println(p)
 		}
 	}()
-	requests := generateMetricsRequests(endpoint, "/value/", mtrcs)
+	request := createRequestsBatch(endpoint, "/updates/", mtrcs)
+	resp, err := client.Do(request)
+	if err != nil {
+		metrics.ErrorLog.Println(err)
+	}
+	defer resp.Body.Close()
+}
+
+func GetMetricsValues(client *http.Client, endpoint, key string, mtrcs *metrics.Metrics) {
+	defer func() {
+		if p := recover(); p != nil {
+			metrics.ErrorLog.Println(p)
+		}
+	}()
+	requests := generateMetricsRequests(endpoint, "/value/", key, mtrcs)
 	for _, request := range requests {
 		resp, err := client.Do(request)
 		if err != nil {
@@ -147,9 +205,11 @@ func main() {
 			metrics.InfoLog.Println("Metrics have been updated")
 		}
 		if timeDiffSec%int64(agentConfig.PollInterval) == 0 {
-			PushMetrics(client, endpoint, collector.GetMetrics())
+			PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key)
 			metrics.InfoLog.Println("Metrics have been pushed")
-			GetMetricsValues(client, endpoint, collector.GetMetrics())
+			PushMetricsBatch(client, endpoint, collector.GetMetrics())
+			metrics.InfoLog.Println("Batch metrics were pushed")
+			GetMetricsValues(client, endpoint, agentConfig.Key, collector.GetMetrics())
 			metrics.InfoLog.Println("Metrics update has been received")
 		}
 	}
