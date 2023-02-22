@@ -16,6 +16,7 @@ const (
 	RESTORE         string = "default"
 	KEY             string = ""
 	DATABASE_DSN    string = ""
+	RATE_LIMIT      string = ""
 )
 
 type AgentEnvConfig struct {
@@ -23,6 +24,7 @@ type AgentEnvConfig struct {
 	ReportInterval string `env:"REPORT_INTERVAL,required"`
 	PollInterval   string `env:"POLL_INTERVAL,required"`
 	Key            string `env:"KEY"`
+	RateLimit      string `env:"RATE_LIMIT"`
 }
 
 func checkAgentEnvs(envs *AgentEnvConfig) *AgentEnvConfig {
@@ -30,6 +32,7 @@ func checkAgentEnvs(envs *AgentEnvConfig) *AgentEnvConfig {
 	var pollint string = POLL_INTERVAL
 	var reportint string = REPORT_INTERVAL
 	var key string = KEY
+	var rate string = RATE_LIMIT
 	if envs.Address != ADDRESS && envs.Address != "" {
 		addr = envs.Address
 	}
@@ -42,11 +45,15 @@ func checkAgentEnvs(envs *AgentEnvConfig) *AgentEnvConfig {
 	if envs.Key != "" {
 		key = envs.Key
 	}
+	if envs.RateLimit != "" {
+		rate = envs.RateLimit
+	}
 	return &AgentEnvConfig{
 		Address:        addr,
 		PollInterval:   pollint,
 		ReportInterval: reportint,
 		Key:            key,
+		RateLimit:      rate,
 	}
 }
 

@@ -24,4 +24,5 @@ func TestEnvConfigIntervalConvertion(t *testing.T) {
 	assert.Equal(t, reportInterval, int64(600))
 	pollInterval := testConfig.GetNumericInterval("PollInterval")
 	assert.Equal(t, pollInterval, int64(2))
+	assert.Equal(t, testConfig.RateLimit, "")
 }
