@@ -212,8 +212,25 @@ func RunWithoutConcurrency(agentConfig *metrics.AgentConfig, client *http.Client
 	RunAgent(agentConfig, collector, client, endpoint)
 }
 
-// func RunConcurrently(agentConfig *metrics.AgentConfig, client *http.Client, endpoint string) {
+// type Job struct {}
 
+// func RunConcurrently(agentConfig *metrics.AgentConfig, client *http.Client, endpoint string) {
+// 	var collector = metrics.NewCollector()
+// 	var extraCollector = metrics.NewExtraMetricsCollector()
+
+// 	metricsChan = make(chan *metrics.Metrics)
+// 	extraMetricsChan = make(chan *map[string]metrics.Gauge)
+
+// 	// jobCh := make(chan *Job)
+// 	// go func() {
+// 	// 	for job := range jobCh {
+
+// 	// 	}
+// 	// }
+
+// 	// go collector.UpdateMetrics()
+// 	// go extraCollector.Update()
+// 	// go
 // }
 
 func main() {
@@ -225,4 +242,5 @@ func main() {
 	if agentConfig.RateLimit == 0 {
 		RunWithoutConcurrency(agentConfig, client, endpoint)
 	}
+	// RunConcurrently(agentConfig, client, endpoint)
 }
