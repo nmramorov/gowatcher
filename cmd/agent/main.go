@@ -182,10 +182,7 @@ func GetMetricsValues(client *http.Client, endpoint, key string, mtrcs *metrics.
 	}
 }
 
-func main() {
-	agentConfig := metrics.GetAgentConfig()
-	fmt.Println(agentConfig)
-
+func RunWithoutConcurrency(agentConfig *metrics.AgentConfig) {
 	var collector = metrics.NewCollector()
 
 	endpoint := "http://" + agentConfig.Address
@@ -212,5 +209,12 @@ func main() {
 			GetMetricsValues(client, endpoint, agentConfig.Key, collector.GetMetrics())
 			metrics.InfoLog.Println("Metrics update has been received")
 		}
+	}
+}
+
+func main() {
+	agentConfig := metrics.GetAgentConfig()
+	if agentConfig.RateLimit == 0 {
+		RunWithoutConcurrency(agentConfig)
 	}
 }
