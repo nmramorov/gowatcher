@@ -182,14 +182,8 @@ func GetMetricsValues(client *http.Client, endpoint, key string, mtrcs *metrics.
 	}
 }
 
-func RunWithoutConcurrency(agentConfig *metrics.AgentConfig) {
-	var collector = metrics.NewCollector()
-
-	endpoint := "http://" + agentConfig.Address
-
-	client := &http.Client{}
-	metrics.InfoLog.Println("Client initialized...")
-
+func RunAgent(agentConfig *metrics.AgentConfig, collector *metrics.Collector,
+	client *http.Client, endpoint string) {
 	ticker := time.NewTicker(1 * time.Second)
 	startTime := time.Now()
 
@@ -210,6 +204,20 @@ func RunWithoutConcurrency(agentConfig *metrics.AgentConfig) {
 			metrics.InfoLog.Println("Metrics update has been received")
 		}
 	}
+}
+
+func RunWithoutConcurrency(agentConfig *metrics.AgentConfig) {
+	var collector = metrics.NewCollector()
+
+	endpoint := "http://" + agentConfig.Address
+
+	client := &http.Client{}
+	metrics.InfoLog.Println("Client initialized...")
+	RunAgent(agentConfig, collector, client, endpoint)
+}
+
+func RunConcurrently(agentConfig *metrics.AgentConfig) {
+
 }
 
 func main() {
