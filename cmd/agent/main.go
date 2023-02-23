@@ -206,23 +206,23 @@ func RunAgent(agentConfig *metrics.AgentConfig, collector *metrics.Collector,
 	}
 }
 
-func RunWithoutConcurrency(agentConfig *metrics.AgentConfig) {
+func RunWithoutConcurrency(agentConfig *metrics.AgentConfig, client *http.Client, endpoint string) {
 	var collector = metrics.NewCollector()
-
-	endpoint := "http://" + agentConfig.Address
-
-	client := &http.Client{}
-	metrics.InfoLog.Println("Client initialized...")
+	metrics.InfoLog.Println("Non-concurrent Client initialized...")
 	RunAgent(agentConfig, collector, client, endpoint)
 }
 
-func RunConcurrently(agentConfig *metrics.AgentConfig) {
+// func RunConcurrently(agentConfig *metrics.AgentConfig, client *http.Client, endpoint string) {
 
-}
+// }
 
 func main() {
 	agentConfig := metrics.GetAgentConfig()
+	endpoint := "http://" + agentConfig.Address
+
+	client := &http.Client{}
+
 	if agentConfig.RateLimit == 0 {
-		RunWithoutConcurrency(agentConfig)
+		RunWithoutConcurrency(agentConfig, client, endpoint)
 	}
 }
