@@ -4,12 +4,18 @@ import (
 	"reflect"
 	"runtime"
 	"strconv"
+	"sync"
+	"time"
+
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 type Collector struct {
 	MetricsCollector
 	metrics *Metrics
 	updates int
+	mu      sync.RWMutex
 }
 
 func NewCollector() *Collector {
@@ -30,6 +36,8 @@ func NewCollectorFromSavedFile(saved *Metrics) *Collector {
 }
 
 func (col *Collector) UpdateMetrics() {
+	col.mu.Lock()
+	defer col.mu.Unlock()
 	var newstats runtime.MemStats
 	runtime.ReadMemStats(&newstats)
 
@@ -42,6 +50,8 @@ func (col *Collector) GetMetrics() *Metrics {
 }
 
 func (col *Collector) GetMetric(name string) (interface{}, error) {
+	col.mu.Lock()
+	defer col.mu.Unlock()
 	for k, v := range col.metrics.CounterMetrics {
 		if k == name {
 			return v, nil
@@ -68,6 +78,8 @@ func (col *Collector) String(value interface{}) (string, error) {
 }
 
 func (col *Collector) UpdateMetricFromJson(newMetric *JSONMetrics) (*JSONMetrics, error) {
+	col.mu.Lock()
+	defer col.mu.Unlock()
 	result := JSONMetrics{}
 	switch newMetric.MType {
 	case "gauge":
@@ -88,6 +100,8 @@ func (col *Collector) UpdateMetricFromJson(newMetric *JSONMetrics) (*JSONMetrics
 }
 
 func (col *Collector) GetMetricJson(requestedMetric *JSONMetrics) (*JSONMetrics, error) {
+	col.mu.Lock()
+	defer col.mu.Unlock()
 	result := JSONMetrics{}
 	switch requestedMetric.MType {
 	case "gauge":
@@ -107,6 +121,8 @@ func (col *Collector) GetMetricJson(requestedMetric *JSONMetrics) (*JSONMetrics,
 }
 
 func (col *Collector) UpdateBatch(metrics []*JSONMetrics) error {
+	col.mu.Lock()
+	defer col.mu.Unlock()
 	for _, metric := range metrics {
 		_, err := col.UpdateMetricFromJson(metric)
 		if err != nil {
@@ -115,4 +131,14 @@ func (col *Collector) UpdateBatch(metrics []*JSONMetrics) error {
 		}
 	}
 	return nil
+}
+
+func (col *Collector) UpdateExtraMetrics() {
+	col.mu.Lock()
+	defer col.mu.Unlock()
+	v, _ := mem.VirtualMemory()
+	utilization, _ := cpu.Percent(time.Second, false)
+	col.metrics.GaugeMetrics["TotalMemory"] = Gauge(v.Total)
+	col.metrics.GaugeMetrics["FreeMemory"] = Gauge(v.Free)
+	col.metrics.GaugeMetrics["CPUutilization1"] = Gauge(utilization[0])
 }

@@ -214,11 +214,9 @@ func RunWithoutConcurrency(agentConfig *metrics.AgentConfig, client *http.Client
 
 type Job struct {
 	RequestType string
-	// MetricData *metrics.Metrics
 }
 
 func RunTickers(agentConfig *metrics.AgentConfig, jobCh chan<- *Job) {
-	// var collector = metrics.NewCollector()
 	metrics.InfoLog.Println("Tickers are running...")
 	updateTicker := time.NewTicker(time.Duration(agentConfig.PollInterval) * time.Second)
 	pushTicker := time.NewTicker(time.Duration(agentConfig.ReportInterval) * time.Second)
@@ -226,37 +224,19 @@ func RunTickers(agentConfig *metrics.AgentConfig, jobCh chan<- *Job) {
 	for {
 		select {
 		case <-updateTicker.C:
-			// collector.UpdateMetrics()
-			// metrics.InfoLog.Println("Metrics have been updated")
 			jobCh <- &Job{
-				// MetricData: collector.GetMetrics(),
 				RequestType: "update",
 			}
 		case <-pushTicker.C:
-			// PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key)
-			// metrics.InfoLog.Println("Metrics have been pushed")
 			jobCh <- &Job{
-				// MetricData: collector.GetMetrics(),
 				RequestType: "push",
 			}
-			// PushMetricsBatch(client, endpoint, collector.GetMetrics())
-			// jobCh <- &Job{
-			// 	// MetricData: collector.GetMetrics(),
-			// 	RequestType: "push batch",
-			// }
-			// metrics.InfoLog.Println("Batch metrics were pushed")
-			// GetMetricsValues(client, endpoint, agentConfig.Key, collector.GetMetrics())
-			// jobCh <- &Job{
-			// 	// MetricData: collector.GetMetrics(),
-			// 	RequestType: "get",
-			// }
-			// metrics.InfoLog.Println("Metrics update has been received")
 		}
 	}
 }
 
 func RunConcurrently(config *metrics.AgentConfig, client *http.Client, endpoint string) {
-	jobCh := make(chan *Job)
+	jobCh := make(chan *Job, config.RateLimit)
 
 	var collector = metrics.NewCollector()
 	go func() {
@@ -267,6 +247,7 @@ func RunConcurrently(config *metrics.AgentConfig, client *http.Client, endpoint 
 		metrics.InfoLog.Printf("Running job %s", job.RequestType)
 		RunJob(job, collector, client, endpoint, config)
 	}
+
 }
 
 func RunJob(job *Job, collector *metrics.Collector, client *http.Client, endpoint string, agentConfig *metrics.AgentConfig) {
@@ -275,6 +256,10 @@ func RunJob(job *Job, collector *metrics.Collector, client *http.Client, endpoin
 		go func() {
 			collector.UpdateMetrics()
 			metrics.InfoLog.Println("Metrics have been updated concurrently")
+		}()
+		go func() {
+			collector.UpdateExtraMetrics()
+			metrics.InfoLog.Println("Extra metrics have been updated concurrently")
 		}()
 	case "push":
 		go func() {

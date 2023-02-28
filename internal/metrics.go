@@ -3,10 +3,6 @@ package metrics
 import (
 	"math/rand"
 	"runtime"
-	"time"
-
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/mem"
 )
 
 type Gauge float64
@@ -33,8 +29,6 @@ type MetricsCollector interface {
 }
 
 func UpdateMetrics(m runtime.MemStats, counter int) *Metrics {
-	v, _ := mem.VirtualMemory()
-	utilization, _ := cpu.Percent(time.Second, false)
 	return &Metrics{
 		GaugeMetrics: map[string]Gauge{
 			"Alloc":           Gauge(m.Alloc),
@@ -65,9 +59,6 @@ func UpdateMetrics(m runtime.MemStats, counter int) *Metrics {
 			"Sys":             Gauge(m.Sys),
 			"TotalAlloc":      Gauge(m.TotalAlloc),
 			"RandomValue":     Gauge(rand.Float64()),
-			"TotalMemory":     Gauge(v.Total),
-			"FreeMemory":      Gauge(v.Free),
-			"CPUutilization1": Gauge(utilization[0]),
 		},
 		CounterMetrics: map[string]Counter{
 			"PollCount": Counter(counter),
