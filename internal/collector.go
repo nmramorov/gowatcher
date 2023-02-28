@@ -15,7 +15,7 @@ type Collector struct {
 	MetricsCollector
 	metrics *Metrics
 	updates int
-	mu      sync.RWMutex
+	mu      sync.Mutex
 }
 
 func NewCollector() *Collector {
@@ -50,8 +50,6 @@ func (col *Collector) GetMetrics() *Metrics {
 }
 
 func (col *Collector) GetMetric(name string) (interface{}, error) {
-	col.mu.Lock()
-	defer col.mu.Unlock()
 	for k, v := range col.metrics.CounterMetrics {
 		if k == name {
 			return v, nil
@@ -100,8 +98,6 @@ func (col *Collector) UpdateMetricFromJson(newMetric *JSONMetrics) (*JSONMetrics
 }
 
 func (col *Collector) GetMetricJson(requestedMetric *JSONMetrics) (*JSONMetrics, error) {
-	col.mu.Lock()
-	defer col.mu.Unlock()
 	result := JSONMetrics{}
 	switch requestedMetric.MType {
 	case "gauge":
@@ -121,8 +117,6 @@ func (col *Collector) GetMetricJson(requestedMetric *JSONMetrics) (*JSONMetrics,
 }
 
 func (col *Collector) UpdateBatch(metrics []*JSONMetrics) error {
-	col.mu.Lock()
-	defer col.mu.Unlock()
 	for _, metric := range metrics {
 		_, err := col.UpdateMetricFromJson(metric)
 		if err != nil {
