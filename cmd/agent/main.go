@@ -182,36 +182,6 @@ func GetMetricsValues(client *http.Client, endpoint, key string, mtrcs *metrics.
 	}
 }
 
-func RunAgent(agentConfig *metrics.AgentConfig, collector *metrics.Collector,
-	client *http.Client, endpoint string) {
-	ticker := time.NewTicker(1 * time.Second)
-	startTime := time.Now()
-
-	for {
-		tickedTime := <-ticker.C
-
-		timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
-		if timeDiffSec%int64(agentConfig.PollInterval) == 0 {
-			collector.UpdateMetrics()
-			metrics.InfoLog.Println("Metrics have been updated")
-		}
-		if timeDiffSec%int64(agentConfig.PollInterval) == 0 {
-			PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key)
-			metrics.InfoLog.Println("Metrics have been pushed")
-			PushMetricsBatch(client, endpoint, collector.GetMetrics())
-			metrics.InfoLog.Println("Batch metrics were pushed")
-			GetMetricsValues(client, endpoint, agentConfig.Key, collector.GetMetrics())
-			metrics.InfoLog.Println("Metrics update has been received")
-		}
-	}
-}
-
-func RunWithoutConcurrency(agentConfig *metrics.AgentConfig, client *http.Client, endpoint string) {
-	var collector = metrics.NewCollector()
-	metrics.InfoLog.Println("Non-concurrent Client initialized...")
-	RunAgent(agentConfig, collector, client, endpoint)
-}
-
 type Job struct {
 	RequestType string
 }
@@ -279,8 +249,5 @@ func main() {
 
 	client := &http.Client{}
 
-	// if agentConfig.RateLimit == 0 {
-	// 	RunWithoutConcurrency(agentConfig, client, endpoint)
-	// }
 	RunConcurrently(agentConfig, client, endpoint)
 }
