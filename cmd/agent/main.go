@@ -256,18 +256,16 @@ func RunTickers(agentConfig *metrics.AgentConfig, jobCh chan<- *Job) {
 }
 
 func RunConcurrently(config *metrics.AgentConfig, client *http.Client, endpoint string) {
-	jobCh := make(chan *Job, config.RateLimit)
+	jobCh := make(chan *Job)
 
 	var collector = metrics.NewCollector()
 	go func() {
 		RunTickers(config, jobCh)
 	}()
 
-	for {
-		for job := range jobCh {
-			metrics.InfoLog.Printf("Running job %s", job.RequestType)
-			RunJob(job, collector, client, endpoint, config)
-		}
+	for job := range jobCh {
+		metrics.InfoLog.Printf("Running job %s", job.RequestType)
+		RunJob(job, collector, client, endpoint, config)
 	}
 }
 
@@ -296,8 +294,8 @@ func main() {
 
 	client := &http.Client{}
 
-	if agentConfig.RateLimit == 0 {
-		RunWithoutConcurrency(agentConfig, client, endpoint)
-	}
+	// if agentConfig.RateLimit == 0 {
+	// 	RunWithoutConcurrency(agentConfig, client, endpoint)
+	// }
 	RunConcurrently(agentConfig, client, endpoint)
 }
