@@ -40,6 +40,7 @@ func TestAgentCLI(t *testing.T) {
 	var reportInterval = flag.String("r", "10s", "report interval time")
 	var pollInterval = flag.String("p", "2s", "poll interval time")
 	var key = flag.String("k", "", "key to calculate hash")
+	var rate = flag.Int("l", 0, "rate limit")
 	flag.Parse()
 
 	args := &AgentCLIOptions{
@@ -47,6 +48,7 @@ func TestAgentCLI(t *testing.T) {
 		ReportInterval: *reportInterval,
 		PollInterval:   *pollInterval,
 		Key:            *key,
+		RateLimit:      *rate,
 	}
 
 	assert.Equal(t, "localhost:4444", args.Address)
@@ -56,6 +58,7 @@ func TestAgentCLI(t *testing.T) {
 		return int(poll)
 	}())
 	assert.Equal(t, "sadfsdfsdf", args.Key)
+	assert.Equal(t, 0, args.RateLimit)
 }
 
 func TestServerCLIDefaults(t *testing.T) {

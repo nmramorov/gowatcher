@@ -85,6 +85,7 @@ type AgentConfig struct {
 	ReportInterval int
 	PollInterval   int
 	Key            string
+	RateLimit      int
 }
 
 func checkAgentConfig(envs *AgentEnvConfig, clies *AgentCLIOptions) *AgentConfig {
@@ -94,6 +95,7 @@ func checkAgentConfig(envs *AgentEnvConfig, clies *AgentCLIOptions) *AgentConfig
 	var key string = clies.Key
 	var reportintNumeric int = int(clies.GetNumericInterval("ReportInterval"))
 	var pollintNumeric int = int(clies.GetNumericInterval("PollInterval"))
+	var rate int = clies.RateLimit
 	if envs.Address != ADDRESS && envs.Address != addr {
 		addr = envs.Address
 	}
@@ -106,11 +108,15 @@ func checkAgentConfig(envs *AgentEnvConfig, clies *AgentCLIOptions) *AgentConfig
 	if envs.Key != "" && envs.Key != key {
 		key = envs.Key
 	}
+	if envs.RateLimit != 0 && envs.RateLimit != rate {
+		rate = envs.RateLimit
+	}
 	return &AgentConfig{
 		Address:        addr,
 		PollInterval:   pollintNumeric,
 		ReportInterval: reportintNumeric,
 		Key:            key,
+		RateLimit:      rate,
 	}
 }
 
