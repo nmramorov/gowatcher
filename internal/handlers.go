@@ -12,6 +12,8 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+
+	_ "net/http/pprof"
 )
 
 type Handler struct {

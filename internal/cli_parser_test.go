@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// ToDO!!! Make CLI tests great agent
 func TestServerCLI(t *testing.T) {
 	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd"}
 	var address = flag.String("a", "localhost:8080", "server address")
