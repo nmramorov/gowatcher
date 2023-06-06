@@ -303,7 +303,7 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 					ID:    "GaugeMetric",
 					MType: "gauge",
 					Value: &GaugeVal,
-					Hash: "b80631b192b6e327725bf20e38fb0ca59cf84026515fbc8b3e2a9727ace1e313",
+					Hash:  "b80631b192b6e327725bf20e38fb0ca59cf84026515fbc8b3e2a9727ace1e313",
 				},
 			},
 			args: arguments{
@@ -320,7 +320,7 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 					ID:    "CounterMetric",
 					MType: "counter",
 					Delta: &CountVal,
-					Hash: "34e44bc45730d6ead6c5959c68a8d591f932afac6522a71df1bea414deb21fdd",
+					Hash:  "34e44bc45730d6ead6c5959c68a8d591f932afac6522a71df1bea414deb21fdd",
 				},
 			},
 			args: arguments{
@@ -350,6 +350,59 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 			assert.Equal(t, tt.want.response, result)
 		})
 	}
+}
+
+func Example() {
+	GaugeVal := 44.4
+
+	type arguments struct {
+		ID    string   `json:"id"`
+		MType string   `json:"type"`
+		Delta *int64   `json:"delta,omitempty"`
+		Value *float64 `json:"value,omitempty"`
+	}
+
+	MOCKCURSOR, _ := NewCursor("", "pgx")
+	metricsHandler := NewHandler("", MOCKCURSOR)
+
+	ts := httptest.NewServer(metricsHandler)
+
+	defer ts.Close()
+
+	payload := arguments{
+		ID:    "GaugeMetric",
+		MType: "gauge",
+		Value: &GaugeVal,
+	}
+
+	buf := bytes.NewBuffer([]byte{})
+	encoder := json.NewEncoder(buf)
+	encoder.Encode(payload)
+	req, err := http.NewRequest("POST", ts.URL+"/update/", bytes.NewBuffer(buf.Bytes()))
+	if err != nil {
+		ErrorLog.Printf("Error occured in example: %e", err)
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+
+	respBody, err := io.ReadAll(resp.Body)
+
+	defer resp.Body.Close()
+
+	result := JSONMetrics{}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		panic("Test error: error with unmarshalling JSON POST /update method")
+	}
+	fmt.Println(result)
+
+	// Output:
+	// JSONMetrics{
+	//	ID:    "GaugeMetric",
+	//	MType: "gauge",
+	//	Value: &GaugeVal,
+	//	Hash:  "b80631b192b6e327725bf20e38fb0ca59cf84026515fbc8b3e2a9727ace1e313",
+	// },
 }
 
 func TestPOSTValueMetricsHandlerJson(t *testing.T) {

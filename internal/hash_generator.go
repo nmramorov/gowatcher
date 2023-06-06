@@ -7,10 +7,12 @@ import (
 	"fmt"
 )
 
+// Тип, суть которого - сгенерировать хеш.
 type HashGenerator struct {
 	secretkey string
 }
 
+// Метод, генерирующий хеши для метрик разных типов.
 func (gen *HashGenerator) GenerateHash(metricType, id string, value interface{}) string {
 	var hashString string
 	switch metricType {
@@ -25,6 +27,7 @@ func (gen *HashGenerator) GenerateHash(metricType, id string, value interface{})
 	return hex.EncodeToString(dst)
 }
 
+// Конструктор для типа HashGenerator.
 func NewHashGenerator(key string) *HashGenerator {
 	return &HashGenerator{
 		secretkey: key,

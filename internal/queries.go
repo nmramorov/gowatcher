@@ -1,5 +1,6 @@
 package metrics
 
+// Запросы, используемые при работе приложения.
 const (
 	CreateGaugeTable string = `CREATE TABLE IF NOT EXISTS gaugeMetrics (
 		_id TEXT,

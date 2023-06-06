@@ -16,6 +16,7 @@ import (
 	_ "net/http/pprof"
 )
 
+// Базовый тип Handler, отвечающий за обработку запросов.
 type Handler struct {
 	*chi.Mux
 	collector *Collector
@@ -23,6 +24,7 @@ type Handler struct {
 	cursor    *Cursor
 }
 
+// Конструктор для объектов типа Handler.
 func NewHandler(key string, newCursor *Cursor) *Handler {
 	h := &Handler{
 		Mux:       chi.NewMux(),
@@ -42,6 +44,7 @@ func NewHandler(key string, newCursor *Cursor) *Handler {
 	return h
 }
 
+// Конструктор Handler, который инициализируется с записанными ранее данными Metrics.
 func NewHandlerFromSavedData(saved *Metrics, secretkey string, cursor *Cursor) *Handler {
 	h := &Handler{
 		Mux:       chi.NewMux(),
@@ -90,6 +93,7 @@ func (h *Handler) getHash(metricData *JSONMetrics) string {
 	return hash
 }
 
+// Метод для обновления метрики, полученной в формате JSON.
 func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 	metricData := JSONMetrics{}
 	if err := json.NewDecoder(r.Body).Decode(&metricData); err != nil {
@@ -117,6 +121,8 @@ func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 	rw.Write(buf.Bytes())
 }
 
+// Метод, позволяющий получить требуемую метрику в формате JSON.
+// На вход требует JSON с заполненными полями id и mtype.
 func (h *Handler) GetMetricByJson(rw http.ResponseWriter, r *http.Request) {
 	metricData := JSONMetrics{}
 	if err := json.NewDecoder(r.Body).Decode(&metricData); err != nil {
@@ -152,6 +158,7 @@ func (h *Handler) GetMetricByJson(rw http.ResponseWriter, r *http.Request) {
 	rw.Write(buf.Bytes())
 }
 
+// Deprecated: метод был создан для первых инкрементов, в настоящее время не используется.
 func (h *Handler) GetMetricByTypeAndName(rw http.ResponseWriter, r *http.Request) {
 	metricType := chi.URLParam(r, "type")
 	metricName := chi.URLParam(r, "name")
@@ -173,6 +180,7 @@ func (h *Handler) GetMetricByTypeAndName(rw http.ResponseWriter, r *http.Request
 	}
 }
 
+// Deprecated: метод был создан для первых инкрементов, в настоящее время не используется.
 func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 	InfoLog.Println("Started handling metric...")
 
@@ -223,6 +231,7 @@ func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status":"ok"}`))
 }
 
+// Метод, позволяющий по корню посмотреть состояние текущих метрик на сервере.
 func (h *Handler) ListMetricsHTML(w http.ResponseWriter, r *http.Request) {
 	t := template.Must(template.New("").Parse(`
 	<strong>Gauge Metrics:</strong>\n {{range $key, $val := .GaugeMetrics}} {{$key}} = {{$val}}\n {{end}}
@@ -232,10 +241,12 @@ func (h *Handler) ListMetricsHTML(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, h.collector.metrics)
 }
 
+// Вспомогательный метод для получения метрик из коллектора.
 func (h *Handler) GetCurrentMetrics() *Metrics {
 	return h.collector.metrics
 }
 
+// Метод для проверки соединения с БД.
 func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
 	isAvailable := h.cursor.Ping()
 	defer h.cursor.Close()
@@ -248,10 +259,12 @@ func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Метод, инициализирующий БД.
 func (h *Handler) InitDb() error {
 	return h.cursor.InitDb()
 }
 
+// Метод, позволяющий обновить несколько метрик за раз.
 func (h *Handler) UpdateJSONBatch(rw http.ResponseWriter, r *http.Request) {
 	var metricsBatch []*JSONMetrics
 	if err := json.NewDecoder(r.Body).Decode(&metricsBatch); err != nil {
