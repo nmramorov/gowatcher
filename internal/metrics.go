@@ -21,6 +21,7 @@ type JSONMetrics struct {
 	Hash  string   `json:"hash,omitempty"`             // значение хеш-функции
 }
 
+// Интерфейс, используемый для работы с метриками: обновление, чтение и строковая репрезентация.
 type MetricsCollector interface {
 	String()
 	UpdateMetrics()
@@ -28,37 +29,38 @@ type MetricsCollector interface {
 	GetMetric(name string) (interface{}, error)
 }
 
+// Метод обновления метрик.
 func UpdateMetrics(m runtime.MemStats, counter int) *Metrics {
 	return &Metrics{
 		GaugeMetrics: map[string]Gauge{
-			"Alloc":           Gauge(m.Alloc),
-			"BuckHashSys":     Gauge(m.BuckHashSys),
-			"Frees":           Gauge(m.Frees),
-			"GCCPUFraction":   Gauge(m.GCCPUFraction),
-			"GCSys":           Gauge(m.GCSys),
-			"HeapAlloc":       Gauge(m.HeapAlloc),
-			"HeapIdle":        Gauge(m.HeapIdle),
-			"HeapInuse":       Gauge(m.HeapInuse),
-			"HeapObjects":     Gauge(m.HeapObjects),
-			"HeapReleased":    Gauge(m.HeapReleased),
-			"HeapSys":         Gauge(m.HeapSys),
-			"LastGC":          Gauge(m.LastGC),
-			"Lookups":         Gauge(m.Lookups),
-			"MCacheInuse":     Gauge(m.MCacheInuse),
-			"MCacheSys":       Gauge(m.MCacheSys),
-			"MSpanInuse":      Gauge(m.MSpanInuse),
-			"MSpanSys":        Gauge(m.MSpanSys),
-			"Mallocs":         Gauge(m.Mallocs),
-			"NextGC":          Gauge(m.NextGC),
-			"NumForcedGC":     Gauge(m.NumForcedGC),
-			"NumGC":           Gauge(m.NumGC),
-			"OtherSys":        Gauge(m.OtherSys),
-			"PauseTotalNs":    Gauge(m.PauseTotalNs),
-			"StackInuse":      Gauge(m.StackInuse),
-			"StackSys":        Gauge(m.StackSys),
-			"Sys":             Gauge(m.Sys),
-			"TotalAlloc":      Gauge(m.TotalAlloc),
-			"RandomValue":     Gauge(rand.Float64()),
+			"Alloc":         Gauge(m.Alloc),
+			"BuckHashSys":   Gauge(m.BuckHashSys),
+			"Frees":         Gauge(m.Frees),
+			"GCCPUFraction": Gauge(m.GCCPUFraction),
+			"GCSys":         Gauge(m.GCSys),
+			"HeapAlloc":     Gauge(m.HeapAlloc),
+			"HeapIdle":      Gauge(m.HeapIdle),
+			"HeapInuse":     Gauge(m.HeapInuse),
+			"HeapObjects":   Gauge(m.HeapObjects),
+			"HeapReleased":  Gauge(m.HeapReleased),
+			"HeapSys":       Gauge(m.HeapSys),
+			"LastGC":        Gauge(m.LastGC),
+			"Lookups":       Gauge(m.Lookups),
+			"MCacheInuse":   Gauge(m.MCacheInuse),
+			"MCacheSys":     Gauge(m.MCacheSys),
+			"MSpanInuse":    Gauge(m.MSpanInuse),
+			"MSpanSys":      Gauge(m.MSpanSys),
+			"Mallocs":       Gauge(m.Mallocs),
+			"NextGC":        Gauge(m.NextGC),
+			"NumForcedGC":   Gauge(m.NumForcedGC),
+			"NumGC":         Gauge(m.NumGC),
+			"OtherSys":      Gauge(m.OtherSys),
+			"PauseTotalNs":  Gauge(m.PauseTotalNs),
+			"StackInuse":    Gauge(m.StackInuse),
+			"StackSys":      Gauge(m.StackSys),
+			"Sys":           Gauge(m.Sys),
+			"TotalAlloc":    Gauge(m.TotalAlloc),
+			"RandomValue":   Gauge(rand.Float64()),
 		},
 		CounterMetrics: map[string]Counter{
 			"PollCount": Counter(counter),
@@ -66,6 +68,7 @@ func UpdateMetrics(m runtime.MemStats, counter int) *Metrics {
 	}
 }
 
+// Первичная инициализация метрик нулевыми значениями.
 func NewMetrics() *Metrics {
 	return &Metrics{
 		GaugeMetrics: map[string]Gauge{
@@ -107,6 +110,7 @@ func NewMetrics() *Metrics {
 	}
 }
 
+// Функция, получающая новые данные для метрик.
 func GetMemStats() runtime.MemStats {
 	var memstats runtime.MemStats
 	runtime.ReadMemStats(&memstats)

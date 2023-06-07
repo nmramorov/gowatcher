@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"path/filepath"
 	"time"
@@ -14,7 +13,6 @@ func GetMetricsHandler(options *metrics.ServerConfig) (*metrics.Handler, error) 
 	if err != nil {
 		cursor.IsValid = false
 	}
-	fmt.Println(cursor)
 	path, err := filepath.Abs(".")
 	if err != nil {
 		metrics.ErrorLog.Printf("no file to save exist: %e", err)
@@ -68,7 +66,6 @@ func StartSavingToDisk(options *metrics.ServerConfig, handler *metrics.Handler) 
 		tickedTime := <-ticker.C
 		timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
 		if timeDiffSec%int64(options.StoreInterval) == 0 {
-			fmt.Printf("Writing to file %s", path+options.StoreFile)
 			err := writer.WriteJson(handler.GetCurrentMetrics())
 			if err != nil {
 				metrics.ErrorLog.Printf("Error happened during saving metrics to JSON: %e", err)
@@ -82,7 +79,7 @@ func main() {
 	serverConfig := metrics.GetServerConfig()
 
 	metricsHandler, _ := GetMetricsHandler(serverConfig)
-	fmt.Println(serverConfig)
+
 	if serverConfig.Database != "" {
 		metricsHandler.InitDb()
 	}
