@@ -1,3 +1,6 @@
+// Анализатор для проекта Gowatcher. Использованы как стандартные,
+// так и несколько установленных извне, таких как ineffassign и errcheck,
+// а также был добавлен свой анализатор exitchecker.
 package main
 
 import (
@@ -57,7 +60,7 @@ func main() {
 	for _, v := range cfg.Staticcheck {
 		checks[v] = true
 	}
-	// добавляем анализаторы из staticcheck, которые указаны в файле конфигурации
+	// добавляем анализаторы из staticcheck, которые указаны в файле конфигурации.
 	for _, v := range staticcheck.Analyzers {
 		if checks[v.Analyzer.Name] {
 			mychecks = append(mychecks, v.Analyzer)
