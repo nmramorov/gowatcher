@@ -1,3 +1,5 @@
+// Модуль exitchecker проверяет не было ли вызовов функции os.Exit()
+// в функции "main" модуля "main" для каждого модуля проекта.
 package exitchecker
 
 import (
@@ -13,6 +15,9 @@ var OsExitAnalyzer = &analysis.Analyzer{
 	Run:  run,
 }
 
+// Сначала проверяем, что пакет называется "main", далее нужно проверить что
+// узел синтаксического дерева может быть приведен к типу SelectorExpr,
+// это необходимо для проверки модуля и функции os.Exit
 func run(pass *analysis.Pass) (interface{}, error) {
 	if strings.Compare(pass.Pkg.Name(), "main") == 0 {
 		for _, file := range pass.Files {
