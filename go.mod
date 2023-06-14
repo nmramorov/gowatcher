@@ -2,10 +2,7 @@ module github.com/nmramorov/gowatcher
 
 go 1.19
 
-require (
-	github.com/stretchr/testify v1.8.1
-	internal/metrics v0.0.0-00010101000000-000000000000
-)
+require github.com/stretchr/testify v1.8.1
 
 require (
 	github.com/caarlos0/env/v6 v6.10.1 // indirect
@@ -17,6 +14,7 @@ require (
 	github.com/jackc/pgx/v5 v5.2.0 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
+	github.com/mattn/go-sqlite3 v1.14.17 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/shirou/gopsutil/v3 v3.23.1 // indirect
@@ -29,5 +27,3 @@ require (
 	golang.org/x/text v0.3.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace internal/metrics => ./internal
