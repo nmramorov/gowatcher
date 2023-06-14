@@ -26,7 +26,7 @@ func GetMetricsHandler(options *config.ServerConfig) (*handlers.Handler, error) 
 		log.InfoLog.Println("Restoring configuration from file...")
 		reader, err := file.NewFileReader(path + options.StoreFile)
 		defer func() {
-			err := reader.Close()
+			err = reader.Close()
 			if err != nil {
 				log.ErrorLog.Printf("Error closing file during read operation: %e", err)
 			}
@@ -55,7 +55,7 @@ func StartSavingToDisk(options *config.ServerConfig, handler *handlers.Handler) 
 	}
 	writer, err := file.NewFileWriter(path + options.StoreFile)
 	defer func() {
-		err := writer.Close()
+		err = writer.Close()
 		if err != nil {
 			log.ErrorLog.Printf("Error closing file during write operation: %e", err)
 		}
@@ -87,10 +87,18 @@ func (s *Server) Run() {
 	metricsHandler, _ := GetMetricsHandler(serverConfig)
 
 	if serverConfig.Database != "" {
-		metricsHandler.InitDb()
+		err := metricsHandler.InitDb()
+		if err != nil {
+			log.ErrorLog.Printf("error initializing db: %e", err)
+		}
 	}
 	if serverConfig.StoreFile != "" {
-		go StartSavingToDisk(serverConfig, metricsHandler)
+		go func() {
+			err := StartSavingToDisk(serverConfig, metricsHandler)
+			if err != nil {
+				log.ErrorLog.Printf("error starting saving file to disk: %e", err)
+			}
+		}()
 		log.InfoLog.Println("Initialized file saving")
 	}
 
@@ -100,5 +108,8 @@ func (s *Server) Run() {
 	}
 
 	log.InfoLog.Println("Web server is ready to accept connections...")
-	server.ListenAndServe()
+	err := server.ListenAndServe()
+	if err != nil {
+		log.ErrorLog.Printf("Unexpected error occured: %e", err)
+	}
 }

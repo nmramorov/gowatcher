@@ -11,10 +11,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	
 
-	"github.com/nmramorov/gowatcher/internal/db"
 	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
+	"github.com/nmramorov/gowatcher/internal/db"
 	// "github.com/nmramorov/gowatcher/internal/log"
 )
 
@@ -356,7 +355,6 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 		})
 	}
 }
-
 
 // ToDO: Fix Example!
 // func Example() {

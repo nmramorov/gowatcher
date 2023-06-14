@@ -48,7 +48,10 @@ func NewCursor(link, adaptor string) (*Cursor, error) {
 }
 
 func (c *Cursor) Close() {
-	c.Db.Close()
+	err := c.Db.Close()
+	if err != nil {
+		log.ErrorLog.Printf("error closing db: %e", err)
+	}
 }
 
 func (c *Cursor) Ping() bool {
@@ -153,8 +156,18 @@ func (c *Cursor) Flush() error {
 	if err != nil {
 		return err
 	}
-	defer stmtGauge.Close()
-	defer stmtCounter.Close()
+	defer func() {
+		err = stmtGauge.Close()
+		if err != nil {
+			log.ErrorLog.Printf("error closing Gauge statement: %e", err)
+		}
+	}()
+	defer func() {
+		err = stmtCounter.Close()
+		if err != nil {
+			log.ErrorLog.Printf("error closing Counter statement: %e", err)
+		}
+	}()
 
 	for _, v := range c.buffer {
 		switch v.MType {

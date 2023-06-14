@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
 	col "github.com/nmramorov/gowatcher/internal/collector"
-	"github.com/nmramorov/gowatcher/internal/log"
-	"github.com/nmramorov/gowatcher/internal/hashgen"
+	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
 	"github.com/nmramorov/gowatcher/internal/config"
+	"github.com/nmramorov/gowatcher/internal/hashgen"
+	"github.com/nmramorov/gowatcher/internal/log"
 )
 
 func CreateRequests(endpoint string, mtrcs *m.Metrics) []*http.Request {
@@ -57,7 +57,10 @@ func createBatch(src *m.Metrics) []*m.JSONMetrics {
 func encodeBatch(batch []*m.JSONMetrics) *bytes.Buffer {
 	body := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(body)
-	encoder.Encode(&batch)
+	err := encoder.Encode(&batch)
+	if err != nil {
+		log.ErrorLog.Printf("Error during batch encoding: %e", err)
+	}
 	return body
 }
 
@@ -102,7 +105,10 @@ func createBody(metricType, path, key, secretkey string, value interface{}) *byt
 		toEncode.Delta = nil
 		toEncode.Value = nil
 	}
-	encoder.Encode(&toEncode)
+	err := encoder.Encode(&toEncode)
+	if err != nil {
+		log.ErrorLog.Printf("error encoding body: %e", err)
+	}
 	return body
 }
 
@@ -152,7 +158,12 @@ func PushMetrics(client *http.Client, endpoint string, mtrcs *m.Metrics, key str
 		if err != nil {
 			log.ErrorLog.Println(err)
 		}
-		defer resp.Body.Close()
+		defer func() {
+			err := resp.Body.Close()
+			if err != nil {
+				log.ErrorLog.Printf("error during response body close: %e", err)
+			}
+		}()
 	}
 }
 
@@ -167,7 +178,12 @@ func PushMetricsBatch(client *http.Client, endpoint string, mtrcs *m.Metrics) {
 	if err != nil {
 		log.ErrorLog.Println(err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			log.ErrorLog.Printf("error during response body close: %e", err)
+		}
+	}()
 }
 
 func GetMetricsValues(client *http.Client, endpoint, key string, mtrcs *m.Metrics) {
@@ -182,7 +198,12 @@ func GetMetricsValues(client *http.Client, endpoint, key string, mtrcs *m.Metric
 		if err != nil {
 			log.ErrorLog.Println(err)
 		}
-		defer resp.Body.Close()
+		defer func() {
+			err := resp.Body.Close()
+			if err != nil {
+				log.ErrorLog.Printf("error during response body close: %e", err)
+			}
+		}()
 	}
 }
 
@@ -247,7 +268,7 @@ func RunJob(job *Job, collector *col.Collector, client *http.Client, endpoint st
 	}
 }
 
-type Client struct {}
+type Client struct{}
 
 func (c *Client) Run() {
 	agentConfig := config.GetAgentConfig()
