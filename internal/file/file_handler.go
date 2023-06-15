@@ -29,7 +29,7 @@ func NewFileReader(fileName string) (*FileReader, error) {
 	}, nil
 }
 
-func (fr *FileReader) ReadJson() (*metrics.Metrics, error) {
+func (fr *FileReader) ReadJSON() (*metrics.Metrics, error) {
 	metric := &metrics.Metrics{}
 	if err := fr.decoder.Decode(&metric); err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func NewFileWriter(fileName string) (*FileWriter, error) {
 	}, nil
 }
 
-func (fw *FileWriter) WriteJson(metric *metrics.Metrics) error {
+func (fw *FileWriter) WriteJSON(metric *metrics.Metrics) error {
 	return fw.encoder.Encode(&metric)
 }
 func (fw *FileWriter) Close() error {

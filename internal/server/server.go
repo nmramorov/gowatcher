@@ -35,7 +35,7 @@ func GetMetricsHandler(options *config.ServerConfig) (*handlers.Handler, error) 
 			log.ErrorLog.Printf("Error happend creating File Reader: %e", err)
 			return nil, err
 		}
-		storedMetrics, err := reader.ReadJson()
+		storedMetrics, err := reader.ReadJSON()
 		if err != nil {
 			log.ErrorLog.Printf("Error happend during JSON reading: %e", err)
 			return handlers.NewHandler(options.Key, cursor), nil
@@ -70,7 +70,7 @@ func StartSavingToDisk(options *config.ServerConfig, handler *handlers.Handler) 
 		tickedTime := <-ticker.C
 		timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
 		if timeDiffSec%int64(options.StoreInterval) == 0 {
-			err := writer.WriteJson(handler.GetCurrentMetrics())
+			err := writer.WriteJSON(handler.GetCurrentMetrics())
 			if err != nil {
 				log.ErrorLog.Printf("Error happened during saving metrics to JSON: %e", err)
 			}
@@ -87,7 +87,7 @@ func (s *Server) Run() {
 	metricsHandler, _ := GetMetricsHandler(serverConfig)
 
 	if serverConfig.Database != "" {
-		err := metricsHandler.InitDb()
+		err := metricsHandler.InitDB()
 		if err != nil {
 			log.ErrorLog.Printf("error initializing db: %e", err)
 		}

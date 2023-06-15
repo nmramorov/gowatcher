@@ -1,4 +1,4 @@
-package cli_parser
+package cliparser
 
 import (
 	"flag"

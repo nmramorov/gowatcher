@@ -43,8 +43,8 @@ func TestFileReaderWriter(t *testing.T) {
 			panic(err)
 		}
 	}()
-	assert.NotPanics(t, func() { testWriter.WriteJson(&testMetric) })
-	jsonContent, err := testReader.ReadJson()
+	assert.NotPanics(t, func() { testWriter.WriteJSON(&testMetric) })
+	jsonContent, err := testReader.ReadJSON()
 	if err != nil {
 		panic(err)
 	}

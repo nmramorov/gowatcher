@@ -11,7 +11,7 @@ import (
 	"github.com/nmramorov/gowatcher/internal/log"
 )
 
-type DbInterface interface {
+type DBInterface interface {
 	InitDb() error
 	Add(*metrics.JSONMetrics) error
 	Get(string) (*metrics.JSONMetrics, error)
@@ -21,8 +21,8 @@ type DbInterface interface {
 }
 
 type Cursor struct {
-	DbInterface
-	Db      *sql.DB
+	DBInterface
+	DB      *sql.DB
 	Context context.Context
 	IsValid bool
 	buffer  []*metrics.JSONMetrics
@@ -35,7 +35,7 @@ func NewCursor(link, adaptor string) (*Cursor, error) {
 		return nil, err
 	}
 	new := &Cursor{
-		Db:      db,
+		DB:      db,
 		Context: context.Background(),
 		IsValid: true,
 		buffer:  make([]*metrics.JSONMetrics, 0, 100),
@@ -48,7 +48,7 @@ func NewCursor(link, adaptor string) (*Cursor, error) {
 }
 
 func (c *Cursor) Close() {
-	err := c.Db.Close()
+	err := c.DB.Close()
 	if err != nil {
 		log.ErrorLog.Printf("error closing db: %e", err)
 	}
@@ -57,21 +57,21 @@ func (c *Cursor) Close() {
 func (c *Cursor) Ping() bool {
 	ctx, cancel := context.WithTimeout(c.Context, 1*time.Second)
 	defer cancel()
-	if err := c.Db.PingContext(ctx); err != nil {
+	if err := c.DB.PingContext(ctx); err != nil {
 		log.ErrorLog.Printf("ping error, database unreachable?: %e", err)
 		return false
 	}
 	return true
 }
 
-func (c *Cursor) InitDb() error {
-	_, err := c.Db.Exec(CreateGaugeTable)
+func (c *Cursor) InitDB() error {
+	_, err := c.DB.Exec(CreateGaugeTable)
 	if err != nil {
 		log.ErrorLog.Printf("error creating gaugemetrics table %e", err)
 		return err
 	}
 	log.InfoLog.Println("gaugemetrics table was created")
-	_, err = c.Db.Exec(CreateCounterTable)
+	_, err = c.DB.Exec(CreateCounterTable)
 	if err != nil {
 		log.ErrorLog.Printf("error creating countermetrics table %e", err)
 		return err
@@ -84,12 +84,12 @@ func (c *Cursor) InitDb() error {
 func (c *Cursor) Add(incomingMetrics *metrics.JSONMetrics) error {
 	switch incomingMetrics.MType {
 	case "gauge":
-		if _, err := c.Db.ExecContext(c.Context, InsertIntoGauge, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Value); err != nil {
-			log.ErrorLog.Printf("error adding gauge row %s to db: %e", incomingMetrics.ID, err)
+		if _, err := c.DB.ExecContext(c.Context, InsertIntoGauge, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Value); err != nil {
+			log.ErrorLog.Printf("error adding gauge row %s to DB: %e", incomingMetrics.ID, err)
 			return err
 		}
 	case "counter":
-		if _, err := c.Db.ExecContext(c.Context, InsertIntoCounter, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Delta); err != nil {
+		if _, err := c.DB.ExecContext(c.Context, InsertIntoCounter, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Delta); err != nil {
 			log.ErrorLog.Printf("error adding counter row %s to db: %e", incomingMetrics.ID, err)
 			return err
 		}
@@ -103,7 +103,7 @@ func (c *Cursor) Get(metricToFind *metrics.JSONMetrics) (*metrics.JSONMetrics, e
 	var row *sql.Row
 	switch metricToFind.MType {
 	case "gauge":
-		if row = c.Db.QueryRowContext(c.Context, SelectFromGauge, metricToFind.ID); row.Err() != nil {
+		if row = c.DB.QueryRowContext(c.Context, SelectFromGauge, metricToFind.ID); row.Err() != nil {
 			log.ErrorLog.Printf("error getting gauge row %s to db: %e", metricToFind.ID, row.Err())
 			return nil, row.Err()
 		}
@@ -113,7 +113,7 @@ func (c *Cursor) Get(metricToFind *metrics.JSONMetrics) (*metrics.JSONMetrics, e
 			return nil, err
 		}
 	case "counter":
-		if row = c.Db.QueryRowContext(c.Context, SelectFromCounter, metricToFind.ID); row.Err() != nil {
+		if row = c.DB.QueryRowContext(c.Context, SelectFromCounter, metricToFind.ID); row.Err() != nil {
 			log.ErrorLog.Printf("error getting counter row %s to db: %e", metricToFind.ID, row.Err())
 			return nil, row.Err()
 		}
@@ -140,10 +140,10 @@ func (c *Cursor) AddBatch(metrics []*metrics.JSONMetrics) error {
 
 func (c *Cursor) Flush() error {
 	// проверим на всякий случай
-	if c.Db == nil {
+	if c.DB == nil {
 		log.ErrorLog.Printf("You haven`t opened the database connection")
 	}
-	tx, err := c.Db.Begin()
+	tx, err := c.DB.Begin()
 	if err != nil {
 		return err
 	}

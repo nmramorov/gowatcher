@@ -45,8 +45,8 @@ func NewHandler(key string, newCursor *db.Cursor) *Handler {
 	h.Get("/ping", h.HandlePing)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
-	h.Post("/update/", h.UpdateMetricsJson)
-	h.Post("/value/", h.GetMetricByJson)
+	h.Post("/update/", h.UpdateMetricsJSON)
+	h.Post("/value/", h.GetMetricByJSON)
 	h.Post("/updates/", h.UpdateJSONBatch)
 
 	return h
@@ -65,8 +65,8 @@ func NewHandlerFromSavedData(saved *m.Metrics, secretkey string, cursor *db.Curs
 	h.Get("/ping", h.HandlePing)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
 	h.Post("/update/{type}/{name}/{value}", h.UpdateMetric)
-	h.Post("/update/", h.UpdateMetricsJson)
-	h.Post("/value/", h.GetMetricByJson)
+	h.Post("/update/", h.UpdateMetricsJSON)
+	h.Post("/value/", h.GetMetricByJSON)
 	h.Post("/updates/", h.UpdateJSONBatch)
 
 	return h
@@ -102,7 +102,7 @@ func (h *Handler) getHash(metricData *m.JSONMetrics) string {
 }
 
 // Метод для обновления метрики, полученной в формате JSON.
-func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateMetricsJSON(rw http.ResponseWriter, r *http.Request) {
 	metricData := m.JSONMetrics{}
 	if err := json.NewDecoder(r.Body).Decode(&metricData); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
@@ -111,7 +111,7 @@ func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 	if h.secretkey != "" {
 		h.checkHash(rw, &metricData)
 	}
-	updatedData, err := h.collector.UpdateMetricFromJson(&metricData)
+	updatedData, err := h.collector.UpdateMetricFromJSON(&metricData)
 	if h.cursor.IsValid {
 		err = h.cursor.Add(updatedData)
 		if err != nil {
@@ -137,7 +137,7 @@ func (h *Handler) UpdateMetricsJson(rw http.ResponseWriter, r *http.Request) {
 
 // Метод, позволяющий получить требуемую метрику в формате JSON.
 // На вход требует JSON с заполненными полями id и mtype.
-func (h *Handler) GetMetricByJson(rw http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetMetricByJSON(rw http.ResponseWriter, r *http.Request) {
 	metricData := m.JSONMetrics{}
 	if err := json.NewDecoder(r.Body).Decode(&metricData); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
@@ -149,13 +149,13 @@ func (h *Handler) GetMetricByJson(rw http.ResponseWriter, r *http.Request) {
 		metric, err = h.cursor.Get(&metricData)
 		if err != nil {
 			log.ErrorLog.Println("could not get data from db...")
-			metric, err = h.collector.GetMetricJson(&metricData)
+			metric, err = h.collector.GetMetricJSON(&metricData)
 			if err != nil {
 				log.ErrorLog.Printf("Error occured during metric getting from json: %e", err)
 			}
 		}
 	} else {
-		metric, err = h.collector.GetMetricJson(&metricData)
+		metric, err = h.collector.GetMetricJSON(&metricData)
 		if err != nil {
 			log.ErrorLog.Printf("Error occured during metric getting from json: %e", err)
 		}
@@ -293,8 +293,8 @@ func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
 }
 
 // Метод, инициализирующий БД.
-func (h *Handler) InitDb() error {
-	return h.cursor.InitDb()
+func (h *Handler) InitDB() error {
+	return h.cursor.InitDB()
 }
 
 // Метод, позволяющий обновить несколько метрик за раз.

@@ -56,9 +56,6 @@ func TestStringFromCounter(t *testing.T) {
 		panic(1)
 	}
 	strPollCount := fmt.Sprint(pollCount)
-	if err != nil {
-		panic(1)
-	}
 	assert.Equal(t, strPollCount, "0")
 }
 
@@ -73,10 +70,10 @@ func TestStringFromGauge(t *testing.T) {
 }
 
 func TestUpdateBatch(t *testing.T) {
-	var newCollector = NewCollector()
-	var alloc float64 = 2.2
-	var pollCount int64 = 44444
-	var myVal float64 = 3333.3333
+	newCollector := NewCollector()
+	alloc := float64(2.2)
+	pollCount := int64(44444)
+	myVal := float64(3333.3333)
 	newCollector.UpdateMetrics()
 	toUpdate := []*metrics.JSONMetrics{
 		{

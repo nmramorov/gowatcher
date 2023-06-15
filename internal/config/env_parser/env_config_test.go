@@ -1,4 +1,4 @@
-package env_parser
+package envparser
 
 import (
 	"testing"

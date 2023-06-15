@@ -32,7 +32,7 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string) (int, s
 	return resp.StatusCode, string(respBody)
 }
 
-func testRequestJson(t *testing.T, ts *httptest.Server, method, path string, payload interface{}) (int, []byte) {
+func testRequestJSON(t *testing.T, ts *httptest.Server, method, path string, payload interface{}) (int, []byte) {
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
 	encoder.Encode(payload)
@@ -345,7 +345,7 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			urlPath := "/update/"
-			statusCode, body := testRequestJson(t, ts, "POST", urlPath, tt.args)
+			statusCode, body := testRequestJSON(t, ts, "POST", urlPath, tt.args)
 			assert.Equal(t, tt.want.code, statusCode)
 			result := m.JSONMetrics{}
 			if err := json.Unmarshal(body, &result); err != nil {
@@ -503,7 +503,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			urlPath := "/value/"
-			statusCode, body := testRequestJson(t, ts, "POST", urlPath, tt.args)
+			statusCode, body := testRequestJSON(t, ts, "POST", urlPath, tt.args)
 			assert.Equal(t, tt.want.code, statusCode)
 			result := m.JSONMetrics{}
 			if err := json.Unmarshal(body, &result); err != nil {

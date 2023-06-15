@@ -79,7 +79,7 @@ func (col *Collector) String(value interface{}) (string, error) {
 	}
 }
 
-func (col *Collector) UpdateMetricFromJson(newMetric *m.JSONMetrics) (*m.JSONMetrics, error) {
+func (col *Collector) UpdateMetricFromJSON(newMetric *m.JSONMetrics) (*m.JSONMetrics, error) {
 	col.mu.Lock()
 	defer col.mu.Unlock()
 	result := m.JSONMetrics{}
@@ -101,7 +101,7 @@ func (col *Collector) UpdateMetricFromJson(newMetric *m.JSONMetrics) (*m.JSONMet
 	return &result, nil
 }
 
-func (col *Collector) GetMetricJson(requestedMetric *m.JSONMetrics) (*m.JSONMetrics, error) {
+func (col *Collector) GetMetricJSON(requestedMetric *m.JSONMetrics) (*m.JSONMetrics, error) {
 	result := m.JSONMetrics{}
 	switch requestedMetric.MType {
 	case "gauge":
@@ -122,7 +122,7 @@ func (col *Collector) GetMetricJson(requestedMetric *m.JSONMetrics) (*m.JSONMetr
 
 func (col *Collector) UpdateBatch(metrics []*m.JSONMetrics) error {
 	for _, metric := range metrics {
-		_, err := col.UpdateMetricFromJson(metric)
+		_, err := col.UpdateMetricFromJSON(metric)
 		if err != nil {
 			log.ErrorLog.Printf("could not update metric as batch part: %e", err)
 			return err
