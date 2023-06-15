@@ -1,0 +1,10 @@
+name: "go formatting"
+on: ["push", "pull_request"]
+
+jobs:
+  ci:
+	name: "Run gofmt check"
+	runs-on: ubuntu-latest
+	steps:
+	- name: Check code formatting using gofmt
+    uses: Jerome1337/gofmt-action@v1.0.5
