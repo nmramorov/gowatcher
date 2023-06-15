@@ -1,10 +1,16 @@
-name: "go formatting"
-on: ["push", "pull_request"]
+name: go format
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
-  ci:
-	name: "Run gofmt check"
-	runs-on: ubuntu-latest
-	steps:
-	- name: Check code formatting using gofmt
-    uses: Jerome1337/gofmt-action@v1.0.5
+
+  statictest:
+    runs-on: ubuntu-latest
+    container: golang:1.19
+    steps:
+      - name: Check code formatting using gofmt
+        uses: Jerome1337/gofmt-action@v1.0.5
