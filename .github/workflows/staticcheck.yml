@@ -12,6 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     container: golang:1.19
     steps:
-      - uses: dominikh/staticcheck-action@v1.2.0
-        with:
-        version: "2022.1.1"
+      - name: Staticcheck run for golang code
+        uses: dominikh/staticcheck-action@v1.2.0
+
