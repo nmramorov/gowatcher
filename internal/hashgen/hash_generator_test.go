@@ -43,7 +43,7 @@ func TestHashGenerator(t *testing.T) {
 			},
 		},
 	}
-	generator := HashGenerator{}
+	generator := NewHashGenerator("")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			generatedHash := generator.GenerateHash(tt.args.metricType, tt.args.id, tt.args.value)

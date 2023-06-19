@@ -56,6 +56,7 @@ func NewFileWriter(fileName string) (*FileWriter, error) {
 func (fw *FileWriter) WriteJSON(metric *metrics.Metrics) error {
 	return fw.encoder.Encode(&metric)
 }
+
 func (fw *FileWriter) Close() error {
 	return fw.file.Close()
 }
