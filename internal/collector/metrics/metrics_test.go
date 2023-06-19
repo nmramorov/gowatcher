@@ -1,49 +1,63 @@
 package metrics
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMetrics(t *testing.T) {
-	var tests = []struct {
-		name  string
-		value Gauge
-	}{
-		{name: "Alloc", value: 0.0},
-		{name: "BuckHashSys", value: 0.0},
-		{name: "Frees", value: 0.0},
-		{name: "GCCPUFraction", value: 0.0},
-		{name: "GCSys", value: 0.0},
-		{name: "HeapAlloc", value: 0.0},
-		{name: "HeapIdle", value: 0.0},
-		{name: "HeapInuse", value: 0.0},
-		{name: "HeapInuse", value: 0.0},
-		{name: "HeapObjects", value: 0.0},
-		{name: "HeapReleased", value: 0.0},
-		{name: "HeapSys", value: 0.0},
-		{name: "LastGC", value: 0.0},
-		{name: "Lookups", value: 0.0},
-		{name: "MCacheInuse", value: 0.0},
-		{name: "MCacheSys", value: 0.0},
-		{name: "MSpanInuse", value: 0.0},
-		{name: "MSpanSys", value: 0.0},
-		{name: "Mallocs", value: 0.0},
-		{name: "NextGC", value: 0.0},
-		{name: "NumForcedGC", value: 0.0},
-		{name: "NumGC", value: 0.0},
-		{name: "OtherSys", value: 0.0},
-		{name: "PauseTotalNs", value: 0.0},
-		{name: "StackInuse", value: 0.0},
-		{name: "StackSys", value: 0.0},
-		{name: "Sys", value: 0.0},
-		{name: "TotalAlloc", value: 0.0},
+func TestNewMetrics(t *testing.T) {
+	newMetr := NewMetrics()
+	for key, metric := range newMetr.GaugeMetrics {
+		if strings.Compare(key, "RandomValue") == 0 {
+			assert.InDelta(t, 0.0, float64(metric), 1.0)
+		} else {
+			assert.Equal(t, metric, Gauge(0.0))
+		}
 	}
-
-	gaugeMetrics := Metrics{}.GaugeMetrics
-
-	for _, v := range tests {
-		assert.Equal(t, gaugeMetrics[v.name], v.value)
+	for _, metric := range newMetr.CounterMetrics {
+		assert.Equal(t, metric, Counter(0))
 	}
+}
+
+func TestUpdateMetrics(t *testing.T) {
+	m := GetMemStats()
+	updatedMetrics := UpdateMetrics(m, 1)
+	assert.Equal(t, Counter(1), updatedMetrics.CounterMetrics["PollCount"])
+
+	expectedRes := map[string]Gauge{
+		"Alloc":         Gauge(m.Alloc),
+		"BuckHashSys":   Gauge(m.BuckHashSys),
+		"Frees":         Gauge(m.Frees),
+		"GCCPUFraction": Gauge(m.GCCPUFraction),
+		"GCSys":         Gauge(m.GCSys),
+		"HeapAlloc":     Gauge(m.HeapAlloc),
+		"HeapIdle":      Gauge(m.HeapIdle),
+		"HeapInuse":     Gauge(m.HeapInuse),
+		"HeapObjects":   Gauge(m.HeapObjects),
+		"HeapReleased":  Gauge(m.HeapReleased),
+		"HeapSys":       Gauge(m.HeapSys),
+		"LastGC":        Gauge(m.LastGC),
+		"Lookups":       Gauge(m.Lookups),
+		"MCacheInuse":   Gauge(m.MCacheInuse),
+		"MCacheSys":     Gauge(m.MCacheSys),
+		"MSpanInuse":    Gauge(m.MSpanInuse),
+		"MSpanSys":      Gauge(m.MSpanSys),
+		"Mallocs":       Gauge(m.Mallocs),
+		"NextGC":        Gauge(m.NextGC),
+		"NumForcedGC":   Gauge(m.NumForcedGC),
+		"NumGC":         Gauge(m.NumGC),
+		"OtherSys":      Gauge(m.OtherSys),
+		"PauseTotalNs":  Gauge(m.PauseTotalNs),
+		"StackInuse":    Gauge(m.StackInuse),
+		"StackSys":      Gauge(m.StackSys),
+		"Sys":           Gauge(m.Sys),
+		"TotalAlloc":    Gauge(m.TotalAlloc),
+	}
+	// Iterating over Gauge metrics because there is "RandomValue" metric
+	for k, v := range expectedRes {
+		assert.Equal(t, v, updatedMetrics.GaugeMetrics[k])
+	}
+	assert.InDelta(t, 0.0, float64(updatedMetrics.GaugeMetrics["RandomValue"]), 1.0)
 }
