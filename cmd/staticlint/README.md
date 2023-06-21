@@ -2,4 +2,4 @@
 
 # Запуск
 
-Выполните команду `chmod -755 run_checker.sh && ./run_checker.sh`
+Выполните команду из корня `chmod 755 ./cmd/staticlint/run_checker.sh && ./cmd/staticlint/run_checker.sh`
