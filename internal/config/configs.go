@@ -6,6 +6,8 @@ import (
 	"github.com/nmramorov/gowatcher/internal/log"
 )
 
+var DEFAULT = "default"
+
 type ServerConfig struct {
 	Address       string
 	Restore       bool
@@ -27,14 +29,14 @@ func checkServerConfig(envs *env.ServerEnvConfig, clies *cli.ServerCLIOptions) *
 	if envs.Address != env.Address && envs.Address != addr {
 		addr = envs.Address
 	}
-	if envs.Restore != "default" && envs.Restore != "" {
+	if envs.Restore != env.Restore && envs.Restore != "" {
 		if envs.Restore == "true" {
 			rest = true
 		} else {
 			rest = false
 		}
 	}
-	if envs.Restore == "default" && cliRest != "default" {
+	if envs.Restore == env.Restore && cliRest != DEFAULT {
 		if cliRest == "true" {
 			rest = true
 		} else {

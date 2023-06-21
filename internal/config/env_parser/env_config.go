@@ -153,8 +153,7 @@ func (e *AgentEnvConfig) GetNumericInterval(intervalName string) int64 {
 }
 
 func (e *ServerEnvConfig) GetNumericInterval(intervalName string) int64 {
-	switch intervalName {
-	case "StoreInterval":
+	if intervalName == "StoreInterval" {
 		multiplier := getMultiplier(e.StoreInterval)
 		stringValue := strings.Split(e.StoreInterval, e.StoreInterval[len(e.StoreInterval)-1:])[0]
 		value, _ := strconv.ParseInt(stringValue, 10, 64)

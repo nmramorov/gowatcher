@@ -23,7 +23,7 @@ func TestNewMetrics(t *testing.T) {
 
 func TestUpdateMetrics(t *testing.T) {
 	m := GetMemStats()
-	updatedMetrics := UpdateMetrics(m, 1)
+	updatedMetrics := UpdateMetrics(&m, 1)
 	assert.Equal(t, Counter(1), updatedMetrics.CounterMetrics["PollCount"])
 
 	expectedRes := map[string]Gauge{

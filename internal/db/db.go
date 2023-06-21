@@ -5,10 +5,15 @@ import (
 	"database/sql"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib" //required import for pgx
+	_ "github.com/jackc/pgx/v5/stdlib" // required import for pgx
 
 	"github.com/nmramorov/gowatcher/internal/collector/metrics"
 	"github.com/nmramorov/gowatcher/internal/log"
+)
+
+var (
+	GAUGE   = "gauge"
+	COUNTER = "counter"
 )
 
 type DatabaseAccess interface {
@@ -34,17 +39,17 @@ func NewCursor(link, adaptor string) (*Cursor, error) {
 		log.ErrorLog.Printf("Unable to connect to database: %v\n", err)
 		return nil, err
 	}
-	new := &Cursor{
+	cursor := &Cursor{
 		DB:      db,
 		Context: context.Background(),
 		IsValid: true,
 		buffer:  make([]*metrics.JSONMetrics, 0, 100),
 	}
-	valid := new.Ping()
+	valid := cursor.Ping()
 	if !valid {
-		new.IsValid = false
+		cursor.IsValid = false
 	}
-	return new, nil
+	return cursor, nil
 }
 
 func (c *Cursor) Close() {
@@ -83,13 +88,15 @@ func (c *Cursor) InitDB() error {
 
 func (c *Cursor) Add(incomingMetrics *metrics.JSONMetrics) error {
 	switch incomingMetrics.MType {
-	case "gauge":
-		if _, err := c.DB.ExecContext(c.Context, InsertIntoGauge, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Value); err != nil {
+	case GAUGE:
+		if _, err := c.DB.ExecContext(
+			c.Context, InsertIntoGauge, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Value); err != nil {
 			log.ErrorLog.Printf("error adding gauge row %s to DB: %e", incomingMetrics.ID, err)
 			return err
 		}
-	case "counter":
-		if _, err := c.DB.ExecContext(c.Context, InsertIntoCounter, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Delta); err != nil {
+	case COUNTER:
+		if _, err := c.DB.ExecContext(
+			c.Context, InsertIntoCounter, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Delta); err != nil {
 			log.ErrorLog.Printf("error adding counter row %s to db: %e", incomingMetrics.ID, err)
 			return err
 		}
@@ -102,7 +109,7 @@ func (c *Cursor) Get(metricToFind *metrics.JSONMetrics) (*metrics.JSONMetrics, e
 	foundMetric := &metrics.JSONMetrics{}
 	var row *sql.Row
 	switch metricToFind.MType {
-	case "gauge":
+	case GAUGE:
 		if row = c.DB.QueryRowContext(c.Context, SelectFromGauge, metricToFind.ID); row.Err() != nil {
 			log.ErrorLog.Printf("error getting gauge row %s to db: %e", metricToFind.ID, row.Err())
 			return nil, row.Err()
@@ -112,7 +119,7 @@ func (c *Cursor) Get(metricToFind *metrics.JSONMetrics) (*metrics.JSONMetrics, e
 			log.ErrorLog.Printf("error scanning gauge %s: %e", metricToFind.ID, err)
 			return nil, err
 		}
-	case "counter":
+	case COUNTER:
 		if row = c.DB.QueryRowContext(c.Context, SelectFromCounter, metricToFind.ID); row.Err() != nil {
 			log.ErrorLog.Printf("error getting counter row %s to db: %e", metricToFind.ID, row.Err())
 			return nil, row.Err()
@@ -171,14 +178,14 @@ func (c *Cursor) Flush() error {
 
 	for _, v := range c.buffer {
 		switch v.MType {
-		case "gauge":
+		case GAUGE:
 			if _, err = stmtGauge.Exec(v.ID, v.MType, v.Value); err != nil {
 				if err = tx.Rollback(); err != nil {
 					log.ErrorLog.Fatalf("update drivers: unable to rollback: %v", err)
 				}
 				return err
 			}
-		case "counter":
+		case COUNTER:
 			if _, err = stmtCounter.Exec(v.ID, v.MType, v.Delta); err != nil {
 				if err = tx.Rollback(); err != nil {
 					log.ErrorLog.Fatalf("update drivers: unable to rollback: %v", err)

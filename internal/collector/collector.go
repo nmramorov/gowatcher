@@ -16,7 +16,7 @@ import (
 )
 
 type Collector struct {
-	m.MetricsCollector
+	m.Collector
 	Metrics *m.Metrics
 	Updates int
 	mu      sync.Mutex
@@ -46,7 +46,7 @@ func (col *Collector) UpdateMetrics() {
 	runtime.ReadMemStats(&newstats)
 
 	col.Updates++
-	col.Metrics = m.UpdateMetrics(newstats, col.Updates)
+	col.Metrics = m.UpdateMetrics(&newstats, col.Updates)
 }
 
 func (col *Collector) GetMetrics() *m.Metrics {
@@ -89,8 +89,7 @@ func (col *Collector) UpdateMetricFromJSON(newMetric *m.JSONMetrics) (*m.JSONMet
 		val := col.Metrics.GaugeMetrics[newMetric.ID]
 		result.Value = (*float64)(&val)
 	case "counter":
-
-		col.Metrics.CounterMetrics[newMetric.ID] = col.Metrics.CounterMetrics[newMetric.ID] + m.Counter(*newMetric.Delta)
+		col.Metrics.CounterMetrics[newMetric.ID] += m.Counter(*newMetric.Delta)
 		delta := col.Metrics.CounterMetrics[newMetric.ID]
 		result.Delta = (*int64)(&delta)
 	default:

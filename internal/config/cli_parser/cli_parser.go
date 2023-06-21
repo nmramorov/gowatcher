@@ -24,8 +24,7 @@ type AgentCLIOptions struct {
 }
 
 func (scli *ServerCLIOptions) GetNumericInterval(intervalName string) int64 {
-	switch intervalName {
-	case "StoreInterval":
+	if intervalName == "StoreInterval" {
 		multiplier := getMultiplier(scli.StoreInterval)
 		stringValue := strings.Split(scli.StoreInterval, scli.StoreInterval[len(scli.StoreInterval)-1:])[0]
 		value, _ := strconv.ParseInt(stringValue, 10, 64)

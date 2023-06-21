@@ -24,7 +24,7 @@ type JSONMetrics struct {
 }
 
 // Интерфейс, используемый для работы с метриками: обновление, чтение и строковая репрезентация.
-type MetricsCollector interface {
+type Collector interface {
 	String()
 	UpdateMetrics()
 	GetMetrics() Metrics
@@ -32,7 +32,7 @@ type MetricsCollector interface {
 }
 
 // Метод обновления метрик.
-func UpdateMetrics(m runtime.MemStats, counter int) *Metrics {
+func UpdateMetrics(m *runtime.MemStats, counter int) *Metrics {
 	return &Metrics{
 		GaugeMetrics: map[string]Gauge{
 			"Alloc":         Gauge(m.Alloc),
@@ -62,7 +62,7 @@ func UpdateMetrics(m runtime.MemStats, counter int) *Metrics {
 			"StackSys":      Gauge(m.StackSys),
 			"Sys":           Gauge(m.Sys),
 			"TotalAlloc":    Gauge(m.TotalAlloc),
-			"RandomValue":   Gauge(rand.Float64()),
+			"RandomValue":   Gauge(rand.Float64()), //nolint:gosec
 		},
 		CounterMetrics: map[string]Counter{
 			"PollCount": Counter(counter),
@@ -101,7 +101,7 @@ func NewMetrics() *Metrics {
 			"StackSys":        Gauge(0.0),
 			"Sys":             Gauge(0.0),
 			"TotalAlloc":      Gauge(0.0),
-			"RandomValue":     Gauge(rand.Float64()),
+			"RandomValue":     Gauge(rand.Float64()), //nolint:gosec
 			"TotalMemory":     Gauge(0),
 			"FreeMemory":      Gauge(0),
 			"CPUutilization1": Gauge(0),

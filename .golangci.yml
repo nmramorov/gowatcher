@@ -73,9 +73,9 @@ linters-settings:
     local-prefixes: github.com/nmramorov/gowatcher/
   goconst:
     # minimal length of string constant, 3 by default
-    min-len: 2
+    min-len: 3
     # minimal occurrences count to trigger, 3 by default
-    min-occurrences: 2
+    min-occurrences: 4
   fieldalignment:
     # print struct with more effective memory layout or not, false by default
     suggest-new: true
@@ -333,3 +333,6 @@ issues:
         - unused
         - unparam
         - gocritic
+    - path: cmd/staticlint/exitchecker/checker.go
+      linters:
+        - nestif

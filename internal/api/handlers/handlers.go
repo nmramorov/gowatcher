@@ -12,7 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	_ "net/http/pprof"
+	_ "net/http/pprof" //nolint:gosec
 
 	middleware "github.com/nmramorov/gowatcher/internal/api/middlewares"
 	val "github.com/nmramorov/gowatcher/internal/api/validators"
@@ -21,6 +21,11 @@ import (
 	"github.com/nmramorov/gowatcher/internal/db"
 	"github.com/nmramorov/gowatcher/internal/hashgen"
 	"github.com/nmramorov/gowatcher/internal/log"
+)
+
+var (
+	GAUGE   = "gauge"
+	COUNTER = "counter"
 )
 
 // Базовый тип Handler, отвечающий за обработку запросов.
@@ -75,9 +80,9 @@ func (h *Handler) checkHash(rw http.ResponseWriter, metricData *m.JSONMetrics) {
 	var hash string
 	generator := hashgen.NewHashGenerator(h.secretkey)
 	switch metricData.MType {
-	case "gauge":
+	case GAUGE:
 		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Value)
-	case "counter":
+	case COUNTER:
 		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Delta)
 	}
 	d, _ := hex.DecodeString(hash)
@@ -92,9 +97,9 @@ func (h *Handler) getHash(metricData *m.JSONMetrics) string {
 	var hash string
 	generator := hashgen.NewHashGenerator(h.secretkey)
 	switch metricData.MType {
-	case "gauge":
+	case GAUGE:
 		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Value)
-	case "counter":
+	case COUNTER:
 		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Delta)
 	}
 	return hash
@@ -148,12 +153,8 @@ func (h *Handler) GetMetricByJSON(rw http.ResponseWriter, r *http.Request) {
 		metric, err = h.cursor.Get(&metricData)
 		if err != nil {
 			log.ErrorLog.Println("could not get data from db...")
-			// metric, err = h.collector.GetMetricJSON(&metricData)
-			// if err != nil {
-			// 	log.ErrorLog.Printf("Error occurred during metric getting from json: %e", err)
-			// }
 		}
-	} 
+	}
 	if metric == nil {
 		metric, err = h.collector.GetMetricJSON(&metricData)
 		if err != nil {
@@ -188,11 +189,13 @@ func (h *Handler) GetMetricByTypeAndName(rw http.ResponseWriter, r *http.Request
 		if err != nil {
 			log.ErrorLog.Fatalf("No such metric %s of type %s: %e", metricName, metricType, err)
 			http.Error(rw, "Metric not found", http.StatusNotFound)
+			return
 		}
 		payload, err := h.collector.String(metric)
 		if err != nil {
 			log.ErrorLog.Fatalf("Encoding error with metric %s of type %s: %e", metricName, metricType, err)
 			http.Error(rw, "Decoding error", http.StatusInternalServerError)
+			return
 		}
 
 		_, err = rw.Write([]byte(payload))
