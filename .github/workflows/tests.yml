@@ -1,0 +1,23 @@
+name: tests
+on:
+  push:
+    branches:
+      - master
+      - release-*
+  pull_request:
+  workflow_dispatch:
+jobs:
+  unit:
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Install Go
+        uses: actions/setup-go@v3
+      - name: Test
+        run: go test -race -coverprofile unit.txt -covermode atomic ./...
+      - name: Upload coverage report to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./unit.txt
+          flags: unit
+          name: unit
