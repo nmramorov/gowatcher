@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/nmramorov/gowatcher/internal/collector/metrics"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFileReaderWriter(t *testing.T) {
@@ -24,25 +24,27 @@ func TestFileReaderWriter(t *testing.T) {
 		}
 	}()
 	testWriter, err := NewFileWriter(filename)
-	defer func() {
-		err := testWriter.Close()
-		if err != nil {
-			panic(err)
-		}
-	}()
 	if err != nil {
 		panic(err)
 	}
+	defer func(writer FileWriter) {
+		err := writer.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(*testWriter)
+
 	testReader, err := NewFileReader(filename)
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		err := testReader.Close()
+	defer func(reader FileReader) {
+		err := reader.Close()
 		if err != nil {
 			panic(err)
 		}
-	}()
+	}(*testReader)
+
 	assert.NotPanics(t, func() { testWriter.WriteJSON(&testMetric) })
 	jsonContent, err := testReader.ReadJSON()
 	if err != nil {
