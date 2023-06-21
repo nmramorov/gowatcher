@@ -154,7 +154,7 @@ func (h *Handler) GetMetricByJSON(rw http.ResponseWriter, r *http.Request) {
 			// }
 		}
 	} 
-	if metric != nil {
+	if metric == nil {
 		metric, err = h.collector.GetMetricJSON(&metricData)
 		if err != nil {
 			log.ErrorLog.Printf("Error occurred during metric getting from json: %e", err)
