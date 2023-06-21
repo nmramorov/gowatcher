@@ -8,28 +8,28 @@ import (
 	"github.com/nmramorov/gowatcher/internal/log"
 )
 
-type FileReader struct {
+type Reader struct {
 	file    *os.File
 	decoder *json.Decoder
 }
 
-type FileWriter struct {
+type Writer struct {
 	file    *os.File
 	encoder *json.Encoder
 }
 
-func NewFileReader(fileName string) (*FileReader, error) {
+func NewReader(fileName string) (*Reader, error) {
 	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0o777)
 	if err != nil {
 		return nil, err
 	}
-	return &FileReader{
+	return &Reader{
 		file:    file,
 		decoder: json.NewDecoder(file),
 	}, nil
 }
 
-func (fr *FileReader) ReadJSON() (*metrics.Metrics, error) {
+func (fr *Reader) ReadJSON() (*metrics.Metrics, error) {
 	metric := &metrics.Metrics{}
 	if err := fr.decoder.Decode(&metric); err != nil {
 		return nil, err
@@ -38,25 +38,25 @@ func (fr *FileReader) ReadJSON() (*metrics.Metrics, error) {
 	return metric, nil
 }
 
-func (fr *FileReader) Close() error {
+func (fr *Reader) Close() error {
 	return fr.file.Close()
 }
 
-func NewFileWriter(fileName string) (*FileWriter, error) {
+func NewWriter(fileName string) (*Writer, error) {
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0o777)
 	if err != nil {
 		return nil, err
 	}
-	return &FileWriter{
+	return &Writer{
 		file:    file,
 		encoder: json.NewEncoder(file),
 	}, nil
 }
 
-func (fw *FileWriter) WriteJSON(metric *metrics.Metrics) error {
+func (fw *Writer) WriteJSON(metric *metrics.Metrics) error {
 	return fw.encoder.Encode(&metric)
 }
 
-func (fw *FileWriter) Close() error {
+func (fw *Writer) Close() error {
 	return fw.file.Close()
 }

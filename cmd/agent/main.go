@@ -7,9 +7,9 @@ import (
 )
 
 var (
-	BuildVersion string = "N/A"
-	BuildDate    string = "N/A"
-	BuildCommit  string = "N/A"
+	BuildVersion = "N/A"
+	BuildDate    = "N/A"
+	BuildCommit  = "N/A"
 )
 
 func printBuildInfo() {

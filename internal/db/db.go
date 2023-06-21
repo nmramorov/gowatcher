@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib" //required import for pgx
 
 	"github.com/nmramorov/gowatcher/internal/collector/metrics"
 	"github.com/nmramorov/gowatcher/internal/log"
 )
 
-type DBInterface interface {
+type DatabaseAccess interface {
 	InitDb() error
 	Add(*metrics.JSONMetrics) error
 	Get(string) (*metrics.JSONMetrics, error)
@@ -21,7 +21,7 @@ type DBInterface interface {
 }
 
 type Cursor struct {
-	DBInterface
+	DatabaseAccess
 	DB      *sql.DB
 	Context context.Context
 	IsValid bool

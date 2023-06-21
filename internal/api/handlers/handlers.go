@@ -118,7 +118,7 @@ func (h *Handler) UpdateMetricsJSON(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err != nil {
-		log.ErrorLog.Printf("Error occured during metric update from json: %e", err)
+		log.ErrorLog.Printf("Error occurred during metric update from json: %e", err)
 	}
 	updatedData.Hash = h.getHash(updatedData)
 	buf := bytes.NewBuffer([]byte{})
@@ -148,15 +148,16 @@ func (h *Handler) GetMetricByJSON(rw http.ResponseWriter, r *http.Request) {
 		metric, err = h.cursor.Get(&metricData)
 		if err != nil {
 			log.ErrorLog.Println("could not get data from db...")
-			metric, err = h.collector.GetMetricJSON(&metricData)
-			if err != nil {
-				log.ErrorLog.Printf("Error occured during metric getting from json: %e", err)
-			}
+			// metric, err = h.collector.GetMetricJSON(&metricData)
+			// if err != nil {
+			// 	log.ErrorLog.Printf("Error occurred during metric getting from json: %e", err)
+			// }
 		}
-	} else {
+	} 
+	if metric != nil {
 		metric, err = h.collector.GetMetricJSON(&metricData)
 		if err != nil {
-			log.ErrorLog.Printf("Error occured during metric getting from json: %e", err)
+			log.ErrorLog.Printf("Error occurred during metric getting from json: %e", err)
 		}
 	}
 	var hash string
@@ -227,7 +228,6 @@ func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	metricType, metricName, metricValue := args[2], args[3], args[4]
-	log.InfoLog.Printf("Received metric data:\nMetric type: %s\nMetric name: %s\nMetric value: %s", metricType, metricName, metricValue)
 	switch metricType {
 	case "gauge":
 		newMetricValue, err := strconv.ParseFloat(metricValue, 64)
@@ -314,7 +314,7 @@ func (h *Handler) UpdateJSONBatch(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err != nil {
-		log.ErrorLog.Printf("Error occured during metric update from json: %e", err)
+		log.ErrorLog.Printf("Error occurred during metric update from json: %e", err)
 	}
 	log.InfoLog.Println("received and worker with metrics batch")
 	_, err = rw.Write([]byte(`{"status":"ok"}`))

@@ -24,7 +24,7 @@ func GetMetricsHandler(options *config.ServerConfig) (*handlers.Handler, error) 
 	}
 	if options.Restore {
 		log.InfoLog.Println("Restoring configuration from file...")
-		reader, err := file.NewFileReader(path + options.StoreFile)
+		reader, err := file.NewReader(path + options.StoreFile)
 		defer func() {
 			err = reader.Close()
 			if err != nil {
@@ -32,12 +32,12 @@ func GetMetricsHandler(options *config.ServerConfig) (*handlers.Handler, error) 
 			}
 		}()
 		if err != nil {
-			log.ErrorLog.Printf("Error happend creating File Reader: %e", err)
+			log.ErrorLog.Printf("Error happened creating File Reader: %e", err)
 			return nil, err
 		}
 		storedMetrics, err := reader.ReadJSON()
 		if err != nil {
-			log.ErrorLog.Printf("Error happend during JSON reading: %e", err)
+			log.ErrorLog.Printf("Error happened during JSON reading: %e", err)
 			return handlers.NewHandler(options.Key, cursor), nil
 		}
 		metricsHandler := handlers.NewHandlerFromSavedData(storedMetrics, options.Key, cursor)
@@ -53,7 +53,7 @@ func StartSavingToDisk(options *config.ServerConfig, handler *handlers.Handler) 
 		log.ErrorLog.Printf("no file to save exist: %e", err)
 		return err
 	}
-	writer, err := file.NewFileWriter(path + options.StoreFile)
+	writer, err := file.NewWriter(path + options.StoreFile)
 	defer func() {
 		err = writer.Close()
 		if err != nil {
@@ -81,6 +81,8 @@ func StartSavingToDisk(options *config.ServerConfig, handler *handlers.Handler) 
 
 type Server struct{}
 
+var ServerReadHeaderTimeout = 10
+
 func (s *Server) Run() {
 	serverConfig := config.GetServerConfig()
 
@@ -103,13 +105,14 @@ func (s *Server) Run() {
 	}
 
 	server := &http.Server{
-		Addr:    serverConfig.Address,
-		Handler: metricsHandler,
+		Addr:              serverConfig.Address,
+		Handler:           metricsHandler,
+		ReadHeaderTimeout: time.Duration(ServerReadHeaderTimeout) * time.Second,
 	}
 
 	log.InfoLog.Println("Web server is ready to accept connections...")
 	err := server.ListenAndServe()
 	if err != nil {
-		log.ErrorLog.Printf("Unexpected error occured: %e", err)
+		log.ErrorLog.Printf("Unexpected error occurred: %e", err)
 	}
 }
