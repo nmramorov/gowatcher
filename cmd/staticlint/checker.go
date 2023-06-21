@@ -23,8 +23,10 @@ import (
 
 // Config — имя файла конфигурации.
 // Path - путь к файлу конфигурации в проекте.
-const Config = `config.json`
-const Path = `/cmd/staticlint`
+const (
+	Config = `config.json`
+	Path   = `/cmd/staticlint`
+)
 
 // ConfigData описывает структуру файла конфигурации.
 type ConfigData struct {

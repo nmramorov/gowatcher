@@ -28,12 +28,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 							pass.Reportf(x.Pos(), "os.Exit used in main!!!")
 						}
 					}
-
 				}
 				return true
 			})
 		}
-
 	}
 	return nil, nil
 }

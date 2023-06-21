@@ -11,12 +11,12 @@ import (
 // ToDO!!! Make CLI tests great agent
 func TestServerCLI(t *testing.T) {
 	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd"}
-	var address = flag.String("a", "localhost:8080", "server address")
-	var restore = flag.String("r", "default", "restore metrics from file")
-	var storeInterval = flag.String("i", "300s", "period between file save")
-	var storeFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
-	var key = flag.String("k", "", "key to calculate hash")
-	var database = flag.String("d", "", "database link")
+	address := flag.String("a", "localhost:8080", "server address")
+	restore := flag.String("r", "default", "restore metrics from file")
+	storeInterval := flag.String("i", "300s", "period between file save")
+	storeFile := flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
+	key := flag.String("k", "", "key to calculate hash")
+	database := flag.String("d", "", "database link")
 	flag.Parse()
 
 	args := &ServerCLIOptions{

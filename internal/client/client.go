@@ -233,7 +233,7 @@ func RunTickers(agentConfig *config.AgentConfig, jobCh chan<- *Job) {
 func RunConcurrently(config *config.AgentConfig, client *http.Client, endpoint string) {
 	jobCh := make(chan *Job, config.RateLimit)
 
-	var collector = col.NewCollector()
+	collector := col.NewCollector()
 	go func() {
 		RunTickers(config, jobCh)
 	}()
@@ -242,7 +242,6 @@ func RunConcurrently(config *config.AgentConfig, client *http.Client, endpoint s
 		log.InfoLog.Printf("Running job %s", job.RequestType)
 		RunJob(job, collector, client, endpoint, config)
 	}
-
 }
 
 func RunJob(job *Job, collector *col.Collector, client *http.Client, endpoint string, agentConfig *config.AgentConfig) {

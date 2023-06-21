@@ -11,12 +11,12 @@ import (
 )
 
 func TestNewCollector(t *testing.T) {
-	var newCollector = NewCollector()
+	newCollector := NewCollector()
 	assert.EqualValues(t, newCollector.Updates, 0)
 }
 
 func TestUpdateMetrics(t *testing.T) {
-	var newCollector = NewCollector()
+	newCollector := NewCollector()
 	newCollector.UpdateMetrics()
 	assert.Equal(t, newCollector.Updates, 1)
 	assert.Equal(t, newCollector.Metrics.CounterMetrics["PollCount"], metrics.Counter(1))
@@ -27,14 +27,14 @@ func TestUpdateMetrics(t *testing.T) {
 }
 
 func TestGetMetrics(t *testing.T) {
-	var newCollector = NewCollector()
+	newCollector := NewCollector()
 	newCollector.UpdateMetrics()
 	_metrics := newCollector.GetMetrics()
 	assert.Equal(t, _metrics.CounterMetrics["PollCount"], metrics.Counter(1))
 }
 
 func TestGetMetricSuccess(t *testing.T) {
-	var newCollector = NewCollector()
+	newCollector := NewCollector()
 	result, err := newCollector.GetMetric("PollCount")
 	if err != nil {
 		errLog := fmt.Errorf("wrong result in GetMetric %w", err)
@@ -44,13 +44,13 @@ func TestGetMetricSuccess(t *testing.T) {
 }
 
 func TestGetMetricError(t *testing.T) {
-	var newCollector = NewCollector()
+	newCollector := NewCollector()
 	_, err := newCollector.GetMetric("SampleKey")
 	assert.Equal(t, err, errors.ErrorMetricNotFound)
 }
 
 func TestStringFromCounter(t *testing.T) {
-	var newCollector = NewCollector()
+	newCollector := NewCollector()
 	pollCount, err := newCollector.GetMetric("PollCount")
 	if err != nil {
 		panic(1)
@@ -60,7 +60,7 @@ func TestStringFromCounter(t *testing.T) {
 }
 
 func TestStringFromGauge(t *testing.T) {
-	var newCollector = NewCollector()
+	newCollector := NewCollector()
 	alloc, err := newCollector.GetMetric("Alloc")
 	if err != nil {
 		panic(1)

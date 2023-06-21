@@ -19,7 +19,7 @@ type FileWriter struct {
 }
 
 func NewFileReader(fileName string) (*FileReader, error) {
-	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0777)
+	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0o777)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (fr *FileReader) Close() error {
 }
 
 func NewFileWriter(fileName string) (*FileWriter, error) {
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0777)
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0o777)
 	if err != nil {
 		return nil, err
 	}

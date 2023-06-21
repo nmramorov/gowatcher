@@ -547,5 +547,4 @@ func TestPing(t *testing.T) {
 			assert.Equal(t, tt.want.code, statusCode)
 		})
 	}
-
 }

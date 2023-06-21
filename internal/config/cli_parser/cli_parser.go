@@ -53,12 +53,12 @@ func (acli *AgentCLIOptions) GetNumericInterval(intervalName string) int64 {
 }
 
 func NewServerCliOptions() *ServerCLIOptions {
-	var address = flag.String("a", "localhost:8080", "server address")
-	var restore = flag.String("r", "default", "restore metrics from file")
-	var storeInterval = flag.String("i", "30s", "period between file save")
-	var storeFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
-	var key = flag.String("k", "", "key to calculate hash")
-	var database = flag.String("d", "", "database link")
+	address := flag.String("a", "localhost:8080", "server address")
+	restore := flag.String("r", "default", "restore metrics from file")
+	storeInterval := flag.String("i", "30s", "period between file save")
+	storeFile := flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
+	key := flag.String("k", "", "key to calculate hash")
+	database := flag.String("d", "", "database link")
 	flag.Parse()
 
 	return &ServerCLIOptions{
@@ -72,11 +72,11 @@ func NewServerCliOptions() *ServerCLIOptions {
 }
 
 func NewAgentCliOptions() *AgentCLIOptions {
-	var address = flag.String("a", "localhost:8080", "server address")
-	var reportInterval = flag.String("r", "10s", "report interval time")
-	var pollInterval = flag.String("p", "2s", "poll interval time")
-	var key = flag.String("k", "", "key to calculate hash")
-	var rate = flag.Int("l", 0, "rate limit")
+	address := flag.String("a", "localhost:8080", "server address")
+	reportInterval := flag.String("r", "10s", "report interval time")
+	pollInterval := flag.String("p", "2s", "poll interval time")
+	key := flag.String("k", "", "key to calculate hash")
+	rate := flag.Int("l", 0, "rate limit")
 	flag.Parse()
 
 	return &AgentCLIOptions{
@@ -102,4 +102,3 @@ func getMultiplier(intervalValue string) *int64 {
 	}
 	return &multiplier
 }
-

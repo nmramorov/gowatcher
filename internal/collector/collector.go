@@ -11,8 +11,8 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 
 	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
-	"github.com/nmramorov/gowatcher/internal/log"
 	"github.com/nmramorov/gowatcher/internal/errors"
+	"github.com/nmramorov/gowatcher/internal/log"
 )
 
 type Collector struct {

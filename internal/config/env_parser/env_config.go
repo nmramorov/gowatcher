@@ -10,15 +10,15 @@ import (
 )
 
 const (
-	Address         string = "127.0.0.1:8080"
+	Address        string = "127.0.0.1:8080"
 	ReportInterval string = "10s"
 	PollInterval   string = "2s"
 	StoreInterval  string = "300s"
 	StoreFile      string = "/tmp/devops-metrics-db.json"
-	Restore         string = "default"
-	Key         string = ""
+	Restore        string = "default"
+	Key            string = ""
 	DatabaseDSN    string = ""
-	RateLimit     int    = 0
+	RateLimit      int    = 0
 )
 
 type AgentEnvConfig struct {

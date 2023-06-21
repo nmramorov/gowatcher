@@ -186,7 +186,6 @@ func (c *Cursor) Flush() error {
 				return err
 			}
 		}
-
 	}
 
 	if err := tx.Commit(); err != nil {

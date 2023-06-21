@@ -8,7 +8,6 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
-
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -227,7 +226,7 @@ func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Wrong arguments in request", http.StatusNotFound)
 		return
 	}
-	var metricType, metricName, metricValue = args[2], args[3], args[4]
+	metricType, metricName, metricValue := args[2], args[3], args[4]
 	log.InfoLog.Printf("Received metric data:\nMetric type: %s\nMetric name: %s\nMetric value: %s", metricType, metricName, metricValue)
 	switch metricType {
 	case "gauge":

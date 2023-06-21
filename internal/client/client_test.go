@@ -10,7 +10,7 @@ import (
 )
 
 func TestPushMetrics(t *testing.T) {
-	var collector = col.NewCollector()
+	collector := col.NewCollector()
 	endpoint := "http://127.0.0.1:8080"
 
 	client := &http.Client{}
@@ -18,7 +18,7 @@ func TestPushMetrics(t *testing.T) {
 }
 
 func TestCreateRequests(t *testing.T) {
-	var collector = col.NewCollector()
+	collector := col.NewCollector()
 	endpoint := "http://127.0.0.1:8080"
 	assert.IsType(t, make([]*http.Request, 0), CreateRequests(endpoint, collector.GetMetrics()))
 }

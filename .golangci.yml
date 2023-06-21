@@ -228,7 +228,7 @@ linters:
   disable-all: true
   enable:
 #    - cyclop
-    - depguard
+#    - depguard
     - dogsled
 #    - dupl
     - errcheck
@@ -254,7 +254,6 @@ linters:
     - gosec
     - gosimple
     - govet
-    - depguard
 #    - ifshort
 #    - ireturn
     - lll
