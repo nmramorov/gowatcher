@@ -66,11 +66,11 @@ linters-settings:
     # simplify code: gofmt with `-s` option, true by default
     simplify: true
   gofumpt:
-    module-path: github.com/ydb-platform/ydb-go-sdk/v3
+    module-path: github.com/nmramorov/gowatcher/
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
     # it's a comma-separated list of prefixes
-    local-prefixes: github.com/ydb-platform/ydb-go-sdk/v3
+    local-prefixes: github.com/nmramorov/gowatcher/
   goconst:
     # minimal length of string constant, 3 by default
     min-len: 2
@@ -329,13 +329,8 @@ issues:
   # Show only new issues created in git patch with set file path.
   # new-from-patch: path/to/patch/file
   exclude-rules:
-    - path: internal/xatomic/type.go
-      linters:
-        - predeclared
     - path: _test\.go
       linters:
         - unused
         - unparam
         - gocritic
-    - path: _test\.go
-      text: "ydb.Connection is deprecated"
