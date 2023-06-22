@@ -130,8 +130,6 @@ func getMultiplier(intervalValue string) *int64 {
 		multiplier = 1
 	case `m`:
 		multiplier = 60
-	default:
-		multiplier = 1
 	}
 	return &multiplier
 }

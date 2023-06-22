@@ -26,3 +26,34 @@ func TestEnvConfigIntervalConvertion(t *testing.T) {
 	assert.Equal(t, pollInterval, int64(2))
 	assert.Equal(t, testConfig.RateLimit, 0)
 }
+
+func TestGetNumericInterval(t *testing.T) {
+	testConfig, _ := NewServerEnvConfig()
+	testConfig.StoreInterval = "10s"
+	interval := testConfig.GetNumericInterval("StoreInterval")
+	assert.Equal(t, int64(10), interval)
+
+	wrongIntervalNameRes := testConfig.GetNumericInterval("Some field")
+	assert.Equal(t, int64(0), wrongIntervalNameRes)
+}
+
+func TestCheckAgentEnvs(t *testing.T) {
+	config, _ := NewAgentEnvConfig()
+	config.Address = "some addr"
+	config.Key = "some key"
+	config.PollInterval = "my interval"
+	config.RateLimit = 222
+	config.ReportInterval = "my int"
+	assert.Equal(t, config, checkAgentEnvs(config))
+}
+
+func TestCheckServerEnvs(t *testing.T) {
+	config, _ := NewServerEnvConfig()
+	config.Address = "some addr"
+	config.Key = "some key"
+	config.Database = "my db"
+	config.Restore = "true"
+	config.StoreFile = "my file"
+	config.StoreInterval = "some interval"
+	assert.Equal(t, config, checkServerEnvs(config))
+}
