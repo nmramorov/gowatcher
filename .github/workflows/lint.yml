@@ -27,5 +27,4 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v3
       - name: Build and run checker
-        # working-directory: ${{ github.workspace }}
         run: ./cmd/staticlint/run_checker.sh
