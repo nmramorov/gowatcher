@@ -100,3 +100,55 @@ func TestUpdateBatch(t *testing.T) {
 	assert.Equal(t, pollCount+1, int64(newCollector.Metrics.CounterMetrics["PollCount"]))
 	assert.Equal(t, myVal, float64(newCollector.Metrics.GaugeMetrics["MyMetric"]))
 }
+
+
+func TestGetMetric(t *testing.T) {
+	newCollector := NewCollector()
+	alloc := float64(2.2)
+	pollCount := int64(44444)
+	myVal := float64(3333.3333)
+	newCollector.UpdateMetrics()
+	toUpdate := []*metrics.JSONMetrics{
+		{
+			ID:    "Alloc",
+			MType: "gauge",
+			Value: &alloc,
+			Delta: nil,
+		},
+		{
+			ID:    "MyMetric",
+			MType: "gauge",
+			Value: &myVal,
+			Delta: nil,
+		},
+		{
+			ID:    "PollCount",
+			MType: "counter",
+			Value: nil,
+			Delta: &pollCount,
+		},
+	}
+	newCollector.UpdateBatch(toUpdate)
+	res, _ := newCollector.GetMetricJSON(toUpdate[0])
+	assert.Equal(t, alloc, *res.Value)
+	res, _ = newCollector.GetMetricJSON(toUpdate[1])
+	assert.Equal(t,myVal, *res.Value)
+	res, _ = newCollector.GetMetricJSON(toUpdate[2])
+	assert.Equal(t,pollCount + 1, *res.Delta)
+}
+
+
+func TestNewCollecorFromSavedFile(t *testing.T) {
+	assert.NotPanics(t, func() {
+		saved := metrics.NewMetrics()
+		_ = NewCollectorFromSavedFile(saved)
+	})
+}
+
+func TestCollectorString(t *testing.T) {
+	c := NewCollector()
+	test_float64, _ := c.String(float64(22.0))
+	assert.Equal(t, "22", test_float64)
+	test_int64, _ := c.String(int64(22))
+	assert.Equal(t, "22", test_int64)
+}
