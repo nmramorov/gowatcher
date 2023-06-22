@@ -28,7 +28,7 @@ func (scli *ServerCLIOptions) GetNumericInterval(intervalName string) int64 {
 		multiplier := getMultiplier(scli.StoreInterval)
 		stringValue := strings.Split(scli.StoreInterval, scli.StoreInterval[len(scli.StoreInterval)-1:])[0]
 		value, _ := strconv.ParseInt(stringValue, 10, 64)
-		return *multiplier * value
+		return multiplier * value
 	}
 
 	return 0
@@ -40,12 +40,12 @@ func (acli *AgentCLIOptions) GetNumericInterval(intervalName string) int64 {
 		multiplier := getMultiplier(acli.ReportInterval)
 		stringValue := strings.Split(acli.ReportInterval, acli.ReportInterval[len(acli.ReportInterval)-1:])[0]
 		value, _ := strconv.ParseInt(stringValue, 10, 64)
-		return *multiplier * value
+		return multiplier * value
 	case "PollInterval":
 		multiplier := getMultiplier(acli.PollInterval)
 		stringValue := strings.Split(acli.PollInterval, acli.PollInterval[len(acli.PollInterval)-1:])[0]
 		value, _ := strconv.ParseInt(stringValue, 10, 64)
-		return *multiplier * value
+		return multiplier * value
 	}
 
 	return 0
@@ -87,7 +87,7 @@ func NewAgentCliOptions() *AgentCLIOptions {
 	}
 }
 
-func getMultiplier(intervalValue string) *int64 {
+func getMultiplier(intervalValue string) int64 {
 	var multiplier int64
 	splitter := intervalValue[len(intervalValue)-1:]
 
@@ -96,8 +96,6 @@ func getMultiplier(intervalValue string) *int64 {
 		multiplier = 1
 	case `m`:
 		multiplier = 60
-	default:
-		multiplier = 1
 	}
-	return &multiplier
+	return multiplier
 }
