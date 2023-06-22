@@ -147,8 +147,8 @@ func TestNewCollecorFromSavedFile(t *testing.T) {
 
 func TestCollectorString(t *testing.T) {
 	c := NewCollector()
-	test_float64, _ := c.String(float64(22.0))
-	assert.Equal(t, "22", test_float64)
-	test_int64, _ := c.String(int64(22))
-	assert.Equal(t, "22", test_int64)
+	testFloat64, _ := c.String(float64(22.0))
+	assert.Equal(t, "22", testFloat64)
+	testInt64, _ := c.String(int64(22))
+	assert.Equal(t, "22", testInt64)
 }
