@@ -150,3 +150,11 @@ func TestCollectorString(t *testing.T) {
 	testInt64, _ := c.String(int64(22))
 	assert.Equal(t, "22", testInt64)
 }
+
+func TestCollectorUpdateExtraMetrics(t *testing.T) {
+	c := NewCollector()
+	c.UpdateExtraMetrics()
+	assert.GreaterOrEqual(t, c.GetMetrics().GaugeMetrics["TotalMemory"], metrics.Gauge(0.0))
+	assert.GreaterOrEqual(t, c.GetMetrics().GaugeMetrics["FreeMemory"], metrics.Gauge(0.0))
+	assert.GreaterOrEqual(t, c.GetMetrics().GaugeMetrics["CPUutilization1"], metrics.Gauge(0.0))
+}
