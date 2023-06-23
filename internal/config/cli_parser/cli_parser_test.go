@@ -24,5 +24,4 @@ func TestNewServerCLIOptions(t *testing.T) {
 
 	assert.Equal(t, int64(300), config.GetNumericInterval("StoreInterval"))
 	assert.Equal(t, int64(0), config.GetNumericInterval("MyInterval"))
-
 }

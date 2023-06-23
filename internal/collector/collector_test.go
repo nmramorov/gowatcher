@@ -101,7 +101,6 @@ func TestUpdateBatch(t *testing.T) {
 	assert.Equal(t, myVal, float64(newCollector.Metrics.GaugeMetrics["MyMetric"]))
 }
 
-
 func TestGetMetric(t *testing.T) {
 	newCollector := NewCollector()
 	alloc := float64(2.2)
@@ -132,11 +131,10 @@ func TestGetMetric(t *testing.T) {
 	res, _ := newCollector.GetMetricJSON(toUpdate[0])
 	assert.Equal(t, alloc, *res.Value)
 	res, _ = newCollector.GetMetricJSON(toUpdate[1])
-	assert.Equal(t,myVal, *res.Value)
+	assert.Equal(t, myVal, *res.Value)
 	res, _ = newCollector.GetMetricJSON(toUpdate[2])
-	assert.Equal(t,pollCount + 1, *res.Delta)
+	assert.Equal(t, pollCount+1, *res.Delta)
 }
-
 
 func TestNewCollecorFromSavedFile(t *testing.T) {
 	assert.NotPanics(t, func() {
