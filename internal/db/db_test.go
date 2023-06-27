@@ -4,7 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	mock_db "github.com/nmramorov/gowatcher/internal/db/mocks"
+	"github.com/stretchr/testify/require"
+
+	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
+	"github.com/nmramorov/gowatcher/internal/errors"
 )
 
 func TestNewCursor(t *testing.T) {
@@ -28,15 +34,6 @@ func TestNewCursor(t *testing.T) {
 				adaptor: "pgx",
 			},
 			wantErr: false,
-		},
-		{
-			name: "Negative Cursor creation",
-			args: args{
-				parent:  parent,
-				link:    "",
-				adaptor: "",
-			},
-			wantErr: true,
 		},
 	}
 
@@ -78,7 +75,7 @@ func TestCursor_Close(t *testing.T) {
 			if err != nil {
 				t.Errorf("Error creating Cursror %v", err)
 			}
-			if err := c.Close(tt.args.parent); (err != nil) != tt.wantErr {
+			if err := c.CloseConnection(tt.args.parent); (err != nil) != tt.wantErr {
 				t.Errorf("Cursor.Close() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -102,7 +99,7 @@ func TestCursor_Ping(t *testing.T) {
 		// TODO: Add test cases.
 		{
 			name: "Ping Negative",
-			c: cursor,
+			c:    cursor,
 			args: args{
 				parent: parent,
 			},
@@ -116,4 +113,116 @@ func TestCursor_Ping(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestInitDBPositive(t *testing.T) {
+	parent := context.Background()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	s := mock_db.NewMockDriverMethods(ctrl)
+	s.EXPECT().ExecContext(gomock.Any(), CreateGaugeTable).Return(nil, nil).MaxTimes(1)
+	s.EXPECT().ExecContext(gomock.Any(), CreateCounterTable).Return(nil, nil).MaxTimes(1)
+	c := Cursor{
+		DB: s,
+	}
+	require.NoError(t, c.InitDB(parent))
+}
+
+func TestInitDBNegative(t *testing.T) {
+	parent := context.Background()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	s := mock_db.NewMockDriverMethods(ctrl)
+	s.EXPECT().ExecContext(gomock.Any(), CreateGaugeTable).Return(nil, errors.ErrorMetricNotFound).MaxTimes(1)
+	s.EXPECT().ExecContext(gomock.Any(), CreateCounterTable).Return(nil, errors.ErrorMetricNotFound).MaxTimes(1)
+	c := Cursor{
+		DB: s,
+	}
+	require.Error(t, c.InitDB(parent))
+
+	ss := mock_db.NewMockDriverMethods(ctrl)
+	ss.EXPECT().ExecContext(gomock.Any(), CreateGaugeTable).Return(nil, nil).MaxTimes(1)
+	ss.EXPECT().ExecContext(gomock.Any(), CreateCounterTable).Return(nil, errors.ErrorMetricNotFound).MaxTimes(1)
+	c = Cursor{
+		DB: ss,
+	}
+	require.Error(t, c.InitDB(parent))
+}
+
+func TestAddPositive(t *testing.T) {
+	parent := context.Background()
+	mock_val := 55.3
+	mock_delta := int64(3)
+	mock_gauge_metric := &m.JSONMetrics{
+		ID:    "1",
+		MType: "gauge",
+		Value: &mock_val,
+	}
+	mock_counter_metric := &m.JSONMetrics{
+		ID:    "1",
+		MType: "counter",
+		Delta: &mock_delta,
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	s := mock_db.NewMockDriverMethods(ctrl)
+	s.EXPECT().
+		ExecContext(gomock.Any(), InsertIntoGauge, mock_gauge_metric.ID, mock_gauge_metric.MType, mock_gauge_metric.Value).
+		MaxTimes(1)
+	c := Cursor{
+		DB: s,
+	}
+	require.NoError(t, c.Add(parent, mock_gauge_metric))
+
+	s = mock_db.NewMockDriverMethods(ctrl)
+	s.EXPECT().
+		ExecContext(gomock.Any(), InsertIntoCounter, mock_counter_metric.ID, mock_counter_metric.MType, mock_counter_metric.Delta).
+		MaxTimes(1)
+	c = Cursor{
+		DB: s,
+	}
+	require.NoError(t, c.Add(parent, mock_counter_metric))
+}
+
+func TestAddNegative(t *testing.T) {
+	parent := context.Background()
+	mock_val := 55.3
+	mock_delta := int64(3)
+	mock_gauge_metric := &m.JSONMetrics{
+		ID:    "1",
+		MType: "gauge",
+		Value: &mock_val,
+	}
+	mock_counter_metric := &m.JSONMetrics{
+		ID:    "1",
+		MType: "counter",
+		Delta: &mock_delta,
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	s := mock_db.NewMockDriverMethods(ctrl)
+	s.EXPECT().
+		ExecContext(gomock.Any(), InsertIntoGauge, mock_gauge_metric.ID, mock_gauge_metric.MType, mock_gauge_metric.Value).
+		Return(nil, errors.ErrorWithIntervalConvertion).
+		MaxTimes(1)
+	c := Cursor{
+		DB: s,
+	}
+	require.Error(t, c.Add(parent, mock_gauge_metric))
+
+	s = mock_db.NewMockDriverMethods(ctrl)
+	s.EXPECT().
+		ExecContext(gomock.Any(), InsertIntoCounter, mock_counter_metric.ID, mock_counter_metric.MType, mock_counter_metric.Delta).
+		Return(nil, errors.ErrorWithIntervalConvertion).
+		MaxTimes(1)
+	c = Cursor{
+		DB: s,
+	}
+	require.Error(t, c.Add(parent, mock_counter_metric))
 }

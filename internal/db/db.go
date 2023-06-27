@@ -15,21 +15,29 @@ var (
 	GAUGE   = "gauge"
 	COUNTER = "counter"
 
-	DBDefaultTimeout = time.Duration(5) * time.Second
+	DBDefaultTimeout = time.Duration(100) * time.Millisecond
 )
+
+type DriverMethods interface{
+	Close() error
+	PingContext(ctx context.Context) error
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
+}
 
 type DatabaseAccess interface {
 	InitDb() error
 	Add(*metrics.JSONMetrics) error
 	Get(string) (*metrics.JSONMetrics, error)
-	Close()
+	CloseConnection(context.Context) error
 	Ping()
 	UpdateBatch()
 }
 
 type Cursor struct {
 	DatabaseAccess
-	DB      *sql.DB
+	DB      DriverMethods
 	IsValid bool
 	buffer  []*metrics.JSONMetrics
 }
@@ -55,7 +63,7 @@ func NewCursor(parent context.Context, link, adaptor string) (*Cursor, error) {
 	return cursor, nil
 }
 
-func (c *Cursor) Close(parent context.Context) error {
+func (c *Cursor) CloseConnection(parent context.Context) error {
 	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
 	defer cancel()
 

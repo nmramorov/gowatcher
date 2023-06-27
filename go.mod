@@ -9,6 +9,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-chi/chi/v5 v5.0.8 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/golang/mock v1.6.0 // indirect
 	github.com/gordonklaus/ineffassign v0.0.0-20230610083614-0e73809eb601 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
