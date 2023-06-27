@@ -62,7 +62,12 @@ func (c *Cursor) Close(parent context.Context) error {
 	err := func(ctx context.Context, cursor *Cursor) error {
 		select {
 		case <-ctx.Done():
-			return nil
+			err := cursor.DB.Close()
+			if err != nil {
+				log.ErrorLog.Printf("error closing db: %e", err)
+				return err
+			}
+			return err
 		default:
 			err := cursor.DB.Close()
 			if err != nil {
