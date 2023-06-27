@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"encoding/hex"
 	"encoding/json"
@@ -117,7 +118,7 @@ func (h *Handler) UpdateMetricsJSON(rw http.ResponseWriter, r *http.Request) {
 	}
 	updatedData, err := h.collector.UpdateMetricFromJSON(&metricData)
 	if h.cursor.IsValid {
-		err = h.cursor.Add(updatedData)
+		err = h.cursor.Add(r.Context(), updatedData)
 		if err != nil {
 			log.ErrorLog.Println("could not add data to db...")
 		}
@@ -150,7 +151,7 @@ func (h *Handler) GetMetricByJSON(rw http.ResponseWriter, r *http.Request) {
 	var metric *m.JSONMetrics
 	var err error
 	if h.cursor.IsValid {
-		metric, err = h.cursor.Get(&metricData)
+		metric, err = h.cursor.Get(r.Context(), &metricData)
 		if err != nil {
 			log.ErrorLog.Println("could not get data from db...")
 		}
@@ -280,23 +281,20 @@ func (h *Handler) GetCurrentMetrics() *m.Metrics {
 
 // Метод для проверки соединения с БД.
 func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
-	isAvailable := h.cursor.Ping()
-	defer h.cursor.Close()
-	switch isAvailable {
-	case true:
-		_, err := w.Write([]byte(`{"status":"ok"}`))
-		if err != nil {
-			log.ErrorLog.Printf("error handling ping request: %e", err)
-		}
-	case false:
+	err := h.cursor.Ping(r.Context())
+	defer h.cursor.Close(r.Context())
+	if err != nil {
 		http.Error(w, "error with db", http.StatusInternalServerError)
 		return
 	}
 }
 
 // Метод, инициализирующий БД.
-func (h *Handler) InitDB() error {
-	return h.cursor.InitDB()
+func (h *Handler) InitDB(parent context.Context) error {
+	ctx, cancel := context.WithTimeout(parent, db.DbDefaultTimeout)
+	defer cancel()
+
+	return h.cursor.InitDB(ctx)
 }
 
 // Метод, позволяющий обновить несколько метрик за раз.
@@ -311,7 +309,7 @@ func (h *Handler) UpdateJSONBatch(rw http.ResponseWriter, r *http.Request) {
 		log.ErrorLog.Println("could not update batch...")
 	}
 	if h.cursor.IsValid {
-		err = h.cursor.AddBatch(metricsBatch)
+		err = h.cursor.AddBatch(r.Context(), metricsBatch)
 		if err != nil {
 			log.ErrorLog.Println("could not add batch data to db...")
 		}

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -104,7 +105,8 @@ func TestServer(t *testing.T) {
 			},
 		},
 	}
-	MockCursor, _ := db.NewCursor("", "pgx")
+	ctx := context.Background()
+	MockCursor, _ := db.NewCursor(ctx, "", "pgx")
 	metricsHandler := handlers.NewHandler("", MockCursor)
 
 	ts := httptest.NewServer(metricsHandler)

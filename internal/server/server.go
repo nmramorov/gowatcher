@@ -1,8 +1,10 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/nmramorov/gowatcher/internal/api/handlers"
@@ -12,8 +14,11 @@ import (
 	"github.com/nmramorov/gowatcher/internal/log"
 )
 
-func GetMetricsHandler(options *config.ServerConfig) (*handlers.Handler, error) {
-	cursor, err := db.NewCursor(options.Database, "pgx")
+func GetMetricsHandler(parent context.Context, options *config.ServerConfig) (*handlers.Handler, error) {
+	ctx, cancel := context.WithCancel(parent)
+	defer cancel()
+
+	cursor, err := db.NewCursor(ctx, options.Database, "pgx")
 	if err != nil {
 		cursor.IsValid = false
 	}
@@ -83,23 +88,35 @@ type Server struct{}
 
 var ServerReadHeaderTimeout = 10
 
-func (s *Server) Run() {
+func (s *Server) Run(parent context.Context) error {
+	ctx, cancel := context.WithCancel(parent)
+	defer cancel()
+
+	var wg sync.WaitGroup
+
 	serverConfig := config.GetServerConfig()
 
-	metricsHandler, _ := GetMetricsHandler(serverConfig)
+	metricsHandler, err := GetMetricsHandler(ctx, serverConfig)
+	if err != nil {
+		log.ErrorLog.Printf("could not get metrics handler: %e", err)
+		return err
+	}
 
 	if serverConfig.Database != "" {
-		err := metricsHandler.InitDB()
+		err := metricsHandler.InitDB(ctx)
 		if err != nil {
 			log.ErrorLog.Printf("error initializing db: %e", err)
+			return err
 		}
 	}
+	wg.Add(1)
 	if serverConfig.StoreFile != "" {
 		go func() {
 			err := StartSavingToDisk(serverConfig, metricsHandler)
 			if err != nil {
 				log.ErrorLog.Printf("error starting saving file to disk: %e", err)
 			}
+			wg.Done()
 		}()
 		log.InfoLog.Println("Initialized file saving")
 	}
@@ -109,10 +126,14 @@ func (s *Server) Run() {
 		Handler:           metricsHandler,
 		ReadHeaderTimeout: time.Duration(ServerReadHeaderTimeout) * time.Second,
 	}
+	defer server.Shutdown(ctx)
 
 	log.InfoLog.Println("Web server is ready to accept connections...")
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 	if err != nil {
 		log.ErrorLog.Printf("Unexpected error occurred: %e", err)
 	}
+	wg.Wait()
+
+	return nil
 }

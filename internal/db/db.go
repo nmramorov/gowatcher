@@ -14,6 +14,8 @@ import (
 var (
 	GAUGE   = "gauge"
 	COUNTER = "counter"
+
+	DbDefaultTimeout = time.Duration(5) * time.Second
 )
 
 type DatabaseAccess interface {
@@ -28,12 +30,14 @@ type DatabaseAccess interface {
 type Cursor struct {
 	DatabaseAccess
 	DB      *sql.DB
-	Context context.Context
 	IsValid bool
 	buffer  []*metrics.JSONMetrics
 }
 
-func NewCursor(link, adaptor string) (*Cursor, error) {
+func NewCursor(parent context.Context, link, adaptor string) (*Cursor, error) {
+	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	defer cancel()
+
 	db, err := sql.Open(adaptor, link)
 	if err != nil {
 		log.ErrorLog.Printf("Unable to connect to database: %v\n", err)
@@ -41,42 +45,59 @@ func NewCursor(link, adaptor string) (*Cursor, error) {
 	}
 	cursor := &Cursor{
 		DB:      db,
-		Context: context.Background(),
 		IsValid: true,
 		buffer:  make([]*metrics.JSONMetrics, 0, 100),
 	}
-	valid := cursor.Ping()
-	if !valid {
+	err = cursor.Ping(ctx)
+	if err != nil {
 		cursor.IsValid = false
 	}
 	return cursor, nil
 }
 
-func (c *Cursor) Close() {
-	err := c.DB.Close()
-	if err != nil {
-		log.ErrorLog.Printf("error closing db: %e", err)
-	}
+func (c *Cursor) Close(parent context.Context) error {
+	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	defer cancel()
+
+	err := func(ctx context.Context, cursor *Cursor) error {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			err := cursor.DB.Close()
+			if err != nil {
+				log.ErrorLog.Printf("error closing db: %e", err)
+				return err
+			}
+			return err
+		}
+	}(ctx, c)
+
+	return err
 }
 
-func (c *Cursor) Ping() bool {
-	ctx, cancel := context.WithTimeout(c.Context, 1*time.Second)
+func (c *Cursor) Ping(parent context.Context) error {
+	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
 	defer cancel()
+
 	if err := c.DB.PingContext(ctx); err != nil {
 		log.ErrorLog.Printf("ping error, database unreachable?: %e", err)
-		return false
+		return err
 	}
-	return true
+	return nil
 }
 
-func (c *Cursor) InitDB() error {
-	_, err := c.DB.Exec(CreateGaugeTable)
+func (c *Cursor) InitDB(parent context.Context) error {
+	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	defer cancel()
+
+	_, err := c.DB.ExecContext(ctx, CreateGaugeTable)
 	if err != nil {
 		log.ErrorLog.Printf("error creating gaugemetrics table %e", err)
 		return err
 	}
 	log.InfoLog.Println("gaugemetrics table was created")
-	_, err = c.DB.Exec(CreateCounterTable)
+	_, err = c.DB.ExecContext(ctx, CreateCounterTable)
 	if err != nil {
 		log.ErrorLog.Printf("error creating countermetrics table %e", err)
 		return err
@@ -86,17 +107,20 @@ func (c *Cursor) InitDB() error {
 	return nil
 }
 
-func (c *Cursor) Add(incomingMetrics *metrics.JSONMetrics) error {
+func (c *Cursor) Add(parent context.Context, incomingMetrics *metrics.JSONMetrics) error {
+	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	defer cancel()
+
 	switch incomingMetrics.MType {
 	case GAUGE:
 		if _, err := c.DB.ExecContext(
-			c.Context, InsertIntoGauge, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Value); err != nil {
+			ctx, InsertIntoGauge, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Value); err != nil {
 			log.ErrorLog.Printf("error adding gauge row %s to DB: %e", incomingMetrics.ID, err)
 			return err
 		}
 	case COUNTER:
 		if _, err := c.DB.ExecContext(
-			c.Context, InsertIntoCounter, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Delta); err != nil {
+			ctx, InsertIntoCounter, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Delta); err != nil {
 			log.ErrorLog.Printf("error adding counter row %s to db: %e", incomingMetrics.ID, err)
 			return err
 		}
@@ -105,12 +129,15 @@ func (c *Cursor) Add(incomingMetrics *metrics.JSONMetrics) error {
 	return nil
 }
 
-func (c *Cursor) Get(metricToFind *metrics.JSONMetrics) (*metrics.JSONMetrics, error) {
+func (c *Cursor) Get(parent context.Context, metricToFind *metrics.JSONMetrics) (*metrics.JSONMetrics, error) {
+	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	defer cancel()
+
 	foundMetric := &metrics.JSONMetrics{}
 	var row *sql.Row
 	switch metricToFind.MType {
 	case GAUGE:
-		if row = c.DB.QueryRowContext(c.Context, SelectFromGauge, metricToFind.ID); row.Err() != nil {
+		if row = c.DB.QueryRowContext(ctx, SelectFromGauge, metricToFind.ID); row.Err() != nil {
 			log.ErrorLog.Printf("error getting gauge row %s to db: %e", metricToFind.ID, row.Err())
 			return nil, row.Err()
 		}
@@ -120,7 +147,7 @@ func (c *Cursor) Get(metricToFind *metrics.JSONMetrics) (*metrics.JSONMetrics, e
 			return nil, err
 		}
 	case COUNTER:
-		if row = c.DB.QueryRowContext(c.Context, SelectFromCounter, metricToFind.ID); row.Err() != nil {
+		if row = c.DB.QueryRowContext(ctx, SelectFromCounter, metricToFind.ID); row.Err() != nil {
 			log.ErrorLog.Printf("error getting counter row %s to db: %e", metricToFind.ID, row.Err())
 			return nil, row.Err()
 		}
@@ -133,10 +160,13 @@ func (c *Cursor) Get(metricToFind *metrics.JSONMetrics) (*metrics.JSONMetrics, e
 	return foundMetric, nil
 }
 
-func (c *Cursor) AddBatch(metrics []*metrics.JSONMetrics) error {
+func (c *Cursor) AddBatch(parent context.Context, metrics []*metrics.JSONMetrics) error {
+	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	defer cancel()
+
 	c.buffer = append(c.buffer, metrics...)
 	if cap(c.buffer) == len(c.buffer) {
-		err := c.Flush()
+		err := c.Flush(ctx)
 		if err != nil {
 			log.ErrorLog.Printf("cannot add record to the database")
 			return err
@@ -145,21 +175,24 @@ func (c *Cursor) AddBatch(metrics []*metrics.JSONMetrics) error {
 	return nil
 }
 
-func (c *Cursor) Flush() error {
+func (c *Cursor) Flush(parent context.Context) error {
+	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	defer cancel()
+
 	// проверим на всякий случай
 	if c.DB == nil {
 		log.ErrorLog.Printf("You haven`t opened the database connection")
 	}
-	tx, err := c.DB.Begin()
+	tx, err := c.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	stmtGauge, err := tx.Prepare(InsertIntoGauge)
+	stmtGauge, err := tx.PrepareContext(ctx, InsertIntoGauge)
 	if err != nil {
 		return err
 	}
-	stmtCounter, err := tx.Prepare(InsertIntoCounter)
+	stmtCounter, err := tx.PrepareContext(ctx, InsertIntoCounter)
 	if err != nil {
 		return err
 	}
@@ -179,16 +212,16 @@ func (c *Cursor) Flush() error {
 	for _, v := range c.buffer {
 		switch v.MType {
 		case GAUGE:
-			if _, err = stmtGauge.Exec(v.ID, v.MType, v.Value); err != nil {
+			if _, err = stmtGauge.ExecContext(ctx, v.ID, v.MType, v.Value); err != nil {
 				if err = tx.Rollback(); err != nil {
-					log.ErrorLog.Fatalf("update drivers: unable to rollback: %v", err)
+					log.ErrorLog.Printf("update drivers: unable to rollback: %v", err)
 				}
 				return err
 			}
 		case COUNTER:
-			if _, err = stmtCounter.Exec(v.ID, v.MType, v.Delta); err != nil {
+			if _, err = stmtCounter.ExecContext(ctx, v.ID, v.MType, v.Delta); err != nil {
 				if err = tx.Rollback(); err != nil {
-					log.ErrorLog.Fatalf("update drivers: unable to rollback: %v", err)
+					log.ErrorLog.Printf("update drivers: unable to rollback: %v", err)
 				}
 				return err
 			}
@@ -196,7 +229,7 @@ func (c *Cursor) Flush() error {
 	}
 
 	if err := tx.Commit(); err != nil {
-		log.ErrorLog.Fatalf("update drivers: unable to commit: %v", err)
+		log.ErrorLog.Printf("update drivers: unable to commit: %v", err)
 		return err
 	}
 
