@@ -103,7 +103,7 @@ func (s *Server) Run(parent context.Context) error {
 	}
 
 	if serverConfig.Database != "" {
-		err := metricsHandler.InitDB(ctx)
+		err = metricsHandler.InitDB(ctx)
 		if err != nil {
 			log.ErrorLog.Printf("error initializing db: %e", err)
 			return err
@@ -112,7 +112,7 @@ func (s *Server) Run(parent context.Context) error {
 	wg.Add(1)
 	if serverConfig.StoreFile != "" {
 		go func() {
-			err := StartSavingToDisk(serverConfig, metricsHandler)
+			err = StartSavingToDisk(serverConfig, metricsHandler)
 			if err != nil {
 				log.ErrorLog.Printf("error starting saving file to disk: %e", err)
 			}
@@ -126,7 +126,12 @@ func (s *Server) Run(parent context.Context) error {
 		Handler:           metricsHandler,
 		ReadHeaderTimeout: time.Duration(ServerReadHeaderTimeout) * time.Second,
 	}
-	defer server.Shutdown(ctx)
+	defer func() {
+		err = server.Shutdown(ctx)
+		if err != nil {
+			log.ErrorLog.Printf("error shutting down server: %e", err)
+		}
+	}()
 
 	log.InfoLog.Println("Web server is ready to accept connections...")
 	err = server.ListenAndServe()

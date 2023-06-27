@@ -15,7 +15,7 @@ var (
 	GAUGE   = "gauge"
 	COUNTER = "counter"
 
-	DbDefaultTimeout = time.Duration(5) * time.Second
+	DBDefaultTimeout = time.Duration(5) * time.Second
 )
 
 type DatabaseAccess interface {
@@ -35,7 +35,7 @@ type Cursor struct {
 }
 
 func NewCursor(parent context.Context, link, adaptor string) (*Cursor, error) {
-	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
 	defer cancel()
 
 	db, err := sql.Open(adaptor, link)
@@ -56,7 +56,7 @@ func NewCursor(parent context.Context, link, adaptor string) (*Cursor, error) {
 }
 
 func (c *Cursor) Close(parent context.Context) error {
-	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
 	defer cancel()
 
 	err := func(ctx context.Context, cursor *Cursor) error {
@@ -82,7 +82,7 @@ func (c *Cursor) Close(parent context.Context) error {
 }
 
 func (c *Cursor) Ping(parent context.Context) error {
-	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
 	defer cancel()
 
 	if err := c.DB.PingContext(ctx); err != nil {
@@ -93,7 +93,7 @@ func (c *Cursor) Ping(parent context.Context) error {
 }
 
 func (c *Cursor) InitDB(parent context.Context) error {
-	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
 	defer cancel()
 
 	_, err := c.DB.ExecContext(ctx, CreateGaugeTable)
@@ -113,7 +113,7 @@ func (c *Cursor) InitDB(parent context.Context) error {
 }
 
 func (c *Cursor) Add(parent context.Context, incomingMetrics *metrics.JSONMetrics) error {
-	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
 	defer cancel()
 
 	switch incomingMetrics.MType {
@@ -135,7 +135,7 @@ func (c *Cursor) Add(parent context.Context, incomingMetrics *metrics.JSONMetric
 }
 
 func (c *Cursor) Get(parent context.Context, metricToFind *metrics.JSONMetrics) (*metrics.JSONMetrics, error) {
-	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
 	defer cancel()
 
 	foundMetric := &metrics.JSONMetrics{}
@@ -166,7 +166,7 @@ func (c *Cursor) Get(parent context.Context, metricToFind *metrics.JSONMetrics) 
 }
 
 func (c *Cursor) AddBatch(parent context.Context, metrics []*metrics.JSONMetrics) error {
-	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
 	defer cancel()
 
 	c.buffer = append(c.buffer, metrics...)
@@ -181,7 +181,7 @@ func (c *Cursor) AddBatch(parent context.Context, metrics []*metrics.JSONMetrics
 }
 
 func (c *Cursor) Flush(parent context.Context) error {
-	ctx, cancel := context.WithTimeout(parent, DbDefaultTimeout)
+	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
 	defer cancel()
 
 	// проверим на всякий случай

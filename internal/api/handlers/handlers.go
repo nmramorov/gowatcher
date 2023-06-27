@@ -282,7 +282,6 @@ func (h *Handler) GetCurrentMetrics() *m.Metrics {
 // Метод для проверки соединения с БД.
 func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
 	err := h.cursor.Ping(r.Context())
-	defer h.cursor.Close(r.Context())
 	if err != nil {
 		http.Error(w, "error with db", http.StatusInternalServerError)
 		return
@@ -291,7 +290,7 @@ func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
 
 // Метод, инициализирующий БД.
 func (h *Handler) InitDB(parent context.Context) error {
-	ctx, cancel := context.WithTimeout(parent, db.DbDefaultTimeout)
+	ctx, cancel := context.WithTimeout(parent, db.DBDefaultTimeout)
 	defer cancel()
 
 	return h.cursor.InitDB(ctx)
