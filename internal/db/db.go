@@ -28,12 +28,13 @@ type DriverMethods interface {
 
 type DatabaseAccess interface {
 	InitDb() error
-	Add(*metrics.JSONMetrics) error
+	Add(context.Context, *metrics.JSONMetrics) error
 	Get(string) (*metrics.JSONMetrics, error)
 	CloseConnection(context.Context) error
-	Ping()
-	UpdateBatch()
-}
+	Ping(context.Context) error
+	AddBatch(context.Context, *[]metrics.JSONMetrics) error
+	Flush(context.Context) error
+ }
 
 type Cursor struct {
 	DatabaseAccess

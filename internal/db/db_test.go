@@ -226,3 +226,18 @@ func TestAddNegative(t *testing.T) {
 	}
 	require.Error(t, c.Add(parent, mockCounterMetric))
 }
+
+func TestAddBatchPositive(t * testing.T) {
+	parent := context.Background()
+	mockVal := 55.3
+	mockGaugeMetrics := make([]*m.JSONMetrics, 0, 1)
+	mockGaugeMetrics = append(mockGaugeMetrics, &m.JSONMetrics{
+		ID:    "1",
+		MType: "gauge",
+		Value: &mockVal,
+	})
+	c := Cursor{
+		buffer: make([]*m.JSONMetrics, 0, 3),
+	}
+	require.NoError(t, c.AddBatch(parent, mockGaugeMetrics))
+}

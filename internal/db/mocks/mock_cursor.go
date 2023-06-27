@@ -155,6 +155,20 @@ func (mr *MockDatabaseAccessMockRecorder) Add(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockDatabaseAccess)(nil).Add), arg0)
 }
 
+// AddBatch mocks base method.
+func (m *MockDatabaseAccess) AddBatch(arg0 context.Context, arg1 *[]metrics.JSONMetrics) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddBatch", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddBatch indicates an expected call of AddBatch.
+func (mr *MockDatabaseAccessMockRecorder) AddBatch(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBatch", reflect.TypeOf((*MockDatabaseAccess)(nil).AddBatch), arg0, arg1)
+}
+
 // CloseConnection mocks base method.
 func (m *MockDatabaseAccess) CloseConnection(arg0 context.Context) error {
 	m.ctrl.T.Helper()
@@ -167,6 +181,20 @@ func (m *MockDatabaseAccess) CloseConnection(arg0 context.Context) error {
 func (mr *MockDatabaseAccessMockRecorder) CloseConnection(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseConnection", reflect.TypeOf((*MockDatabaseAccess)(nil).CloseConnection), arg0)
+}
+
+// Flush mocks base method.
+func (m *MockDatabaseAccess) Flush(arg0 context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Flush", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Flush indicates an expected call of Flush.
+func (mr *MockDatabaseAccessMockRecorder) Flush(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Flush", reflect.TypeOf((*MockDatabaseAccess)(nil).Flush), arg0)
 }
 
 // Get mocks base method.
@@ -199,25 +227,15 @@ func (mr *MockDatabaseAccessMockRecorder) InitDb() *gomock.Call {
 }
 
 // Ping mocks base method.
-func (m *MockDatabaseAccess) Ping() {
+func (m *MockDatabaseAccess) Ping(arg0 context.Context) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Ping")
+	ret := m.ctrl.Call(m, "Ping", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Ping indicates an expected call of Ping.
-func (mr *MockDatabaseAccessMockRecorder) Ping() *gomock.Call {
+func (mr *MockDatabaseAccessMockRecorder) Ping(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockDatabaseAccess)(nil).Ping))
-}
-
-// UpdateBatch mocks base method.
-func (m *MockDatabaseAccess) UpdateBatch() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "UpdateBatch")
-}
-
-// UpdateBatch indicates an expected call of UpdateBatch.
-func (mr *MockDatabaseAccessMockRecorder) UpdateBatch() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBatch", reflect.TypeOf((*MockDatabaseAccess)(nil).UpdateBatch))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockDatabaseAccess)(nil).Ping), arg0)
 }
