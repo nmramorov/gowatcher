@@ -227,7 +227,7 @@ func TestAddNegative(t *testing.T) {
 	require.Error(t, c.Add(parent, mockCounterMetric))
 }
 
-func TestAddBatchPositive(t * testing.T) {
+func TestAddBatchPositive(t *testing.T) {
 	parent := context.Background()
 	mockVal := 55.3
 	mockGaugeMetrics := make([]*m.JSONMetrics, 0, 1)

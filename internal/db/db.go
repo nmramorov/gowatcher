@@ -34,7 +34,7 @@ type DatabaseAccess interface {
 	Ping(context.Context) error
 	AddBatch(context.Context, *[]metrics.JSONMetrics) error
 	Flush(context.Context) error
- }
+}
 
 type Cursor struct {
 	DatabaseAccess
