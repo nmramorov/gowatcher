@@ -18,7 +18,7 @@ var (
 	DBDefaultTimeout = time.Duration(100) * time.Millisecond
 )
 
-type DriverMethods interface{
+type DriverMethods interface {
 	Close() error
 	PingContext(ctx context.Context) error
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
