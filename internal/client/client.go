@@ -41,8 +41,8 @@ func CreateRequests(endpoint string, mtrcs *m.Metrics) []*http.Request {
 }
 
 func createBatch(src *m.Metrics) []*m.JSONMetrics {
-	batchLen := len(src.CounterMetrics) + len(src.GaugeMetrics)
-	batch := make([]*m.JSONMetrics, batchLen)
+	batchCap := len(src.CounterMetrics) + len(src.GaugeMetrics)
+	batch := make([]*m.JSONMetrics, 0, batchCap)
 	for k, v := range src.GaugeMetrics {
 		v := v
 		batch = append(batch, &m.JSONMetrics{
