@@ -153,17 +153,17 @@ func TestInitDBNegative(t *testing.T) {
 
 func TestAddPositive(t *testing.T) {
 	parent := context.Background()
-	mock_val := 55.3
-	mock_delta := int64(3)
-	mock_gauge_metric := &m.JSONMetrics{
+	mockVal := 55.3
+	mockDelta := int64(3)
+	mockGaugeMetric := &m.JSONMetrics{
 		ID:    "1",
 		MType: "gauge",
-		Value: &mock_val,
+		Value: &mockVal,
 	}
-	mock_counter_metric := &m.JSONMetrics{
+	mockCounterMetric := &m.JSONMetrics{
 		ID:    "1",
 		MType: "counter",
-		Delta: &mock_delta,
+		Delta: &mockDelta,
 	}
 
 	ctrl := gomock.NewController(t)
@@ -171,36 +171,36 @@ func TestAddPositive(t *testing.T) {
 
 	s := mock_db.NewMockDriverMethods(ctrl)
 	s.EXPECT().
-		ExecContext(gomock.Any(), InsertIntoGauge, mock_gauge_metric.ID, mock_gauge_metric.MType, mock_gauge_metric.Value).
+		ExecContext(gomock.Any(), InsertIntoGauge, mockGaugeMetric.ID, mockGaugeMetric.MType, mockGaugeMetric.Value).
 		MaxTimes(1)
 	c := Cursor{
 		DB: s,
 	}
-	require.NoError(t, c.Add(parent, mock_gauge_metric))
+	require.NoError(t, c.Add(parent, mockGaugeMetric))
 
 	s = mock_db.NewMockDriverMethods(ctrl)
 	s.EXPECT().
-		ExecContext(gomock.Any(), InsertIntoCounter, mock_counter_metric.ID, mock_counter_metric.MType, mock_counter_metric.Delta).
+		ExecContext(gomock.Any(), InsertIntoCounter, mockCounterMetric.ID, mockCounterMetric.MType, mockCounterMetric.Delta).
 		MaxTimes(1)
 	c = Cursor{
 		DB: s,
 	}
-	require.NoError(t, c.Add(parent, mock_counter_metric))
+	require.NoError(t, c.Add(parent, mockCounterMetric))
 }
 
 func TestAddNegative(t *testing.T) {
 	parent := context.Background()
-	mock_val := 55.3
-	mock_delta := int64(3)
-	mock_gauge_metric := &m.JSONMetrics{
+	mockVal := 55.3
+	mockDelta := int64(3)
+	mockGaugeMetric := &m.JSONMetrics{
 		ID:    "1",
 		MType: "gauge",
-		Value: &mock_val,
+		Value: &mockVal,
 	}
-	mock_counter_metric := &m.JSONMetrics{
+	mockCounterMetric := &m.JSONMetrics{
 		ID:    "1",
 		MType: "counter",
-		Delta: &mock_delta,
+		Delta: &mockDelta,
 	}
 
 	ctrl := gomock.NewController(t)
@@ -208,21 +208,21 @@ func TestAddNegative(t *testing.T) {
 
 	s := mock_db.NewMockDriverMethods(ctrl)
 	s.EXPECT().
-		ExecContext(gomock.Any(), InsertIntoGauge, mock_gauge_metric.ID, mock_gauge_metric.MType, mock_gauge_metric.Value).
+		ExecContext(gomock.Any(), InsertIntoGauge, mockGaugeMetric.ID, mockGaugeMetric.MType, mockGaugeMetric.Value).
 		Return(nil, errors.ErrorWithIntervalConvertion).
 		MaxTimes(1)
 	c := Cursor{
 		DB: s,
 	}
-	require.Error(t, c.Add(parent, mock_gauge_metric))
+	require.Error(t, c.Add(parent, mockGaugeMetric))
 
 	s = mock_db.NewMockDriverMethods(ctrl)
 	s.EXPECT().
-		ExecContext(gomock.Any(), InsertIntoCounter, mock_counter_metric.ID, mock_counter_metric.MType, mock_counter_metric.Delta).
+		ExecContext(gomock.Any(), InsertIntoCounter, mockCounterMetric.ID, mockCounterMetric.MType, mockCounterMetric.Delta).
 		Return(nil, errors.ErrorWithIntervalConvertion).
 		MaxTimes(1)
 	c = Cursor{
 		DB: s,
 	}
-	require.Error(t, c.Add(parent, mock_counter_metric))
+	require.Error(t, c.Add(parent, mockCounterMetric))
 }
