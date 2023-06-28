@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/nmramorov/gowatcher/internal/collector/metrics"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestFileReaderWriter(t *testing.T) {
+func TestReaderWriter(t *testing.T) {
 	filename := "test.json"
 	testCountersMap := map[string]metrics.Counter{"PollCount": 1}
 	testGaugeMap := map[string]metrics.Gauge{"RandomValue": 222.22, "Alloc": 11.11, "Frees": 33.3}
@@ -23,28 +23,30 @@ func TestFileReaderWriter(t *testing.T) {
 			panic(err)
 		}
 	}()
-	testWriter, err := NewFileWriter(filename)
-	defer func() {
-		err := testWriter.Close()
-		if err != nil {
-			panic(err)
-		}
-	}()
+	testWriter, err := NewWriter(filename)
 	if err != nil {
 		panic(err)
 	}
-	testReader, err := NewFileReader(filename)
-	if err != nil {
-		panic(err)
-	}
-	defer func() {
-		err := testReader.Close()
+	defer func(writer Writer) {
+		err := writer.Close()
 		if err != nil {
 			panic(err)
 		}
-	}()
-	assert.NotPanics(t, func() { testWriter.WriteJson(&testMetric) })
-	jsonContent, err := testReader.ReadJson()
+	}(*testWriter)
+
+	testReader, err := NewReader(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer func(reader Reader) {
+		err := reader.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(*testReader)
+
+	assert.NotPanics(t, func() { testWriter.WriteJSON(&testMetric) })
+	jsonContent, err := testReader.ReadJSON()
 	if err != nil {
 		panic(err)
 	}

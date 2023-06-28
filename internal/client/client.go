@@ -7,17 +7,22 @@ import (
 	"net/http"
 	"time"
 
-	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
 	col "github.com/nmramorov/gowatcher/internal/collector"
-	"github.com/nmramorov/gowatcher/internal/log"
-	"github.com/nmramorov/gowatcher/internal/hashgen"
+	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
 	"github.com/nmramorov/gowatcher/internal/config"
+	"github.com/nmramorov/gowatcher/internal/hashgen"
+	"github.com/nmramorov/gowatcher/internal/log"
+)
+
+var (
+	COUNTER = "counter"
+	GAUGE   = "gauge"
 )
 
 func CreateRequests(endpoint string, mtrcs *m.Metrics) []*http.Request {
-	var requests []*http.Request
+	requests := make([]*http.Request, 0)
 	for k, v := range mtrcs.GaugeMetrics {
-		req, err := http.NewRequest(http.MethodPost, endpoint+fmt.Sprintf("/update/gauge/%s/%f", k, v), nil)
+		req, err := http.NewRequest(http.MethodPost, endpoint+fmt.Sprintf("/update/gauge/%s/%f", k, v), http.NoBody)
 		if err != nil {
 			log.ErrorLog.Printf("Could not do POST request for gauge with params: %s %f", k, v)
 		}
@@ -25,7 +30,7 @@ func CreateRequests(endpoint string, mtrcs *m.Metrics) []*http.Request {
 		requests = append(requests, req)
 	}
 	for k, v := range mtrcs.CounterMetrics {
-		req, err := http.NewRequest(http.MethodPost, endpoint+fmt.Sprintf("/update/counter/%s/%d", k, v), nil)
+		req, err := http.NewRequest(http.MethodPost, endpoint+fmt.Sprintf("/update/counter/%s/%d", k, v), http.NoBody)
 		if err != nil {
 			log.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
 		}
@@ -36,18 +41,21 @@ func CreateRequests(endpoint string, mtrcs *m.Metrics) []*http.Request {
 }
 
 func createBatch(src *m.Metrics) []*m.JSONMetrics {
-	var batch []*m.JSONMetrics
+	batchCap := len(src.CounterMetrics) + len(src.GaugeMetrics)
+	batch := make([]*m.JSONMetrics, 0, batchCap)
 	for k, v := range src.GaugeMetrics {
+		v := v
 		batch = append(batch, &m.JSONMetrics{
 			ID:    k,
-			MType: "gauge",
+			MType: GAUGE,
 			Value: (*float64)(&v),
 		})
 	}
 	for k, v := range src.CounterMetrics {
+		v := v
 		batch = append(batch, &m.JSONMetrics{
 			ID:    k,
-			MType: "counter",
+			MType: COUNTER,
 			Delta: (*int64)(&v),
 		})
 	}
@@ -57,7 +65,10 @@ func createBatch(src *m.Metrics) []*m.JSONMetrics {
 func encodeBatch(batch []*m.JSONMetrics) *bytes.Buffer {
 	body := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(body)
-	encoder.Encode(&batch)
+	err := encoder.Encode(&batch)
+	if err != nil {
+		log.ErrorLog.Printf("Error during batch encoding: %e", err)
+	}
 	return body
 }
 
@@ -82,15 +93,15 @@ func createBody(metricType, path, key, secretkey string, value interface{}) *byt
 	encoder := json.NewEncoder(body)
 	var toEncode m.JSONMetrics
 	switch metricType {
-	case "gauge":
-		toEncode.MType = "gauge"
+	case GAUGE:
+		toEncode.MType = GAUGE
 		toEncode.ID = key
 		gaugeVal := value.(m.Gauge)
 		val := (*float64)(&gaugeVal)
 		toEncode.Value = val
 		toEncode.Hash = hash
-	case "counter":
-		toEncode.MType = "counter"
+	case COUNTER:
+		toEncode.MType = COUNTER
 		toEncode.ID = key
 		counterVal := value.(m.Counter)
 		val := (*int64)(&counterVal)
@@ -102,14 +113,17 @@ func createBody(metricType, path, key, secretkey string, value interface{}) *byt
 		toEncode.Delta = nil
 		toEncode.Value = nil
 	}
-	encoder.Encode(&toEncode)
+	err := encoder.Encode(&toEncode)
+	if err != nil {
+		log.ErrorLog.Printf("error encoding body: %e", err)
+	}
 	return body
 }
 
 func createGaugeRequests(endpoint, path, key string, gaugeMetrics map[string]m.Gauge) []*http.Request {
-	var requests []*http.Request
+	requests := make([]*http.Request, 0)
 	for k, v := range gaugeMetrics {
-		body := createBody("gauge", path, k, key, v)
+		body := createBody(GAUGE, path, k, key, v)
 		req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
 		if err != nil {
 			log.ErrorLog.Printf("Could not do POST request for gauge with params: %s %f", k, v)
@@ -121,9 +135,9 @@ func createGaugeRequests(endpoint, path, key string, gaugeMetrics map[string]m.G
 }
 
 func createCounterRequests(endpoint, path, key string, counterMetrics map[string]m.Counter) []*http.Request {
-	var requests []*http.Request
+	requests := make([]*http.Request, 0)
 	for k, v := range counterMetrics {
-		body := createBody("counter", path, k, key, v)
+		body := createBody(COUNTER, path, k, key, v)
 		req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
 		if err != nil {
 			log.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
@@ -152,7 +166,10 @@ func PushMetrics(client *http.Client, endpoint string, mtrcs *m.Metrics, key str
 		if err != nil {
 			log.ErrorLog.Println(err)
 		}
-		defer resp.Body.Close()
+		err = resp.Body.Close()
+		if err != nil {
+			log.ErrorLog.Printf("error during response body close: %e", err)
+		}
 	}
 }
 
@@ -167,7 +184,10 @@ func PushMetricsBatch(client *http.Client, endpoint string, mtrcs *m.Metrics) {
 	if err != nil {
 		log.ErrorLog.Println(err)
 	}
-	defer resp.Body.Close()
+	err = resp.Body.Close()
+	if err != nil {
+		log.ErrorLog.Printf("error during response body close: %e", err)
+	}
 }
 
 func GetMetricsValues(client *http.Client, endpoint, key string, mtrcs *m.Metrics) {
@@ -182,7 +202,10 @@ func GetMetricsValues(client *http.Client, endpoint, key string, mtrcs *m.Metric
 		if err != nil {
 			log.ErrorLog.Println(err)
 		}
-		defer resp.Body.Close()
+		err = resp.Body.Close()
+		if err != nil {
+			log.ErrorLog.Printf("error during response body close: %e", err)
+		}
 	}
 }
 
@@ -212,7 +235,7 @@ func RunTickers(agentConfig *config.AgentConfig, jobCh chan<- *Job) {
 func RunConcurrently(config *config.AgentConfig, client *http.Client, endpoint string) {
 	jobCh := make(chan *Job, config.RateLimit)
 
-	var collector = col.NewCollector()
+	collector := col.NewCollector()
 	go func() {
 		RunTickers(config, jobCh)
 	}()
@@ -221,7 +244,6 @@ func RunConcurrently(config *config.AgentConfig, client *http.Client, endpoint s
 		log.InfoLog.Printf("Running job %s", job.RequestType)
 		RunJob(job, collector, client, endpoint, config)
 	}
-
 }
 
 func RunJob(job *Job, collector *col.Collector, client *http.Client, endpoint string, agentConfig *config.AgentConfig) {
@@ -247,7 +269,7 @@ func RunJob(job *Job, collector *col.Collector, client *http.Client, endpoint st
 	}
 }
 
-type Client struct {}
+type Client struct{}
 
 func (c *Client) Run() {
 	agentConfig := config.GetAgentConfig()

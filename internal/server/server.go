@@ -1,8 +1,10 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/nmramorov/gowatcher/internal/api/handlers"
@@ -12,8 +14,11 @@ import (
 	"github.com/nmramorov/gowatcher/internal/log"
 )
 
-func GetMetricsHandler(options *config.ServerConfig) (*handlers.Handler, error) {
-	cursor, err := db.NewCursor(options.Database, "pgx")
+func GetMetricsHandler(parent context.Context, options *config.ServerConfig) (*handlers.Handler, error) {
+	ctx, cancel := context.WithCancel(parent)
+	defer cancel()
+
+	cursor, err := db.NewCursor(ctx, options.Database, "pgx")
 	if err != nil {
 		cursor.IsValid = false
 	}
@@ -24,20 +29,20 @@ func GetMetricsHandler(options *config.ServerConfig) (*handlers.Handler, error) 
 	}
 	if options.Restore {
 		log.InfoLog.Println("Restoring configuration from file...")
-		reader, err := file.NewFileReader(path + options.StoreFile)
+		reader, err := file.NewReader(path + options.StoreFile)
 		defer func() {
-			err := reader.Close()
+			err = reader.Close()
 			if err != nil {
 				log.ErrorLog.Printf("Error closing file during read operation: %e", err)
 			}
 		}()
 		if err != nil {
-			log.ErrorLog.Printf("Error happend creating File Reader: %e", err)
+			log.ErrorLog.Printf("Error happened creating File Reader: %e", err)
 			return nil, err
 		}
-		storedMetrics, err := reader.ReadJson()
+		storedMetrics, err := reader.ReadJSON()
 		if err != nil {
-			log.ErrorLog.Printf("Error happend during JSON reading: %e", err)
+			log.ErrorLog.Printf("Error happened during JSON reading: %e", err)
 			return handlers.NewHandler(options.Key, cursor), nil
 		}
 		metricsHandler := handlers.NewHandlerFromSavedData(storedMetrics, options.Key, cursor)
@@ -53,9 +58,9 @@ func StartSavingToDisk(options *config.ServerConfig, handler *handlers.Handler) 
 		log.ErrorLog.Printf("no file to save exist: %e", err)
 		return err
 	}
-	writer, err := file.NewFileWriter(path + options.StoreFile)
+	writer, err := file.NewWriter(path + options.StoreFile)
 	defer func() {
-		err := writer.Close()
+		err = writer.Close()
 		if err != nil {
 			log.ErrorLog.Printf("Error closing file during write operation: %e", err)
 		}
@@ -70,7 +75,7 @@ func StartSavingToDisk(options *config.ServerConfig, handler *handlers.Handler) 
 		tickedTime := <-ticker.C
 		timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
 		if timeDiffSec%int64(options.StoreInterval) == 0 {
-			err := writer.WriteJson(handler.GetCurrentMetrics())
+			err := writer.WriteJSON(handler.GetCurrentMetrics())
 			if err != nil {
 				log.ErrorLog.Printf("Error happened during saving metrics to JSON: %e", err)
 			}
@@ -81,24 +86,59 @@ func StartSavingToDisk(options *config.ServerConfig, handler *handlers.Handler) 
 
 type Server struct{}
 
-func (s *Server) Run() {
+var ServerReadHeaderTimeout = 10
+
+func (s *Server) Run(parent context.Context) error {
+	ctx, cancel := context.WithCancel(parent)
+	defer cancel()
+
+	var wg sync.WaitGroup
+
 	serverConfig := config.GetServerConfig()
 
-	metricsHandler, _ := GetMetricsHandler(serverConfig)
+	metricsHandler, err := GetMetricsHandler(ctx, serverConfig)
+	if err != nil {
+		log.ErrorLog.Printf("could not get metrics handler: %e", err)
+		return err
+	}
 
 	if serverConfig.Database != "" {
-		metricsHandler.InitDb()
+		err = metricsHandler.InitDB(ctx)
+		if err != nil {
+			log.ErrorLog.Printf("error initializing db: %e", err)
+			return err
+		}
 	}
+	wg.Add(1)
 	if serverConfig.StoreFile != "" {
-		go StartSavingToDisk(serverConfig, metricsHandler)
+		go func() {
+			err = StartSavingToDisk(serverConfig, metricsHandler)
+			if err != nil {
+				log.ErrorLog.Printf("error starting saving file to disk: %e", err)
+			}
+			wg.Done()
+		}()
 		log.InfoLog.Println("Initialized file saving")
 	}
 
 	server := &http.Server{
-		Addr:    serverConfig.Address,
-		Handler: metricsHandler,
+		Addr:              serverConfig.Address,
+		Handler:           metricsHandler,
+		ReadHeaderTimeout: time.Duration(ServerReadHeaderTimeout) * time.Second,
 	}
+	defer func() {
+		err = server.Shutdown(ctx)
+		if err != nil {
+			log.ErrorLog.Printf("error shutting down server: %e", err)
+		}
+	}()
 
 	log.InfoLog.Println("Web server is ready to accept connections...")
-	server.ListenAndServe()
+	err = server.ListenAndServe()
+	if err != nil {
+		log.ErrorLog.Printf("Unexpected error occurred: %e", err)
+	}
+	wg.Wait()
+
+	return nil
 }

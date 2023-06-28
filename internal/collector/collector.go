@@ -11,12 +11,12 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 
 	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
-	"github.com/nmramorov/gowatcher/internal/log"
 	"github.com/nmramorov/gowatcher/internal/errors"
+	"github.com/nmramorov/gowatcher/internal/log"
 )
 
 type Collector struct {
-	m.MetricsCollector
+	m.Collector
 	Metrics *m.Metrics
 	Updates int
 	mu      sync.Mutex
@@ -46,7 +46,7 @@ func (col *Collector) UpdateMetrics() {
 	runtime.ReadMemStats(&newstats)
 
 	col.Updates++
-	col.Metrics = m.UpdateMetrics(newstats, col.Updates)
+	col.Metrics = m.UpdateMetrics(&newstats, col.Updates)
 }
 
 func (col *Collector) GetMetrics() *m.Metrics {
@@ -79,7 +79,7 @@ func (col *Collector) String(value interface{}) (string, error) {
 	}
 }
 
-func (col *Collector) UpdateMetricFromJson(newMetric *m.JSONMetrics) (*m.JSONMetrics, error) {
+func (col *Collector) UpdateMetricFromJSON(newMetric *m.JSONMetrics) (*m.JSONMetrics, error) {
 	col.mu.Lock()
 	defer col.mu.Unlock()
 	result := m.JSONMetrics{}
@@ -89,8 +89,7 @@ func (col *Collector) UpdateMetricFromJson(newMetric *m.JSONMetrics) (*m.JSONMet
 		val := col.Metrics.GaugeMetrics[newMetric.ID]
 		result.Value = (*float64)(&val)
 	case "counter":
-
-		col.Metrics.CounterMetrics[newMetric.ID] = col.Metrics.CounterMetrics[newMetric.ID] + m.Counter(*newMetric.Delta)
+		col.Metrics.CounterMetrics[newMetric.ID] += m.Counter(*newMetric.Delta)
 		delta := col.Metrics.CounterMetrics[newMetric.ID]
 		result.Delta = (*int64)(&delta)
 	default:
@@ -101,7 +100,7 @@ func (col *Collector) UpdateMetricFromJson(newMetric *m.JSONMetrics) (*m.JSONMet
 	return &result, nil
 }
 
-func (col *Collector) GetMetricJson(requestedMetric *m.JSONMetrics) (*m.JSONMetrics, error) {
+func (col *Collector) GetMetricJSON(requestedMetric *m.JSONMetrics) (*m.JSONMetrics, error) {
 	result := m.JSONMetrics{}
 	switch requestedMetric.MType {
 	case "gauge":
@@ -122,7 +121,7 @@ func (col *Collector) GetMetricJson(requestedMetric *m.JSONMetrics) (*m.JSONMetr
 
 func (col *Collector) UpdateBatch(metrics []*m.JSONMetrics) error {
 	for _, metric := range metrics {
-		_, err := col.UpdateMetricFromJson(metric)
+		_, err := col.UpdateMetricFromJSON(metric)
 		if err != nil {
 			log.ErrorLog.Printf("could not update metric as batch part: %e", err)
 			return err

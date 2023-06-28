@@ -1,4 +1,4 @@
-package cli_parser
+package cliparser
 
 import (
 	"flag"
@@ -24,12 +24,11 @@ type AgentCLIOptions struct {
 }
 
 func (scli *ServerCLIOptions) GetNumericInterval(intervalName string) int64 {
-	switch intervalName {
-	case "StoreInterval":
+	if intervalName == "StoreInterval" {
 		multiplier := getMultiplier(scli.StoreInterval)
 		stringValue := strings.Split(scli.StoreInterval, scli.StoreInterval[len(scli.StoreInterval)-1:])[0]
 		value, _ := strconv.ParseInt(stringValue, 10, 64)
-		return *multiplier * value
+		return multiplier * value
 	}
 
 	return 0
@@ -41,24 +40,24 @@ func (acli *AgentCLIOptions) GetNumericInterval(intervalName string) int64 {
 		multiplier := getMultiplier(acli.ReportInterval)
 		stringValue := strings.Split(acli.ReportInterval, acli.ReportInterval[len(acli.ReportInterval)-1:])[0]
 		value, _ := strconv.ParseInt(stringValue, 10, 64)
-		return *multiplier * value
+		return multiplier * value
 	case "PollInterval":
 		multiplier := getMultiplier(acli.PollInterval)
 		stringValue := strings.Split(acli.PollInterval, acli.PollInterval[len(acli.PollInterval)-1:])[0]
 		value, _ := strconv.ParseInt(stringValue, 10, 64)
-		return *multiplier * value
+		return multiplier * value
 	}
 
 	return 0
 }
 
 func NewServerCliOptions() *ServerCLIOptions {
-	var address = flag.String("a", "localhost:8080", "server address")
-	var restore = flag.String("r", "default", "restore metrics from file")
-	var storeInterval = flag.String("i", "30s", "period between file save")
-	var storeFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
-	var key = flag.String("k", "", "key to calculate hash")
-	var database = flag.String("d", "", "database link")
+	address := flag.String("a", "localhost:8080", "server address")
+	restore := flag.String("r", "default", "restore metrics from file")
+	storeInterval := flag.String("i", "30s", "period between file save")
+	storeFile := flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
+	key := flag.String("k", "", "key to calculate hash")
+	database := flag.String("d", "", "database link")
 	flag.Parse()
 
 	return &ServerCLIOptions{
@@ -72,11 +71,11 @@ func NewServerCliOptions() *ServerCLIOptions {
 }
 
 func NewAgentCliOptions() *AgentCLIOptions {
-	var address = flag.String("a", "localhost:8080", "server address")
-	var reportInterval = flag.String("r", "10s", "report interval time")
-	var pollInterval = flag.String("p", "2s", "poll interval time")
-	var key = flag.String("k", "", "key to calculate hash")
-	var rate = flag.Int("l", 0, "rate limit")
+	address := flag.String("a", "localhost:8080", "server address")
+	reportInterval := flag.String("r", "10s", "report interval time")
+	pollInterval := flag.String("p", "2s", "poll interval time")
+	key := flag.String("k", "", "key to calculate hash")
+	rate := flag.Int("l", 0, "rate limit")
 	flag.Parse()
 
 	return &AgentCLIOptions{
@@ -88,7 +87,7 @@ func NewAgentCliOptions() *AgentCLIOptions {
 	}
 }
 
-func getMultiplier(intervalValue string) *int64 {
+func getMultiplier(intervalValue string) int64 {
 	var multiplier int64
 	splitter := intervalValue[len(intervalValue)-1:]
 
@@ -97,9 +96,6 @@ func getMultiplier(intervalValue string) *int64 {
 		multiplier = 1
 	case `m`:
 		multiplier = 60
-	default:
-		multiplier = 1
 	}
-	return &multiplier
+	return multiplier
 }
-

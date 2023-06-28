@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,10 +12,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	
 
-	"github.com/nmramorov/gowatcher/internal/db"
 	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
+	"github.com/nmramorov/gowatcher/internal/db"
 	// "github.com/nmramorov/gowatcher/internal/log"
 )
 
@@ -33,7 +33,7 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string) (int, s
 	return resp.StatusCode, string(respBody)
 }
 
-func testRequestJson(t *testing.T, ts *httptest.Server, method, path string, payload interface{}) (int, []byte) {
+func testRequestJSON(t *testing.T, ts *httptest.Server, method, path string, payload interface{}) (int, []byte) {
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
 	encoder.Encode(payload)
@@ -164,7 +164,8 @@ func TestPOSTMetricsHandlerNoJson(t *testing.T) {
 			},
 		},
 	}
-	MOCKCURSOR, _ := db.NewCursor("", "pgx")
+	ctx := context.Background()
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
@@ -251,7 +252,8 @@ func TestGETMetricsHandler(t *testing.T) {
 			},
 		},
 	}
-	MOCKCURSOR, _ := db.NewCursor("", "pgx")
+	ctx := context.Background()
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
@@ -269,7 +271,9 @@ func TestGETMetricsHandler(t *testing.T) {
 }
 
 func TestHTML(t *testing.T) {
-	MOCKCURSOR, _ := db.NewCursor("", "pgx")
+	ctx := context.Background()
+
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 	metricsHandler.collector.UpdateMetrics()
 
@@ -335,8 +339,9 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 			},
 		},
 	}
+	ctx := context.Background()
 
-	MOCKCURSOR, _ := db.NewCursor("", "pgx")
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
@@ -346,7 +351,7 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			urlPath := "/update/"
-			statusCode, body := testRequestJson(t, ts, "POST", urlPath, tt.args)
+			statusCode, body := testRequestJSON(t, ts, "POST", urlPath, tt.args)
 			assert.Equal(t, tt.want.code, statusCode)
 			result := m.JSONMetrics{}
 			if err := json.Unmarshal(body, &result); err != nil {
@@ -356,7 +361,6 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 		})
 	}
 }
-
 
 // ToDO: Fix Example!
 // func Example() {
@@ -494,8 +498,9 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 			},
 		},
 	}
+	ctx := context.Background()
 
-	MOCKCURSOR, _ := db.NewCursor("", "pgx")
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
@@ -505,7 +510,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			urlPath := "/value/"
-			statusCode, body := testRequestJson(t, ts, "POST", urlPath, tt.args)
+			statusCode, body := testRequestJSON(t, ts, "POST", urlPath, tt.args)
 			assert.Equal(t, tt.want.code, statusCode)
 			result := m.JSONMetrics{}
 			if err := json.Unmarshal(body, &result); err != nil {
@@ -534,7 +539,9 @@ func TestPing(t *testing.T) {
 			},
 		},
 	}
-	MOCKCURSOR, _ := db.NewCursor("", "pgx")
+	ctx := context.Background()
+
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
 	metricsHandler := NewHandler("", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
@@ -549,5 +556,4 @@ func TestPing(t *testing.T) {
 			assert.Equal(t, tt.want.code, statusCode)
 		})
 	}
-
 }

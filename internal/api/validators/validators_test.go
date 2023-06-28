@@ -49,7 +49,7 @@ var tests []test = []test{
 }
 
 func TestValidateMetricType(t *testing.T) {
-	var newCollector = col.NewCollector()
+	newCollector := col.NewCollector()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, ValidateMetric(tt.inputType, tt.input, newCollector), tt.result)

@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/nmramorov/gowatcher/internal/log"
 )
 
 type gzipWriter struct {
@@ -29,10 +31,18 @@ func GzipHandle(next http.Handler) http.Handler {
 		// создаём gzip.Writer поверх текущего w
 		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 		if err != nil {
-			io.WriteString(w, err.Error())
+			_, err = io.WriteString(w, err.Error())
+			if err != nil {
+				log.ErrorLog.Printf("error writing string in Gzip: %e", err)
+			}
 			return
 		}
-		defer gz.Close()
+		defer func() {
+			err := gz.Close()
+			if err != nil {
+				log.ErrorLog.Printf("error in Gzip close: %e", err)
+			}
+		}()
 
 		w.Header().Set("Content-Encoding", "gzip")
 		// передаём обработчику страницы переменную типа gzipWriter для вывода данных

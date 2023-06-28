@@ -6,6 +6,8 @@ import (
 	"github.com/nmramorov/gowatcher/internal/log"
 )
 
+var DEFAULT = "default"
+
 type ServerConfig struct {
 	Address       string
 	Restore       bool
@@ -16,35 +18,35 @@ type ServerConfig struct {
 }
 
 func checkServerConfig(envs *env.ServerEnvConfig, clies *cli.ServerCLIOptions) *ServerConfig {
-	var addr string = clies.Address
-	var storeint string = clies.StoreInterval
-	var storefile string = clies.StoreFile
-	var cliRest string = clies.Restore
-	var rest bool
-	var storeintNumeric int = int(clies.GetNumericInterval("StoreInterval"))
-	var key string = clies.Key
-	var db string = clies.Database
-	if envs.Address != env.ADDRESS && envs.Address != addr {
+	addr := clies.Address
+	storeint := clies.StoreInterval
+	storefile := clies.StoreFile
+	cliRest := clies.Restore
+	rest := false
+	storeintNumeric := int(clies.GetNumericInterval("StoreInterval"))
+	key := clies.Key
+	db := clies.Database
+	if envs.Address != env.Address && envs.Address != addr {
 		addr = envs.Address
 	}
-	if envs.Restore != "default" && envs.Restore != "" {
+	if envs.Restore != env.Restore && envs.Restore != "" {
 		if envs.Restore == "true" {
 			rest = true
 		} else {
 			rest = false
 		}
 	}
-	if envs.Restore == "default" && cliRest != "default" {
+	if envs.Restore == env.Restore && cliRest != DEFAULT {
 		if cliRest == "true" {
 			rest = true
 		} else {
 			rest = false
 		}
 	}
-	if envs.StoreFile != env.STORE_FILE && envs.StoreFile != storefile {
+	if envs.StoreFile != env.StoreFile && envs.StoreFile != storefile {
 		storefile = envs.StoreFile
 	}
-	if envs.StoreInterval != env.STORE_INTERVAL && envs.StoreInterval != "" && envs.StoreInterval != storeint {
+	if envs.StoreInterval != env.StoreInterval && envs.StoreInterval != "" && envs.StoreInterval != storeint {
 		storeintNumeric = int(envs.GetNumericInterval("StoreInterval"))
 	}
 	if envs.Key != "" && envs.Key != key {
@@ -95,20 +97,20 @@ type AgentConfig struct {
 }
 
 func checkAgentConfig(envs *env.AgentEnvConfig, clies *cli.AgentCLIOptions) *AgentConfig {
-	var addr string = clies.Address
-	var pollint string = clies.PollInterval
-	var reportint string = clies.ReportInterval
-	var key string = clies.Key
-	var reportintNumeric int = int(clies.GetNumericInterval("ReportInterval"))
-	var pollintNumeric int = int(clies.GetNumericInterval("PollInterval"))
-	var rate int = clies.RateLimit
-	if envs.Address != env.ADDRESS && envs.Address != addr {
+	addr := clies.Address
+	pollint := clies.PollInterval
+	reportint := clies.ReportInterval
+	key := clies.Key
+	reportintNumeric := int(clies.GetNumericInterval("ReportInterval"))
+	pollintNumeric := int(clies.GetNumericInterval("PollInterval"))
+	rate := clies.RateLimit
+	if envs.Address != env.Address && envs.Address != addr {
 		addr = envs.Address
 	}
-	if envs.ReportInterval != env.REPORT_INTERVAL && envs.ReportInterval != "" && envs.ReportInterval != reportint {
+	if envs.ReportInterval != env.ReportInterval && envs.ReportInterval != "" && envs.ReportInterval != reportint {
 		reportintNumeric = int(envs.GetNumericInterval("ReportInterval"))
 	}
-	if envs.PollInterval != env.POLL_INTERVAL && envs.PollInterval != "" && envs.PollInterval != pollint {
+	if envs.PollInterval != env.PollInterval && envs.PollInterval != "" && envs.PollInterval != pollint {
 		pollintNumeric = int(envs.GetNumericInterval("PollInterval"))
 	}
 	if envs.Key != "" && envs.Key != key {
