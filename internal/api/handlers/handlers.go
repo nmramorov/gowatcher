@@ -306,15 +306,21 @@ func (h *Handler) UpdateJSONBatch(rw http.ResponseWriter, r *http.Request) {
 	err := h.collector.UpdateBatch(metricsBatch)
 	if err != nil {
 		log.ErrorLog.Println("could not update batch...")
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
 	}
 	if h.cursor.IsValid {
 		err = h.cursor.AddBatch(r.Context(), metricsBatch)
 		if err != nil {
 			log.ErrorLog.Println("could not add batch data to db...")
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	}
 	if err != nil {
 		log.ErrorLog.Printf("Error occurred during metric update from json: %e", err)
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	log.InfoLog.Println("received and worked with metrics batch")
 	log.InfoLog.Println(metricsBatch)
@@ -323,10 +329,14 @@ func (h *Handler) UpdateJSONBatch(rw http.ResponseWriter, r *http.Request) {
 	err = encoder.Encode(metricsBatch)
 	if err != nil {
 		log.ErrorLog.Printf("error encoding metrics batch: %e", err)
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	rw.Header().Set("Content-Type", "application/json")
 	_, err = rw.Write(buf.Bytes())
 	if err != nil {
 		log.ErrorLog.Printf("error updating JSON batch request: %e", err)
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
