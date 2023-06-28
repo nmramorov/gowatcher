@@ -27,9 +27,9 @@ type DriverMethods interface {
 }
 
 type DatabaseAccess interface {
-	InitDb() error
+	InitDb(context.Context) error
 	Add(context.Context, *metrics.JSONMetrics) error
-	Get(string) (*metrics.JSONMetrics, error)
+	Get(context.Context, *metrics.JSONMetrics) (*metrics.JSONMetrics, error)
 	CloseConnection(context.Context) error
 	Ping(context.Context) error
 	AddBatch(context.Context, *[]metrics.JSONMetrics) error
