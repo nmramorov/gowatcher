@@ -94,8 +94,11 @@ func (s *Server) Run(parent context.Context) error {
 
 	var wg sync.WaitGroup
 
-	serverConfig := config.GetServerConfig()
-
+	serverConfig, err := config.GetServerConfig()
+	if err != nil {
+		log.ErrorLog.Printf("could not get server config: %e", err)
+		return err
+	}
 	metricsHandler, err := GetMetricsHandler(ctx, serverConfig)
 	if err != nil {
 		log.ErrorLog.Printf("could not get metrics handler: %e", err)

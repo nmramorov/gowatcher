@@ -65,13 +65,16 @@ func checkServerConfig(envs *env.ServerEnvConfig, clies *cli.ServerCLIOptions) *
 	}
 }
 
-func GetServerConfig() *ServerConfig {
+func GetServerConfig() (*ServerConfig, error) {
 	envConfig, err := env.NewServerEnvConfig()
 	log.InfoLog.Println(envConfig, err)
 	if err != nil {
 		log.InfoLog.Println("could not get env for server config, getting data from cli...")
-		cliConfig := cli.NewServerCliOptions()
-		return checkServerConfig(envConfig, cliConfig)
+		cliConfig, err := cli.NewServerCliOptions()
+		if err != nil {
+			return nil, err
+		}
+		return checkServerConfig(envConfig, cliConfig), nil
 	}
 	var rest bool
 	if envConfig.Restore == "true" {
@@ -85,7 +88,7 @@ func GetServerConfig() *ServerConfig {
 		StoreInterval: int(envConfig.GetNumericInterval("StoreInterval")),
 		StoreFile:     envConfig.StoreFile,
 		Database:      envConfig.Database,
-	}
+	}, nil
 }
 
 type AgentConfig struct {

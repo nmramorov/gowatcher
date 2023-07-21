@@ -44,6 +44,7 @@ type Cursor struct {
 }
 
 func NewCursor(parent context.Context, link, adaptor string) (*Cursor, error) {
+	// Add InitDB here
 	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
 	defer cancel()
 
@@ -57,6 +58,7 @@ func NewCursor(parent context.Context, link, adaptor string) (*Cursor, error) {
 		IsValid: true,
 		buffer:  make([]*metrics.JSONMetrics, 0, 100),
 	}
+
 	err = cursor.Ping(ctx)
 	if err != nil {
 		cursor.IsValid = false
@@ -121,19 +123,20 @@ func (c *Cursor) InitDB(parent context.Context) error {
 	return nil
 }
 
-func (c *Cursor) Add(parent context.Context, incomingMetrics *metrics.JSONMetrics) error {
+func add(parent context.Context, incomingMetrics *metrics.JSONMetrics, db interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}) error {
 	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
 	defer cancel()
-
 	switch incomingMetrics.MType {
 	case GAUGE:
-		if _, err := c.DB.ExecContext(
+		if _, err := db.ExecContext(
 			ctx, InsertIntoGauge, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Value); err != nil {
 			log.ErrorLog.Printf("error adding gauge row %s to DB: %e", incomingMetrics.ID, err)
 			return err
 		}
 	case COUNTER:
-		if _, err := c.DB.ExecContext(
+		if _, err := db.ExecContext(
 			ctx, InsertIntoCounter, incomingMetrics.ID, incomingMetrics.MType, incomingMetrics.Delta); err != nil {
 			log.ErrorLog.Printf("error adding counter row %s to db: %e", incomingMetrics.ID, err)
 			return err
@@ -141,6 +144,10 @@ func (c *Cursor) Add(parent context.Context, incomingMetrics *metrics.JSONMetric
 	}
 	log.InfoLog.Printf("added %s data to db...", incomingMetrics.ID)
 	return nil
+}
+
+func (c *Cursor) Add(parent context.Context, incomingMetrics *metrics.JSONMetrics) error {
+	return add(parent, incomingMetrics, c.DB)
 }
 
 func (c *Cursor) Get(parent context.Context, metricToFind *metrics.JSONMetrics) (*metrics.JSONMetrics, error) {
@@ -185,19 +192,26 @@ func (c *Cursor) AddBatch(parent context.Context, metrics []*metrics.JSONMetrics
 			log.ErrorLog.Printf("cannot add record to the database")
 			return err
 		}
+		c.buffer = c.buffer[:0]
 	}
 	return nil
 }
 
 func (c *Cursor) Flush(parent context.Context) error {
+	return flush(parent, c.buffer, c.DB)
+}
+
+func flush(parent context.Context, buffer []*metrics.JSONMetrics, db interface {
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
+}) error {
 	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
 	defer cancel()
 
 	// проверим на всякий случай
-	if c.DB == nil {
+	if db == nil {
 		log.ErrorLog.Printf("You haven`t opened the database connection")
 	}
-	tx, err := c.DB.BeginTx(ctx, nil)
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -223,7 +237,7 @@ func (c *Cursor) Flush(parent context.Context) error {
 		}
 	}()
 
-	for _, v := range c.buffer {
+	for _, v := range buffer {
 		switch v.MType {
 		case GAUGE:
 			if _, err = stmtGauge.ExecContext(ctx, v.ID, v.MType, v.Value); err != nil {
@@ -246,7 +260,67 @@ func (c *Cursor) Flush(parent context.Context) error {
 		log.ErrorLog.Printf("update drivers: unable to commit: %v", err)
 		return err
 	}
-
-	c.buffer = c.buffer[:0]
 	return nil
 }
+
+// func (c *Cursor) Flush(parent context.Context) error {
+// 	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
+// 	defer cancel()
+
+// 	// проверим на всякий случай
+// 	if c.DB == nil {
+// 		log.ErrorLog.Printf("You haven`t opened the database connection")
+// 	}
+// 	tx, err := c.DB.BeginTx(ctx, nil)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	stmtGauge, err := tx.PrepareContext(ctx, InsertIntoGauge)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	stmtCounter, err := tx.PrepareContext(ctx, InsertIntoCounter)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer func() {
+// 		err = stmtGauge.Close()
+// 		if err != nil {
+// 			log.ErrorLog.Printf("error closing Gauge statement: %e", err)
+// 		}
+// 	}()
+// 	defer func() {
+// 		err = stmtCounter.Close()
+// 		if err != nil {
+// 			log.ErrorLog.Printf("error closing Counter statement: %e", err)
+// 		}
+// 	}()
+
+// 	for _, v := range c.buffer {
+// 		switch v.MType {
+// 		case GAUGE:
+// 			if _, err = stmtGauge.ExecContext(ctx, v.ID, v.MType, v.Value); err != nil {
+// 				if err = tx.Rollback(); err != nil {
+// 					log.ErrorLog.Printf("update drivers: unable to rollback: %v", err)
+// 				}
+// 				return err
+// 			}
+// 		case COUNTER:
+// 			if _, err = stmtCounter.ExecContext(ctx, v.ID, v.MType, v.Delta); err != nil {
+// 				if err = tx.Rollback(); err != nil {
+// 					log.ErrorLog.Printf("update drivers: unable to rollback: %v", err)
+// 				}
+// 				return err
+// 			}
+// 		}
+// 	}
+
+// 	if err := tx.Commit(); err != nil {
+// 		log.ErrorLog.Printf("update drivers: unable to commit: %v", err)
+// 		return err
+// 	}
+
+// 	c.buffer = c.buffer[:0]
+// 	return nil
+// }

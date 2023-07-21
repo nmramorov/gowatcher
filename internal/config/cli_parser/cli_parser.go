@@ -2,8 +2,12 @@ package cliparser
 
 import (
 	"flag"
+	"os"
 	"strconv"
 	"strings"
+
+	"github.com/nmramorov/gowatcher/internal/errors"
+	"github.com/nmramorov/gowatcher/internal/log"
 )
 
 type ServerCLIOptions struct {
@@ -51,14 +55,18 @@ func (acli *AgentCLIOptions) GetNumericInterval(intervalName string) int64 {
 	return 0
 }
 
-func NewServerCliOptions() *ServerCLIOptions {
-	address := flag.String("a", "localhost:8080", "server address")
-	restore := flag.String("r", "default", "restore metrics from file")
-	storeInterval := flag.String("i", "30s", "period between file save")
-	storeFile := flag.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
-	key := flag.String("k", "", "key to calculate hash")
-	database := flag.String("d", "", "database link")
-	flag.Parse()
+func NewServerCliOptions() (*ServerCLIOptions, error) {
+	serverOptions := flag.NewFlagSet("server options", flag.ContinueOnError)
+	address := serverOptions.String("a", "localhost:8080", "server address")
+	restore := serverOptions.String("r", "default", "restore metrics from file")
+	storeInterval := serverOptions.String("i", "30s", "period between file save")
+	storeFile := serverOptions.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
+	key := serverOptions.String("k", "", "key to calculate hash")
+	database := serverOptions.String("d", "", "database link")
+	if err := serverOptions.Parse(os.Args[1:]); err != nil {
+		log.ErrorLog.Printf("error parsing server cli options: %e", err)
+		return nil, errors.ErrorWithCli
+	}
 
 	return &ServerCLIOptions{
 		Address:       *address,
@@ -67,7 +75,7 @@ func NewServerCliOptions() *ServerCLIOptions {
 		StoreFile:     *storeFile,
 		Key:           *key,
 		Database:      *database,
-	}
+	}, nil
 }
 
 func NewAgentCliOptions() *AgentCLIOptions {
