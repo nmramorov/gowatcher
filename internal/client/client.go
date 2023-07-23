@@ -272,7 +272,11 @@ func RunJob(job *Job, collector *col.Collector, client *http.Client, endpoint st
 type Client struct{}
 
 func (c *Client) Run() {
-	agentConfig := config.GetAgentConfig()
+	agentConfig, err := config.GetAgentConfig()
+	if err != nil {
+		log.ErrorLog.Printf("Error with agent config: %e", err)
+		return
+	}
 	endpoint := "http://" + agentConfig.Address
 
 	client := &http.Client{}

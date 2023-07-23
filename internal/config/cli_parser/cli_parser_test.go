@@ -27,9 +27,20 @@ func TestPositiveNewServerCLIOptions(t *testing.T) {
 	assert.Equal(t, int64(0), config.GetNumericInterval("MyInterval"))
 }
 
-
 func TestNegativeNewServerCLIOptions(t *testing.T) {
 	os.Args = []string{"main.go", "-b", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd"}
 	_, err := NewServerCliOptions()
+	assert.Error(t, err)
+}
+
+func TestPositiveNewAgentCLIOptions(t *testing.T) {
+	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=5s", "-p=5m", "-k=salt", "-l=13"}
+	_, err := NewAgentCliOptions()
+	assert.NoError(t, err)
+}
+
+func TestNegativeNewAgentCLIOptions(t *testing.T) {
+	os.Args = []string{"main.go", "-b", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd"}
+	_, err := NewAgentCliOptions()
 	assert.Error(t, err)
 }

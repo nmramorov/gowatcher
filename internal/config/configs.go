@@ -131,17 +131,20 @@ func checkAgentConfig(envs *env.AgentEnvConfig, clies *cli.AgentCLIOptions) *Age
 	}
 }
 
-func GetAgentConfig() *AgentConfig {
+func GetAgentConfig() (*AgentConfig, error) {
 	envConfig, err := env.NewAgentEnvConfig()
 	if err != nil {
 		log.InfoLog.Println("could not get env for server config, getting data from cli...")
-		cliConfig := cli.NewAgentCliOptions()
-		return checkAgentConfig(envConfig, cliConfig)
+		cliConfig, err := cli.NewAgentCliOptions()
+		if err != nil {
+			return nil, err
+		}
+		return checkAgentConfig(envConfig, cliConfig), nil
 	}
 	return &AgentConfig{
 		Address:        envConfig.Address,
 		PollInterval:   int(envConfig.GetNumericInterval("PollInterval")),
 		ReportInterval: int(envConfig.GetNumericInterval("ReportInterval")),
 		Key:            envConfig.Key,
-	}
+	}, nil
 }

@@ -78,13 +78,17 @@ func NewServerCliOptions() (*ServerCLIOptions, error) {
 	}, nil
 }
 
-func NewAgentCliOptions() *AgentCLIOptions {
-	address := flag.String("a", "localhost:8080", "server address")
-	reportInterval := flag.String("r", "10s", "report interval time")
-	pollInterval := flag.String("p", "2s", "poll interval time")
-	key := flag.String("k", "", "key to calculate hash")
-	rate := flag.Int("l", 0, "rate limit")
-	flag.Parse()
+func NewAgentCliOptions() (*AgentCLIOptions, error) {
+	agentOptions := flag.NewFlagSet("agent options", flag.ContinueOnError)
+	address := agentOptions.String("a", "localhost:8080", "server address")
+	reportInterval := agentOptions.String("r", "10s", "report interval time")
+	pollInterval := agentOptions.String("p", "2s", "poll interval time")
+	key := agentOptions.String("k", "", "key to calculate hash")
+	rate := agentOptions.Int("l", 0, "rate limit")
+	if err := agentOptions.Parse(os.Args[1:]); err != nil {
+		log.ErrorLog.Printf("error parsing agent cli options: %e", err)
+		return nil, errors.ErrorWithCli
+	}
 
 	return &AgentCLIOptions{
 		Address:        *address,
@@ -92,7 +96,7 @@ func NewAgentCliOptions() *AgentCLIOptions {
 		PollInterval:   *pollInterval,
 		Key:            *key,
 		RateLimit:      *rate,
-	}
+	}, nil
 }
 
 func getMultiplier(intervalValue string) int64 {
