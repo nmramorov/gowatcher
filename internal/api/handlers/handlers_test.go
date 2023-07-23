@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/nmramorov/gowatcher/internal/collector"
 	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
 	"github.com/nmramorov/gowatcher/internal/db"
 	// "github.com/nmramorov/gowatcher/internal/log"
@@ -554,6 +555,71 @@ func TestPing(t *testing.T) {
 			statusCode, resp := testRequest(t, ts, "GET", urlPath)
 			fmt.Println(resp)
 			assert.Equal(t, tt.want.code, statusCode)
+		})
+	}
+}
+
+func TestNewHandlerFromSavedData(t *testing.T) {
+	ctx := context.Background()
+	col := collector.NewCollector()
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
+	assert.NotPanics(t, func() { NewHandlerFromSavedData(col.GetMetrics(), "sss", MOCKCURSOR) })
+}
+
+func TestPOSTMetricsHandlerJsonBatch(t *testing.T) {
+	GaugeVal := 44.4
+	var CountVal int64 = 3
+
+	type want struct {
+		code int
+	}
+	tests := []struct {
+		name string
+		want want
+		args []m.JSONMetrics
+	}{
+		{
+			name: "Negative test Gauge 1",
+			want: want{
+				code: 400,
+			},
+			args: []m.JSONMetrics{
+				{
+					ID:    "GaugeMetric",
+					MType: "gauge",
+					Value: &GaugeVal,
+				},
+			},
+		},
+		{
+			name: "Negative test Counter 1",
+			want: want{
+				code: 400,
+			},
+			args: []m.JSONMetrics{
+				{
+					ID:    "CounterMetric",
+					MType: "counter",
+					Delta: &CountVal,
+				},
+			},
+		},
+	}
+	ctx := context.Background()
+
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
+	metricsHandler := NewHandler("", MOCKCURSOR)
+
+	ts := httptest.NewServer(metricsHandler)
+
+	defer ts.Close()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			urlPath := "/update/"
+			statusCode, body := testRequestJSON(t, ts, "POST", urlPath, tt.args)
+			assert.Equal(t, tt.want.code, statusCode)
+			assert.NotNil(t, body)
 		})
 	}
 }
