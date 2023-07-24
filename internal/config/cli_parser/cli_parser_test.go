@@ -12,9 +12,10 @@ func TestGetMultiplier(t *testing.T) {
 	assert.Equal(t, int64(1), getMultiplier("6s"))
 }
 
-func TestNewServerCLIOptions(t *testing.T) {
+func TestPositiveNewServerCLIOptions(t *testing.T) {
 	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd"}
-	config := NewServerCliOptions()
+	config, err := NewServerCliOptions()
+	assert.NoError(t, err)
 	assert.Equal(t, "localhost:38731", config.Address)
 	assert.Equal(t, "true", config.Restore)
 	assert.Equal(t, "5m", config.StoreInterval)
@@ -24,4 +25,26 @@ func TestNewServerCLIOptions(t *testing.T) {
 
 	assert.Equal(t, int64(300), config.GetNumericInterval("StoreInterval"))
 	assert.Equal(t, int64(0), config.GetNumericInterval("MyInterval"))
+}
+
+func TestNegativeNewServerCLIOptions(t *testing.T) {
+	os.Args = []string{"main.go", "-b", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd"}
+	_, err := NewServerCliOptions()
+	assert.Error(t, err)
+}
+
+func TestPositiveNewAgentCLIOptions(t *testing.T) {
+	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=5s", "-p=5m", "-k=salt", "-l=13"}
+	config, err := NewAgentCliOptions()
+	assert.NoError(t, err)
+
+	assert.Equal(t, int64(5), config.GetNumericInterval("ReportInterval"))
+	assert.Equal(t, int64(300), config.GetNumericInterval("PollInterval"))
+	assert.Equal(t, int64(0), config.GetNumericInterval("SomeInterval"))
+}
+
+func TestNegativeNewAgentCLIOptions(t *testing.T) {
+	os.Args = []string{"main.go", "-b", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd"}
+	_, err := NewAgentCliOptions()
+	assert.Error(t, err)
 }
