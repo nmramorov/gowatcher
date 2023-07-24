@@ -27,6 +27,7 @@ type AgentEnvConfig struct {
 	PollInterval   string `env:"POLL_INTERVAL,required"`
 	Key            string `env:"KEY"`
 	RateLimit      int    `env:"RATE_LIMIT"`
+	CryptoKey      string `env:"CRYPTO_KEY"`
 }
 
 func checkAgentEnvs(envs *AgentEnvConfig) *AgentEnvConfig {
@@ -56,6 +57,7 @@ func checkAgentEnvs(envs *AgentEnvConfig) *AgentEnvConfig {
 		ReportInterval: reportint,
 		Key:            key,
 		RateLimit:      rate,
+		CryptoKey:      envs.CryptoKey,
 	}
 }
 
@@ -75,6 +77,7 @@ type ServerEnvConfig struct {
 	Restore       string `env:"RESTORE,required"`
 	Key           string `env:"KEY"`
 	Database      string `env:"DATABASE_DSN"`
+	CryptoKey     string `env:"CRYPTO_KEY"`
 }
 
 func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
@@ -109,6 +112,7 @@ func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
 		Restore:       rest,
 		Key:           key,
 		Database:      db,
+		CryptoKey:     envs.CryptoKey,
 	}
 }
 

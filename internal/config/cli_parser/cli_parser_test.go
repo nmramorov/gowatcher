@@ -13,7 +13,7 @@ func TestGetMultiplier(t *testing.T) {
 }
 
 func TestPositiveNewServerCLIOptions(t *testing.T) {
-	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd"}
+	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd", "-crypto-key=sfsdfsdfsd"}
 	config, err := NewServerCliOptions()
 	assert.NoError(t, err)
 	assert.Equal(t, "localhost:38731", config.Address)
@@ -22,6 +22,7 @@ func TestPositiveNewServerCLIOptions(t *testing.T) {
 	assert.Equal(t, "/tmp/wmSoUM", config.StoreFile)
 	assert.Equal(t, "aaab", config.Key)
 	assert.Equal(t, "ddd", config.Database)
+	assert.Equal(t, "sfsdfsdfsd", config.CryptoKey)
 
 	assert.Equal(t, int64(300), config.GetNumericInterval("StoreInterval"))
 	assert.Equal(t, int64(0), config.GetNumericInterval("MyInterval"))
@@ -34,7 +35,7 @@ func TestNegativeNewServerCLIOptions(t *testing.T) {
 }
 
 func TestPositiveNewAgentCLIOptions(t *testing.T) {
-	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=5s", "-p=5m", "-k=salt", "-l=13"}
+	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=5s", "-p=5m", "-k=salt", "-l=13", "-crypto-key=sfsdfsdfsd"}
 	config, err := NewAgentCliOptions()
 	assert.NoError(t, err)
 

@@ -17,6 +17,7 @@ type ServerCLIOptions struct {
 	StoreFile     string
 	Key           string
 	Database      string
+	CryptoKey     string
 }
 
 type AgentCLIOptions struct {
@@ -25,6 +26,7 @@ type AgentCLIOptions struct {
 	PollInterval   string
 	Key            string
 	RateLimit      int
+	CryptoKey      string
 }
 
 func (scli *ServerCLIOptions) GetNumericInterval(intervalName string) int64 {
@@ -63,6 +65,7 @@ func NewServerCliOptions() (*ServerCLIOptions, error) {
 	storeFile := serverOptions.String("f", "/tmp/devops-metrics-db.json", "name of file where metrics stored")
 	key := serverOptions.String("k", "", "key to calculate hash")
 	database := serverOptions.String("d", "", "database link")
+	cryptoKey := serverOptions.String("crypto-key", "", "path to private key")
 	if err := serverOptions.Parse(os.Args[1:]); err != nil {
 		log.ErrorLog.Printf("error parsing server cli options: %e", err)
 		return nil, errors.ErrorWithCli
@@ -75,6 +78,7 @@ func NewServerCliOptions() (*ServerCLIOptions, error) {
 		StoreFile:     *storeFile,
 		Key:           *key,
 		Database:      *database,
+		CryptoKey:     *cryptoKey,
 	}, nil
 }
 
@@ -85,6 +89,7 @@ func NewAgentCliOptions() (*AgentCLIOptions, error) {
 	pollInterval := agentOptions.String("p", "2s", "poll interval time")
 	key := agentOptions.String("k", "", "key to calculate hash")
 	rate := agentOptions.Int("l", 0, "rate limit")
+	cryptoKey := agentOptions.String("crypto-key", "", "path to public key")
 	if err := agentOptions.Parse(os.Args[1:]); err != nil {
 		log.ErrorLog.Printf("error parsing agent cli options: %e", err)
 		return nil, errors.ErrorWithCli
@@ -96,6 +101,7 @@ func NewAgentCliOptions() (*AgentCLIOptions, error) {
 		PollInterval:   *pollInterval,
 		Key:            *key,
 		RateLimit:      *rate,
+		CryptoKey:      *cryptoKey,
 	}, nil
 }
 

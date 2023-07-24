@@ -9,12 +9,13 @@ import (
 var DEFAULT = "default"
 
 type ServerConfig struct {
-	Address       string
-	Restore       bool
-	StoreInterval int
-	StoreFile     string
-	Key           string
-	Database      string
+	Address        string
+	Restore        bool
+	StoreInterval  int
+	StoreFile      string
+	Key            string
+	Database       string
+	PrivateKeyPath string
 }
 
 func checkServerConfig(envs *env.ServerEnvConfig, clies *cli.ServerCLIOptions) *ServerConfig {
@@ -26,6 +27,7 @@ func checkServerConfig(envs *env.ServerEnvConfig, clies *cli.ServerCLIOptions) *
 	storeintNumeric := int(clies.GetNumericInterval("StoreInterval"))
 	key := clies.Key
 	db := clies.Database
+	cryptoKey := clies.CryptoKey
 	if envs.Address != env.Address && envs.Address != addr {
 		addr = envs.Address
 	}
@@ -55,13 +57,17 @@ func checkServerConfig(envs *env.ServerEnvConfig, clies *cli.ServerCLIOptions) *
 	if envs.Database != "" && envs.Database != db {
 		db = envs.Database
 	}
+	if cryptoKey == "" {
+		cryptoKey = envs.CryptoKey
+	}
 	return &ServerConfig{
-		Address:       addr,
-		StoreInterval: storeintNumeric,
-		StoreFile:     storefile,
-		Restore:       rest,
-		Key:           key,
-		Database:      db,
+		Address:        addr,
+		StoreInterval:  storeintNumeric,
+		StoreFile:      storefile,
+		Restore:        rest,
+		Key:            key,
+		Database:       db,
+		PrivateKeyPath: cryptoKey,
 	}
 }
 
@@ -83,11 +89,12 @@ func GetServerConfig() (*ServerConfig, error) {
 		rest = false
 	}
 	return &ServerConfig{
-		Restore:       rest,
-		Address:       envConfig.Address,
-		StoreInterval: int(envConfig.GetNumericInterval("StoreInterval")),
-		StoreFile:     envConfig.StoreFile,
-		Database:      envConfig.Database,
+		Restore:        rest,
+		Address:        envConfig.Address,
+		StoreInterval:  int(envConfig.GetNumericInterval("StoreInterval")),
+		StoreFile:      envConfig.StoreFile,
+		Database:       envConfig.Database,
+		PrivateKeyPath: envConfig.CryptoKey,
 	}, nil
 }
 
@@ -97,6 +104,7 @@ type AgentConfig struct {
 	PollInterval   int
 	Key            string
 	RateLimit      int
+	PublicKeyPath  string
 }
 
 func checkAgentConfig(envs *env.AgentEnvConfig, clies *cli.AgentCLIOptions) *AgentConfig {
@@ -107,6 +115,7 @@ func checkAgentConfig(envs *env.AgentEnvConfig, clies *cli.AgentCLIOptions) *Age
 	reportintNumeric := int(clies.GetNumericInterval("ReportInterval"))
 	pollintNumeric := int(clies.GetNumericInterval("PollInterval"))
 	rate := clies.RateLimit
+	cryptoKey := clies.CryptoKey
 	if envs.Address != env.Address && envs.Address != addr {
 		addr = envs.Address
 	}
@@ -122,12 +131,16 @@ func checkAgentConfig(envs *env.AgentEnvConfig, clies *cli.AgentCLIOptions) *Age
 	if envs.RateLimit != 0 && envs.RateLimit != rate {
 		rate = envs.RateLimit
 	}
+	if cryptoKey == "" {
+		cryptoKey = envs.CryptoKey
+	}
 	return &AgentConfig{
 		Address:        addr,
 		PollInterval:   pollintNumeric,
 		ReportInterval: reportintNumeric,
 		Key:            key,
 		RateLimit:      rate,
+		PublicKeyPath:  cryptoKey,
 	}
 }
 
@@ -146,5 +159,6 @@ func GetAgentConfig() (*AgentConfig, error) {
 		PollInterval:   int(envConfig.GetNumericInterval("PollInterval")),
 		ReportInterval: int(envConfig.GetNumericInterval("ReportInterval")),
 		Key:            envConfig.Key,
+		PublicKeyPath:  envConfig.CryptoKey,
 	}, nil
 }
