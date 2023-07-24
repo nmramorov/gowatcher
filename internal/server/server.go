@@ -23,7 +23,7 @@ func GetMetricsHandler(parent context.Context, options *config.ServerConfig) (*h
 		cursor.IsValid = false
 	}
 	path, err := filepath.Abs(".")
-	pathToPrivateKey := path + "/internal/security/key.pem"
+	// pathToPrivateKey := path + "/internal/security/key.pem"
 	if err != nil {
 		log.ErrorLog.Printf("no file to save exist: %e", err)
 		return nil, err
@@ -46,11 +46,11 @@ func GetMetricsHandler(parent context.Context, options *config.ServerConfig) (*h
 			log.ErrorLog.Printf("Error happened during JSON reading: %e", err)
 			return handlers.NewHandler(options.Key, options.PrivateKeyPath, cursor), nil
 		}
-		metricsHandler := handlers.NewHandlerFromSavedData(storedMetrics, options.Key, pathToPrivateKey, cursor)
+		metricsHandler := handlers.NewHandlerFromSavedData(storedMetrics, options.Key, options.PrivateKeyPath, cursor)
 		log.InfoLog.Println("Configuration restored.")
 		return metricsHandler, nil
 	}
-	return handlers.NewHandler(options.Key, pathToPrivateKey, cursor), nil
+	return handlers.NewHandler(options.Key, options.PrivateKeyPath, cursor), nil
 }
 
 func StartSavingToDisk(options *config.ServerConfig, handler *handlers.Handler) error {
