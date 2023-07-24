@@ -11,6 +11,7 @@ import (
 )
 
 func GetCertificate(path string) (*x509.Certificate, error) {
+	log.InfoLog.Printf("certificate path: %s", path)
 	encodedCert, err := GetCryptoKey(path)
 	if err != nil {
 		log.ErrorLog.Printf("error getting cert: %e", err)
@@ -26,6 +27,7 @@ func GetCertificate(path string) (*x509.Certificate, error) {
 }
 
 func GetPrivateKey(path string) (*rsa.PrivateKey, error) {
+	log.InfoLog.Printf("private key path: %s", path)
 	encodedPrivateKey, err := GetCryptoKey(path)
 	if err != nil {
 		log.ErrorLog.Printf("error getting private key from file: %e", err)
