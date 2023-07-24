@@ -23,7 +23,6 @@ func GetMetricsHandler(parent context.Context, options *config.ServerConfig) (*h
 		cursor.IsValid = false
 	}
 	path, err := filepath.Abs(".")
-	// pathToPrivateKey := path + "/internal/security/key.pem"
 	if err != nil {
 		log.ErrorLog.Printf("no file to save exist: %e", err)
 		return nil, err
