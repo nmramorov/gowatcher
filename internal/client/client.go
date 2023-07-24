@@ -301,7 +301,7 @@ func (c *Client) Run() {
 	if err != nil {
 		log.ErrorLog.Printf("error getting cert file: %e", err)
 	}
-	agentConfig.PublicKeyPath = path + "/internal/security/cert.pem"
+	agentConfig.PublicKeyPath = path + "/internal/security/cert2.pem"
 	endpoint := "http://" + agentConfig.Address
 
 	client := &http.Client{}

@@ -24,7 +24,7 @@ func TestGetCryptoKey(t *testing.T) {
 		{
 			name: "Positive case",
 			args: args{
-				path: "./cert.pem",
+				path: "./cert2.pem",
 			},
 			wantErr: false,
 			want:    "[]byte",
@@ -32,7 +32,7 @@ func TestGetCryptoKey(t *testing.T) {
 		{
 			name: "Negative case",
 			args: args{
-				path: "../cert.pem",
+				path: "../cert2.pem",
 			},
 			wantErr: true,
 			want:    "",
@@ -64,21 +64,21 @@ func TestGetPrivateKey(t *testing.T) {
 		{
 			name: "Positive case",
 			args: args{
-				path: "./private_key.pem",
+				path: "./key.pem",
 			},
 			wantErr: false,
 		},
 		{
 			name: "Negative case (wrong path)",
 			args: args{
-				path: "../private_key.pem",
+				path: "../key.pem",
 			},
 			wantErr: true,
 		},
 		{
 			name: "Negative case (wrong file)",
 			args: args{
-				path: "../cert.pem",
+				path: "../cert2.pem",
 			},
 			wantErr: true,
 		},
@@ -111,21 +111,21 @@ func TestGetCertificate(t *testing.T) {
 		{
 			name: "Positive case",
 			args: args{
-				path: "./cert.pem",
+				path: "./cert2.pem",
 			},
 			wantErr: false,
 		},
 		{
 			name: "Negative case (wrong path)",
 			args: args{
-				path: "../cert.pem",
+				path: "../cert2.pem",
 			},
 			wantErr: true,
 		},
 		{
 			name: "Negative case (wrong file)",
 			args: args{
-				path: "../private_key.pem",
+				path: "../key.pem",
 			},
 			wantErr: true,
 		},
@@ -145,7 +145,7 @@ func TestGetCertificate(t *testing.T) {
 }
 
 func TestEncodeMsg(t *testing.T) {
-	cert, _ := GetCertificate("./cert.pem")
+	cert, _ := GetCertificate("./cert2.pem")
 	type args struct {
 		payload     []byte
 		certificate *x509.Certificate
@@ -180,8 +180,8 @@ func TestEncodeMsg(t *testing.T) {
 }
 
 func TestDecodeMsg(t *testing.T) {
-	key, _ := GetPrivateKey("./private_key.pem")
-	cert, _ := GetCertificate("./cert.pem")
+	key, _ := GetPrivateKey("./key.pem")
+	cert, _ := GetCertificate("./cert2.pem")
 	encodedMsg, _ := EncodeMsg([]byte("sdf"), cert)
 	type args struct {
 		msg        []byte
