@@ -103,7 +103,7 @@ func (h *Handler) DecodeMessage(next http.Handler) http.Handler {
 			return
 		}
 		defer func() {
-			err := r.Body.Close()
+			err = r.Body.Close()
 			if err != nil {
 				log.ErrorLog.Printf("error closing response body: %e", err)
 				http.Error(w, err.Error(), http.StatusBadRequest)
