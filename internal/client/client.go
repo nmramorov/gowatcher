@@ -296,9 +296,6 @@ func (c *Client) Run() {
 		log.ErrorLog.Printf("Error with agent config: %e", err)
 		return
 	}
-	if err != nil {
-		log.ErrorLog.Printf("error getting cert file: %e", err)
-	}
 	endpoint := "http://" + agentConfig.Address
 
 	client := &http.Client{}
