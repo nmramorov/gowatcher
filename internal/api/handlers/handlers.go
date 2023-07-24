@@ -102,7 +102,14 @@ func (h *Handler) DecodeMessage(next http.Handler) http.Handler {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		defer r.Body.Close()
+		defer func() {
+			err := r.Body.Close()
+			if err != nil {
+				log.ErrorLog.Printf("error closing response body: %e", err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}()
 		log.InfoLog.Printf("encoded msg: %s", encodedMsg)
 		decoded, err := sec.DecodeMsg(encodedMsg, privateKey)
 		if err != nil {
