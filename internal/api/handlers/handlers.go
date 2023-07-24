@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"html/template"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,6 +23,7 @@ import (
 	"github.com/nmramorov/gowatcher/internal/db"
 	"github.com/nmramorov/gowatcher/internal/hashgen"
 	"github.com/nmramorov/gowatcher/internal/log"
+	sec "github.com/nmramorov/gowatcher/internal/security"
 )
 
 var (
@@ -32,20 +34,23 @@ var (
 // Базовый тип Handler, отвечающий за обработку запросов.
 type Handler struct {
 	*chi.Mux
-	collector *col.Collector
-	secretkey string
-	cursor    *db.Cursor
+	collector      *col.Collector
+	secretkey      string
+	privateKeyPath string
+	cursor         *db.Cursor
 }
 
 // Конструктор для объектов типа Handler.
-func NewHandler(key string, newCursor *db.Cursor) *Handler {
+func NewHandler(key, privateKeyPath string, newCursor *db.Cursor) *Handler {
 	h := &Handler{
-		Mux:       chi.NewMux(),
-		collector: col.NewCollector(),
-		secretkey: key,
-		cursor:    newCursor,
+		Mux:            chi.NewMux(),
+		collector:      col.NewCollector(),
+		secretkey:      key,
+		cursor:         newCursor,
+		privateKeyPath: privateKeyPath,
 	}
 	h.Use(middleware.GzipHandle)
+	h.Use(h.DecodeMessage)
 	h.Get("/", h.ListMetricsHTML)
 	h.Get("/ping", h.HandlePing)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
@@ -58,14 +63,16 @@ func NewHandler(key string, newCursor *db.Cursor) *Handler {
 }
 
 // Конструктор Handler, который инициализируется с записанными ранее данными Metrics.
-func NewHandlerFromSavedData(saved *m.Metrics, secretkey string, cursor *db.Cursor) *Handler {
+func NewHandlerFromSavedData(saved *m.Metrics, secretkey, privateKeyPath string, cursor *db.Cursor) *Handler {
 	h := &Handler{
-		Mux:       chi.NewMux(),
-		collector: col.NewCollectorFromSavedFile(saved),
-		secretkey: secretkey,
-		cursor:    cursor,
+		Mux:            chi.NewMux(),
+		collector:      col.NewCollectorFromSavedFile(saved),
+		secretkey:      secretkey,
+		cursor:         cursor,
+		privateKeyPath: privateKeyPath,
 	}
 	h.Use(middleware.GzipHandle)
+	h.Use(h.DecodeMessage)
 	h.Get("/", h.ListMetricsHTML)
 	h.Get("/ping", h.HandlePing)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
@@ -75,6 +82,38 @@ func NewHandlerFromSavedData(saved *m.Metrics, secretkey string, cursor *db.Curs
 	h.Post("/updates/", h.UpdateJSONBatch)
 
 	return h
+}
+
+func (h *Handler) DecodeMessage(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if h.privateKeyPath == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		privateKey, err := sec.GetPrivateKey(h.privateKeyPath)
+		if err != nil {
+			log.ErrorLog.Printf("error getting private key: %e", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		encodedMsg, err := io.ReadAll(r.Body)
+		defer r.Body.Close()
+		if err != nil {
+			log.ErrorLog.Printf("error reading buffer")
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		log.InfoLog.Printf("encoded msg: %s", encodedMsg)
+		decoded, err := sec.DecodeMsg(encodedMsg, privateKey)
+		if err != nil {
+			log.ErrorLog.Printf("error decoding msg: %e", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		log.InfoLog.Printf("Decoded msg: %s", decoded)
+		r.Body = io.NopCloser(strings.NewReader(string(decoded)))
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (h *Handler) checkHash(rw http.ResponseWriter, metricData *m.JSONMetrics) {

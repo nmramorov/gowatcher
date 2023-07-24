@@ -16,7 +16,6 @@ import (
 	"github.com/nmramorov/gowatcher/internal/collector"
 	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
 	"github.com/nmramorov/gowatcher/internal/db"
-	// "github.com/nmramorov/gowatcher/internal/log"
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, method, path string) (int, string) {
@@ -167,7 +166,7 @@ func TestPOSTMetricsHandlerNoJson(t *testing.T) {
 	}
 	ctx := context.Background()
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", MOCKCURSOR)
+	metricsHandler := NewHandler("", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -255,7 +254,7 @@ func TestGETMetricsHandler(t *testing.T) {
 	}
 	ctx := context.Background()
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", MOCKCURSOR)
+	metricsHandler := NewHandler("", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -275,7 +274,7 @@ func TestHTML(t *testing.T) {
 	ctx := context.Background()
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", MOCKCURSOR)
+	metricsHandler := NewHandler("", "", MOCKCURSOR)
 	metricsHandler.collector.UpdateMetrics()
 
 	ts := httptest.NewServer(metricsHandler)
@@ -343,7 +342,7 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 	ctx := context.Background()
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", MOCKCURSOR)
+	metricsHandler := NewHandler("", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -502,7 +501,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 	ctx := context.Background()
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", MOCKCURSOR)
+	metricsHandler := NewHandler("", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -543,7 +542,7 @@ func TestPing(t *testing.T) {
 	ctx := context.Background()
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", MOCKCURSOR)
+	metricsHandler := NewHandler("", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -563,7 +562,7 @@ func TestNewHandlerFromSavedData(t *testing.T) {
 	ctx := context.Background()
 	col := collector.NewCollector()
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	assert.NotPanics(t, func() { NewHandlerFromSavedData(col.GetMetrics(), "sss", MOCKCURSOR) })
+	assert.NotPanics(t, func() { NewHandlerFromSavedData(col.GetMetrics(), "sss", "", MOCKCURSOR) })
 }
 
 func TestPOSTMetricsHandlerJsonBatch(t *testing.T) {
@@ -608,7 +607,7 @@ func TestPOSTMetricsHandlerJsonBatch(t *testing.T) {
 	ctx := context.Background()
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", MOCKCURSOR)
+	metricsHandler := NewHandler("", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 

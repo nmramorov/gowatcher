@@ -14,7 +14,7 @@ func TestPushMetrics(t *testing.T) {
 	endpoint := "http://127.0.0.1:8080"
 
 	client := &http.Client{}
-	assert.NotPanics(t, func() { PushMetrics(client, endpoint, collector.GetMetrics(), "") })
+	assert.NotPanics(t, func() { PushMetrics(client, endpoint, collector.GetMetrics(), "", "") })
 }
 
 func TestCreateRequests(t *testing.T) {
@@ -28,7 +28,7 @@ func TestPushMetricsBatch(t *testing.T) {
 	endpoint := "http://127.0.0.1:8080"
 
 	client := &http.Client{}
-	assert.NotPanics(t, func() { PushMetricsBatch(client, endpoint, collector.GetMetrics()) })
+	assert.NotPanics(t, func() { PushMetricsBatch(client, endpoint, "", collector.GetMetrics()) })
 }
 
 func TestGetMetricsValues(t *testing.T) {
@@ -36,7 +36,7 @@ func TestGetMetricsValues(t *testing.T) {
 	endpoint := "http://127.0.0.1:8080"
 
 	client := &http.Client{}
-	assert.NotPanics(t, func() { GetMetricsValues(client, endpoint, "gauge", collector.GetMetrics()) })
+	assert.NotPanics(t, func() { GetMetricsValues(client, endpoint, "gauge", "", collector.GetMetrics()) })
 }
 
 func TestClientRun(t *testing.T) {
