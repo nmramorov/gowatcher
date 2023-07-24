@@ -3,7 +3,6 @@ package security
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
 	"os"
@@ -44,8 +43,10 @@ func GetPrivateKey(path string) (*rsa.PrivateKey, error) {
 }
 
 func EncodeMsg(payload []byte, certificate *x509.Certificate) ([]byte, error) {
-	label := []byte("metrics")
-	ciphertext, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, certificate.PublicKey.(*rsa.PublicKey), payload, label)
+	// label := []byte("metrics")
+	// ciphertext, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, certificate.PublicKey.(*rsa.PublicKey), payload, label)
+	ciphertext, err := rsa.EncryptPKCS1v15(rand.Reader, certificate.PublicKey.(*rsa.PublicKey), payload)
+
 	if err != nil {
 		log.ErrorLog.Printf("encryption error: %e", err)
 		return nil, err
@@ -54,10 +55,11 @@ func EncodeMsg(payload []byte, certificate *x509.Certificate) ([]byte, error) {
 }
 
 func DecodeMsg(msg []byte, privateKey *rsa.PrivateKey) ([]byte, error) {
-	label := []byte("metrics")
-	decyphered, err := rsa.DecryptOAEP(sha256.New(), nil, privateKey, msg, label)
+	// label := []byte("metrics")
+	// decyphered, err := rsa.DecryptOAEP(sha256.New(), nil, privateKey, msg, label)
+	decyphered, err := rsa.DecryptPKCS1v15(nil, privateKey, msg)
 	if err != nil {
-		log.ErrorLog.Printf("errro decyphering message: %e", err)
+		log.ErrorLog.Printf("error decyphering message: %e", err)
 	}
 	return decyphered, nil
 }
