@@ -125,7 +125,8 @@ func (c *Cursor) InitDB(parent context.Context) error {
 
 func add(parent context.Context, incomingMetrics *metrics.JSONMetrics, db interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
-}) error {
+},
+) error {
 	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
 	defer cancel()
 	switch incomingMetrics.MType {
@@ -203,7 +204,8 @@ func (c *Cursor) Flush(parent context.Context) error {
 
 func flush(parent context.Context, buffer []*metrics.JSONMetrics, db interface {
 	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
-}) error {
+},
+) error {
 	ctx, cancel := context.WithTimeout(parent, DBDefaultTimeout)
 	defer cancel()
 

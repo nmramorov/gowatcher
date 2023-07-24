@@ -332,7 +332,6 @@ func TestAzaza(t *testing.T) {
 	}
 }
 
-
 func TestAddBatchNegativeBufCap(t *testing.T) {
 	parent := context.Background()
 	mockVal := 55.3
@@ -363,7 +362,6 @@ func TestAddBatchNegativeBufCap(t *testing.T) {
 	}
 	require.Error(t, c.AddBatch(parent, mockBatch))
 }
-
 
 // func TestAddBatchPositiveBufCap(t *testing.T) {
 // 	parent := context.Background()
