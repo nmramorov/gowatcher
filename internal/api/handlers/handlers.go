@@ -98,16 +98,11 @@ func (h *Handler) DecodeMessage(next http.Handler) http.Handler {
 		}
 		encodedMsg, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.ErrorLog.Printf("error reading encoded message")
+			log.ErrorLog.Printf("error reading encoded body")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		defer r.Body.Close()
-		if err != nil {
-			log.ErrorLog.Printf("error reading buffer")
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
 		log.InfoLog.Printf("encoded msg: %s", encodedMsg)
 		decoded, err := sec.DecodeMsg(encodedMsg, privateKey)
 		if err != nil {
