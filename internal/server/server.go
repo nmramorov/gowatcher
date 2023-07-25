@@ -55,7 +55,7 @@ func GetMetricsHandler(parent context.Context, options *config.ServerConfig) (*h
 	return handlers.NewHandler(options.Key, options.PrivateKeyPath, cursor), nil
 }
 
-func StartSavingToDisk(options *config.ServerConfig, handler *handlers.Handler) error {
+func StartSavingToDisk(killSig chan struct{}, options *config.ServerConfig, handler *handlers.Handler) error {
 	path, err := filepath.Abs(".")
 	if err != nil {
 		log.ErrorLog.Printf("no file to save exist: %e", err)
@@ -72,18 +72,30 @@ func StartSavingToDisk(options *config.ServerConfig, handler *handlers.Handler) 
 		log.ErrorLog.Printf("Error with file writer: %e", err)
 		return err
 	}
-	ticker := time.NewTicker(1 * time.Second)
-	startTime := time.Now()
+	ticker := time.NewTicker(time.Duration(options.StoreInterval) * time.Second)
+	// startTime := time.Now()
+
 	for {
-		tickedTime := <-ticker.C
-		timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
-		if timeDiffSec%int64(options.StoreInterval) == 0 {
+		select {
+		case <-killSig:
+			log.InfoLog.Println("Stop saving file")
+			return nil
+		case <-ticker.C:
 			err := writer.WriteJSON(handler.GetCurrentMetrics())
 			if err != nil {
 				log.ErrorLog.Printf("Error happened during saving metrics to JSON: %e", err)
 			}
 			log.InfoLog.Println("Metrics successfully saved to file")
 		}
+		// tickedTime := <-ticker.C
+		// timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
+		// if timeDiffSec%int64(options.StoreInterval) == 0 {
+		// 	err := writer.WriteJSON(handler.GetCurrentMetrics())
+		// 	if err != nil {
+		// 		log.ErrorLog.Printf("Error happened during saving metrics to JSON: %e", err)
+		// 	}
+		// 	log.InfoLog.Println("Metrics successfully saved to file")
+		// }
 	}
 }
 
@@ -94,6 +106,15 @@ var ServerReadHeaderTimeout = 10
 func (s *Server) Run(parent context.Context) error {
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
+
+	idleConnsClosed := make(chan struct{})
+	// канал для перенаправления прерываний
+	// поскольку нужно отловить всего одно прерывание,
+	// ёмкости 1 для канала будет достаточно
+	sigint := make(chan os.Signal, 1)
+	killFileSave := make(chan struct{}, 1)
+	// регистрируем перенаправление прерываний
+	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
 	var wg sync.WaitGroup
 
@@ -115,10 +136,10 @@ func (s *Server) Run(parent context.Context) error {
 			return err
 		}
 	}
-	wg.Add(1)
 	if serverConfig.StoreFile != "" {
+		wg.Add(1)
 		go func() {
-			err = StartSavingToDisk(serverConfig, metricsHandler)
+			err = StartSavingToDisk(killFileSave, serverConfig, metricsHandler)
 			if err != nil {
 				log.ErrorLog.Printf("error starting saving file to disk: %e", err)
 			}
@@ -132,20 +153,7 @@ func (s *Server) Run(parent context.Context) error {
 		Handler:           metricsHandler,
 		ReadHeaderTimeout: time.Duration(ServerReadHeaderTimeout) * time.Second,
 	}
-	defer func() {
-		err = server.Shutdown(ctx)
-		if err != nil {
-			log.ErrorLog.Printf("error shutting down server: %e", err)
-		}
-	}()
 
-	idleConnsClosed := make(chan struct{})
-	// канал для перенаправления прерываний
-	// поскольку нужно отловить всего одно прерывание,
-	// ёмкости 1 для канала будет достаточно
-	sigint := make(chan os.Signal, 1)
-	// регистрируем перенаправление прерываний
-	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	// запускаем горутину обработки пойманных прерываний
 	go func() {
 		// читаем из канала прерываний
@@ -153,13 +161,23 @@ func (s *Server) Run(parent context.Context) error {
 		// можно обойтись без цикла
 		<-sigint
 		// получили сигнал os.Interrupt, запускаем процедуру graceful shutdown
-		if err = server.Shutdown(context.Background()); err != nil {
+		if err = server.Shutdown(ctx); err != nil {
 			// ошибки закрытия Listener
 			log.ErrorLog.Printf("HTTP server Shutdown: %v", err)
 		}
+		// Kill file save
+		close(killFileSave)
 		// сообщаем основному потоку,
 		// что все сетевые соединения обработаны и закрыты
+		log.InfoLog.Println("closing channels, shutting down server")
 		close(idleConnsClosed)
+	}()
+
+	defer func() {
+		err = server.Shutdown(ctx)
+		if err != nil {
+			log.ErrorLog.Printf("error shutting down server: %e", err)
+		}
 	}()
 
 	log.InfoLog.Println("Web server is ready to accept connections...")
@@ -167,8 +185,8 @@ func (s *Server) Run(parent context.Context) error {
 	if err != nil {
 		log.ErrorLog.Printf("Unexpected error occurred: %e", err)
 	}
+
 	<-idleConnsClosed
 	wg.Wait()
-
 	return nil
 }
