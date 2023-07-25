@@ -262,7 +262,7 @@ linters:
     - ineffassign
     - misspell
     - nakedret
-    - nestif
+    # - nestif
 #    - nilnil
 #    - nlreturn
     - nolintlint

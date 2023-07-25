@@ -91,7 +91,8 @@ func GetServerConfig() (*ServerConfig, error) {
 				log.ErrorLog.Printf("error reading json config for server: %e", err)
 				return nil, err
 			}
-			stringValue := strings.Split(jsonConfig.StoreInterval, jsonConfig.StoreInterval[len(jsonConfig.StoreInterval)-1:])[0]
+			stringValue := strings.Split(jsonConfig.StoreInterval,
+				jsonConfig.StoreInterval[len(jsonConfig.StoreInterval)-1:])[0]
 			value, err := strconv.ParseInt(stringValue, 10, 64)
 			if err != nil {
 				log.ErrorLog.Printf("error parsing store interval value: %e", err)
@@ -185,13 +186,15 @@ func GetAgentConfig() (*AgentConfig, error) {
 				log.ErrorLog.Printf("error reading json config for agent: %e", err)
 				return nil, err
 			}
-			stringValue := strings.Split(jsonConfig.PollInterval, jsonConfig.PollInterval[len(jsonConfig.PollInterval)-1:])[0]
+			stringValue := strings.Split(jsonConfig.PollInterval,
+				jsonConfig.PollInterval[len(jsonConfig.PollInterval)-1:])[0]
 			pollValue, err := strconv.ParseInt(stringValue, 10, 64)
 			if err != nil {
 				log.ErrorLog.Printf("error parsing poll interval value: %e", err)
 				return nil, err
 			}
-			stringValue = strings.Split(jsonConfig.ReportInterval, jsonConfig.ReportInterval[len(jsonConfig.ReportInterval)-1:])[0]
+			stringValue = strings.Split(jsonConfig.ReportInterval,
+				jsonConfig.ReportInterval[len(jsonConfig.ReportInterval)-1:])[0]
 			repValue, err := strconv.ParseInt(stringValue, 10, 64)
 			if err != nil {
 				log.ErrorLog.Printf("error parsing report interval value: %e", err)
