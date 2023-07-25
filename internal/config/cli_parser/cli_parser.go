@@ -18,6 +18,7 @@ type ServerCLIOptions struct {
 	Key           string
 	Database      string
 	CryptoKey     string
+	Config        string
 }
 
 type AgentCLIOptions struct {
@@ -27,11 +28,12 @@ type AgentCLIOptions struct {
 	Key            string
 	RateLimit      int
 	CryptoKey      string
+	Config         string
 }
 
 func (scli *ServerCLIOptions) GetNumericInterval(intervalName string) int64 {
 	if intervalName == "StoreInterval" {
-		multiplier := getMultiplier(scli.StoreInterval)
+		multiplier := GetMultiplier(scli.StoreInterval)
 		stringValue := strings.Split(scli.StoreInterval, scli.StoreInterval[len(scli.StoreInterval)-1:])[0]
 		value, _ := strconv.ParseInt(stringValue, 10, 64)
 		return multiplier * value
@@ -43,12 +45,12 @@ func (scli *ServerCLIOptions) GetNumericInterval(intervalName string) int64 {
 func (acli *AgentCLIOptions) GetNumericInterval(intervalName string) int64 {
 	switch intervalName {
 	case "ReportInterval":
-		multiplier := getMultiplier(acli.ReportInterval)
+		multiplier := GetMultiplier(acli.ReportInterval)
 		stringValue := strings.Split(acli.ReportInterval, acli.ReportInterval[len(acli.ReportInterval)-1:])[0]
 		value, _ := strconv.ParseInt(stringValue, 10, 64)
 		return multiplier * value
 	case "PollInterval":
-		multiplier := getMultiplier(acli.PollInterval)
+		multiplier := GetMultiplier(acli.PollInterval)
 		stringValue := strings.Split(acli.PollInterval, acli.PollInterval[len(acli.PollInterval)-1:])[0]
 		value, _ := strconv.ParseInt(stringValue, 10, 64)
 		return multiplier * value
@@ -66,6 +68,7 @@ func NewServerCliOptions() (*ServerCLIOptions, error) {
 	key := serverOptions.String("k", "", "key to calculate hash")
 	database := serverOptions.String("d", "", "database link")
 	cryptoKey := serverOptions.String("crypto-key", "", "path to private key")
+	config := serverOptions.String("c", "", "server json config path")
 	if err := serverOptions.Parse(os.Args[1:]); err != nil {
 		log.ErrorLog.Printf("error parsing server cli options: %e", err)
 		return nil, errors.ErrorWithCli
@@ -79,6 +82,7 @@ func NewServerCliOptions() (*ServerCLIOptions, error) {
 		Key:           *key,
 		Database:      *database,
 		CryptoKey:     *cryptoKey,
+		Config:        *config,
 	}, nil
 }
 
@@ -90,6 +94,7 @@ func NewAgentCliOptions() (*AgentCLIOptions, error) {
 	key := agentOptions.String("k", "", "key to calculate hash")
 	rate := agentOptions.Int("l", 0, "rate limit")
 	cryptoKey := agentOptions.String("crypto-key", "", "path to public key")
+	config := agentOptions.String("c", "", "path to agent json config")
 	if err := agentOptions.Parse(os.Args[1:]); err != nil {
 		log.ErrorLog.Printf("error parsing agent cli options: %e", err)
 		return nil, errors.ErrorWithCli
@@ -102,10 +107,11 @@ func NewAgentCliOptions() (*AgentCLIOptions, error) {
 		Key:            *key,
 		RateLimit:      *rate,
 		CryptoKey:      *cryptoKey,
+		Config:         *config,
 	}, nil
 }
 
-func getMultiplier(intervalValue string) int64 {
+func GetMultiplier(intervalValue string) int64 {
 	var multiplier int64
 	splitter := intervalValue[len(intervalValue)-1:]
 

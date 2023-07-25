@@ -28,6 +28,7 @@ type AgentEnvConfig struct {
 	Key            string `env:"KEY"`
 	RateLimit      int    `env:"RATE_LIMIT"`
 	CryptoKey      string `env:"CRYPTO_KEY"`
+	Config         string `env:"CONFIG"`
 }
 
 func checkAgentEnvs(envs *AgentEnvConfig) *AgentEnvConfig {
@@ -58,6 +59,7 @@ func checkAgentEnvs(envs *AgentEnvConfig) *AgentEnvConfig {
 		Key:            key,
 		RateLimit:      rate,
 		CryptoKey:      envs.CryptoKey,
+		Config:         envs.Config,
 	}
 }
 
@@ -78,6 +80,7 @@ type ServerEnvConfig struct {
 	Key           string `env:"KEY"`
 	Database      string `env:"DATABASE_DSN"`
 	CryptoKey     string `env:"CRYPTO_KEY"`
+	Config        string `env:"CONFIG"`
 }
 
 func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
@@ -113,6 +116,7 @@ func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
 		Key:           key,
 		Database:      db,
 		CryptoKey:     envs.CryptoKey,
+		Config:        envs.Config,
 	}
 }
 

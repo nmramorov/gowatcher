@@ -8,12 +8,13 @@ import (
 )
 
 func TestGetMultiplier(t *testing.T) {
-	assert.Equal(t, int64(60), getMultiplier("1m"))
-	assert.Equal(t, int64(1), getMultiplier("6s"))
+	assert.Equal(t, int64(60), GetMultiplier("1m"))
+	assert.Equal(t, int64(1), GetMultiplier("6s"))
 }
 
 func TestPositiveNewServerCLIOptions(t *testing.T) {
-	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd", "-crypto-key=sfsdfsdfsd"}
+	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=true", "-i=5m",
+		"-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd", "-crypto-key=sfsdfsdfsd", "-c=/path/to/json"}
 	config, err := NewServerCliOptions()
 	assert.NoError(t, err)
 	assert.Equal(t, "localhost:38731", config.Address)
@@ -23,6 +24,7 @@ func TestPositiveNewServerCLIOptions(t *testing.T) {
 	assert.Equal(t, "aaab", config.Key)
 	assert.Equal(t, "ddd", config.Database)
 	assert.Equal(t, "sfsdfsdfsd", config.CryptoKey)
+	assert.Equal(t, "/path/to/json", config.Config)
 
 	assert.Equal(t, int64(300), config.GetNumericInterval("StoreInterval"))
 	assert.Equal(t, int64(0), config.GetNumericInterval("MyInterval"))
@@ -35,7 +37,8 @@ func TestNegativeNewServerCLIOptions(t *testing.T) {
 }
 
 func TestPositiveNewAgentCLIOptions(t *testing.T) {
-	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=5s", "-p=5m", "-k=salt", "-l=13", "-crypto-key=sfsdfsdfsd"}
+	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=5s", "-p=5m",
+		"-k=salt", "-l=13", "-crypto-key=sfsdfsdfsd", "-c=/path/to/config"}
 	config, err := NewAgentCliOptions()
 	assert.NoError(t, err)
 
