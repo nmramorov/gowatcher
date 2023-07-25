@@ -143,9 +143,9 @@ func (s *Server) Run(parent context.Context) error {
 	// канал для перенаправления прерываний
 	// поскольку нужно отловить всего одно прерывание,
 	// ёмкости 1 для канала будет достаточно
-	sigint := make(chan os.Signal, 3)
+	sigint := make(chan os.Signal, 1)
 	// регистрируем перенаправление прерываний
-	signal.Notify(sigint, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	// запускаем горутину обработки пойманных прерываний
 	go func() {
 		// читаем из канала прерываний
@@ -153,7 +153,7 @@ func (s *Server) Run(parent context.Context) error {
 		// можно обойтись без цикла
 		<-sigint
 		// получили сигнал os.Interrupt, запускаем процедуру graceful shutdown
-		if err := server.Shutdown(context.Background()); err != nil {
+		if err = server.Shutdown(context.Background()); err != nil {
 			// ошибки закрытия Listener
 			log.ErrorLog.Printf("HTTP server Shutdown: %v", err)
 		}
