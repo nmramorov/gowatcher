@@ -73,7 +73,6 @@ func StartSavingToDisk(killSig chan struct{}, options *config.ServerConfig, hand
 		return err
 	}
 	ticker := time.NewTicker(time.Duration(options.StoreInterval) * time.Second)
-	// startTime := time.Now()
 
 	for {
 		select {
@@ -87,15 +86,6 @@ func StartSavingToDisk(killSig chan struct{}, options *config.ServerConfig, hand
 			}
 			log.InfoLog.Println("Metrics successfully saved to file")
 		}
-		// tickedTime := <-ticker.C
-		// timeDiffSec := int64(tickedTime.Sub(startTime).Seconds())
-		// if timeDiffSec%int64(options.StoreInterval) == 0 {
-		// 	err := writer.WriteJSON(handler.GetCurrentMetrics())
-		// 	if err != nil {
-		// 		log.ErrorLog.Printf("Error happened during saving metrics to JSON: %e", err)
-		// 	}
-		// 	log.InfoLog.Println("Metrics successfully saved to file")
-		// }
 	}
 }
 
