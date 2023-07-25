@@ -55,6 +55,7 @@ func DecodeMsg(msg []byte, privateKey *rsa.PrivateKey) ([]byte, error) {
 	decyphered, err := rsa.DecryptPKCS1v15(nil, privateKey, msg)
 	if err != nil {
 		log.ErrorLog.Printf("error decyphering message: %e", err)
+		return nil, err
 	}
 	return decyphered, nil
 }

@@ -203,6 +203,15 @@ func TestDecodeMsg(t *testing.T) {
 			want:    []byte("sdf"),
 			wantErr: false,
 		},
+		{
+			name: "Negative case",
+			args: args{
+				msg:        []byte("some bytes"),
+				privateKey: key,
+			},
+			want:    []byte("sdf"),
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
