@@ -83,6 +83,9 @@ func GetServerConfig() (*ServerConfig, error) {
 		cliConfig, err := cli.NewServerCliOptions()
 		if err != nil {
 			log.InfoLog.Println("could not get data, getting data from json config...")
+			if cliConfig == nil {
+				return nil, err
+			}
 			jsonConfig, err := jparser.ReadJSONConfig[jparser.ServerJSONConfig](cliConfig.Config)
 			if err != nil {
 				log.ErrorLog.Printf("error reading json config for server: %e", err)
@@ -174,6 +177,9 @@ func GetAgentConfig() (*AgentConfig, error) {
 		cliConfig, err := cli.NewAgentCliOptions()
 		if err != nil {
 			log.InfoLog.Println("could not get data, getting data from json config...")
+			if cliConfig == nil {
+				return nil, err
+			}
 			jsonConfig, err := jparser.ReadJSONConfig[jparser.AgentJSONConfig](cliConfig.Config)
 			if err != nil {
 				log.ErrorLog.Printf("error reading json config for agent: %e", err)
