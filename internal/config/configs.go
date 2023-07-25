@@ -1,8 +1,12 @@
 package config
 
 import (
+	"strconv"
+	"strings"
+
 	cli "github.com/nmramorov/gowatcher/internal/config/cli_parser"
 	env "github.com/nmramorov/gowatcher/internal/config/env_parser"
+	jparser "github.com/nmramorov/gowatcher/internal/config/json_parser"
 	"github.com/nmramorov/gowatcher/internal/log"
 )
 
@@ -78,7 +82,26 @@ func GetServerConfig() (*ServerConfig, error) {
 		log.InfoLog.Println("could not get env for server config, getting data from cli...")
 		cliConfig, err := cli.NewServerCliOptions()
 		if err != nil {
-			return nil, err
+			log.InfoLog.Println("could not get data, getting data from json config...")
+			jsonConfig, err := jparser.ReadJSONConfig[jparser.ServerJSONConfig](cliConfig.Config)
+			if err != nil {
+				log.ErrorLog.Printf("error reading json config for server: %e", err)
+				return nil, err
+			}
+			stringValue := strings.Split(jsonConfig.StoreInterval, jsonConfig.StoreInterval[len(jsonConfig.StoreInterval)-1:])[0]
+			value, err := strconv.ParseInt(stringValue, 10, 64)
+			if err != nil {
+				log.ErrorLog.Printf("error parsing store interval value: %e", err)
+				return nil, err
+			}
+			return &ServerConfig{
+				Address:        jsonConfig.Address,
+				StoreInterval:  int(cli.GetMultiplier(jsonConfig.StoreInterval) * int64(value)),
+				StoreFile:      jsonConfig.StoreFile,
+				Restore:        jsonConfig.Restore,
+				PrivateKeyPath: jsonConfig.PrivateKeyPath,
+				Database:       jsonConfig.Database,
+			}, nil
 		}
 		return checkServerConfig(envConfig, cliConfig), nil
 	}
@@ -150,7 +173,30 @@ func GetAgentConfig() (*AgentConfig, error) {
 		log.InfoLog.Println("could not get env for server config, getting data from cli...")
 		cliConfig, err := cli.NewAgentCliOptions()
 		if err != nil {
-			return nil, err
+			log.InfoLog.Println("could not get data, getting data from json config...")
+			jsonConfig, err := jparser.ReadJSONConfig[jparser.AgentJSONConfig](cliConfig.Config)
+			if err != nil {
+				log.ErrorLog.Printf("error reading json config for agent: %e", err)
+				return nil, err
+			}
+			stringValue := strings.Split(jsonConfig.PollInterval, jsonConfig.PollInterval[len(jsonConfig.PollInterval)-1:])[0]
+			pollValue, err := strconv.ParseInt(stringValue, 10, 64)
+			if err != nil {
+				log.ErrorLog.Printf("error parsing poll interval value: %e", err)
+				return nil, err
+			}
+			stringValue = strings.Split(jsonConfig.ReportInterval, jsonConfig.ReportInterval[len(jsonConfig.ReportInterval)-1:])[0]
+			repValue, err := strconv.ParseInt(stringValue, 10, 64)
+			if err != nil {
+				log.ErrorLog.Printf("error parsing report interval value: %e", err)
+				return nil, err
+			}
+			return &AgentConfig{
+				Address:        jsonConfig.Address,
+				PollInterval:   int(cli.GetMultiplier(jsonConfig.PollInterval) * int64(pollValue)),
+				ReportInterval: int(cli.GetMultiplier(jsonConfig.ReportInterval) * int64(repValue)),
+				PublicKeyPath:  jsonConfig.PublicKeyPath,
+			}, nil
 		}
 		return checkAgentConfig(envConfig, cliConfig), nil
 	}

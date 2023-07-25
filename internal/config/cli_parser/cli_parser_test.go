@@ -13,8 +13,10 @@ func TestGetMultiplier(t *testing.T) {
 }
 
 func TestPositiveNewServerCLIOptions(t *testing.T) {
-	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=true", "-i=5m",
-		"-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd", "-crypto-key=sfsdfsdfsd", "-c=/path/to/json"}
+	os.Args = []string{
+		"main.go", "-a", "localhost:38731", "-r=true", "-i=5m",
+		"-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd", "-crypto-key=sfsdfsdfsd", "-c=/path/to/json",
+	}
 	config, err := NewServerCliOptions()
 	assert.NoError(t, err)
 	assert.Equal(t, "localhost:38731", config.Address)
@@ -37,8 +39,10 @@ func TestNegativeNewServerCLIOptions(t *testing.T) {
 }
 
 func TestPositiveNewAgentCLIOptions(t *testing.T) {
-	os.Args = []string{"main.go", "-a", "localhost:38731", "-r=5s", "-p=5m",
-		"-k=salt", "-l=13", "-crypto-key=sfsdfsdfsd", "-c=/path/to/config"}
+	os.Args = []string{
+		"main.go", "-a", "localhost:38731", "-r=5s", "-p=5m",
+		"-k=salt", "-l=13", "-crypto-key=sfsdfsdfsd", "-c=/path/to/config",
+	}
 	config, err := NewAgentCliOptions()
 	assert.NoError(t, err)
 
