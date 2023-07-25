@@ -363,11 +363,6 @@ func (h *Handler) UpdateJSONBatch(rw http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err != nil {
-		log.ErrorLog.Printf("Error occurred during metric update from json: %e", err)
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	log.InfoLog.Println("received and worked with metrics batch")
 	log.InfoLog.Println(metricsBatch)
 	buf := bytes.NewBuffer([]byte{})
