@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	col "github.com/nmramorov/gowatcher/internal/collector"
@@ -232,13 +236,17 @@ type Job struct {
 	RequestType string
 }
 
-func RunTickers(agentConfig *config.AgentConfig, jobCh chan<- *Job) {
+func RunTickers(stateSig chan struct{}, agentConfig *config.AgentConfig, jobCh chan<- *Job) {
 	log.InfoLog.Println("Tickers are running...")
 	updateTicker := time.NewTicker(time.Duration(agentConfig.PollInterval) * time.Second)
 	pushTicker := time.NewTicker(time.Duration(agentConfig.ReportInterval) * time.Second)
 
 	for {
 		select {
+		case <-stateSig:
+			log.InfoLog.Println("received shutdown signal, shutting down tickers")
+			close(jobCh)
+
 		case <-updateTicker.C:
 			jobCh <- &Job{
 				RequestType: "update",
@@ -251,46 +259,54 @@ func RunTickers(agentConfig *config.AgentConfig, jobCh chan<- *Job) {
 	}
 }
 
-func RunConcurrently(config *config.AgentConfig, client *http.Client, endpoint string) {
+func RunConcurrently(stateSignal chan struct{}, config *config.AgentConfig, client *http.Client, endpoint string) {
 	jobCh := make(chan *Job, config.RateLimit)
-
+	var wg sync.WaitGroup
 	collector := col.NewCollector()
+	wg.Add(1)
 	go func() {
-		RunTickers(config, jobCh)
+		RunTickers(stateSignal, config, jobCh)
+		wg.Done()
 	}()
-
 	for job := range jobCh {
 		log.InfoLog.Printf("Running job %s", job.RequestType)
 		RunJob(job, collector, client, endpoint, config)
 	}
+	wg.Wait()
 }
 
 func RunJob(job *Job, collector *col.Collector, client *http.Client, endpoint string, agentConfig *config.AgentConfig) {
 	switch job.RequestType {
 	case "update":
-		go func() {
-			collector.UpdateMetrics()
-			log.InfoLog.Println("Metrics have been updated concurrently")
-		}()
-		go func() {
-			collector.UpdateExtraMetrics()
-			log.InfoLog.Println("Extra metrics have been updated concurrently")
-		}()
+		collector.UpdateMetrics()
+		log.InfoLog.Println("Metrics have been updated concurrently")
+		collector.UpdateExtraMetrics()
+		log.InfoLog.Println("Extra metrics have been updated concurrently")
 	case "push":
-		go func() {
-			PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key, agentConfig.PublicKeyPath)
-			log.InfoLog.Println("Metrics have been pushed")
-			PushMetricsBatch(client, endpoint, agentConfig.PublicKeyPath, collector.GetMetrics())
-			log.InfoLog.Println("Batch metrics were pushed")
-			GetMetricsValues(client, endpoint, agentConfig.Key, agentConfig.PublicKeyPath, collector.GetMetrics())
-			log.InfoLog.Println("Metrics update has been received")
-		}()
+		PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key, agentConfig.PublicKeyPath)
+		log.InfoLog.Println("Metrics have been pushed")
+		PushMetricsBatch(client, endpoint, agentConfig.PublicKeyPath, collector.GetMetrics())
+		log.InfoLog.Println("Batch metrics were pushed")
+		GetMetricsValues(client, endpoint, agentConfig.Key, agentConfig.PublicKeyPath, collector.GetMetrics())
+		log.InfoLog.Println("Metrics update has been received")
 	}
 }
 
 type Client struct{}
 
 func (c *Client) Run() {
+	idleConnsClosed := make(chan struct{})
+
+	sigint := make(chan os.Signal, 1)
+	clientKill := make(chan struct{}, 1)
+	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+	go func() {
+		<-sigint
+		close(clientKill)
+		close(idleConnsClosed)
+	}()
+
 	agentConfig, err := config.GetAgentConfig()
 	if err != nil {
 		log.ErrorLog.Printf("Error with agent config: %e", err)
@@ -300,5 +316,6 @@ func (c *Client) Run() {
 
 	client := &http.Client{}
 
-	RunConcurrently(agentConfig, client, endpoint)
+	RunConcurrently(clientKill, agentConfig, client, endpoint)
+	<-idleConnsClosed
 }
