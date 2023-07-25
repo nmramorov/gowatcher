@@ -3,8 +3,11 @@ package server
 import (
 	"context"
 	"net/http"
+	"os"
+	"os/signal"
 	"path/filepath"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/nmramorov/gowatcher/internal/api/handlers"
@@ -136,11 +139,35 @@ func (s *Server) Run(parent context.Context) error {
 		}
 	}()
 
+	idleConnsClosed := make(chan struct{})
+	// канал для перенаправления прерываний
+	// поскольку нужно отловить всего одно прерывание,
+	// ёмкости 1 для канала будет достаточно
+	sigint := make(chan os.Signal, 3)
+	// регистрируем перенаправление прерываний
+	signal.Notify(sigint, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	// запускаем горутину обработки пойманных прерываний
+	go func() {
+		// читаем из канала прерываний
+		// поскольку нужно прочитать только одно прерывание,
+		// можно обойтись без цикла
+		<-sigint
+		// получили сигнал os.Interrupt, запускаем процедуру graceful shutdown
+		if err := server.Shutdown(context.Background()); err != nil {
+			// ошибки закрытия Listener
+			log.ErrorLog.Printf("HTTP server Shutdown: %v", err)
+		}
+		// сообщаем основному потоку,
+		// что все сетевые соединения обработаны и закрыты
+		close(idleConnsClosed)
+	}()
+
 	log.InfoLog.Println("Web server is ready to accept connections...")
 	err = server.ListenAndServe()
 	if err != nil {
 		log.ErrorLog.Printf("Unexpected error occurred: %e", err)
 	}
+	<-idleConnsClosed
 	wg.Wait()
 
 	return nil
