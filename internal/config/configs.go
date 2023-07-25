@@ -99,7 +99,7 @@ func GetServerConfig() (*ServerConfig, error) {
 			}
 			return &ServerConfig{
 				Address:        jsonConfig.Address,
-				StoreInterval:  int(cli.GetMultiplier(jsonConfig.StoreInterval) * int64(value)),
+				StoreInterval:  int(cli.GetMultiplier(jsonConfig.StoreInterval) * value),
 				StoreFile:      jsonConfig.StoreFile,
 				Restore:        jsonConfig.Restore,
 				PrivateKeyPath: jsonConfig.PrivateKeyPath,
@@ -199,8 +199,8 @@ func GetAgentConfig() (*AgentConfig, error) {
 			}
 			return &AgentConfig{
 				Address:        jsonConfig.Address,
-				PollInterval:   int(cli.GetMultiplier(jsonConfig.PollInterval) * int64(pollValue)),
-				ReportInterval: int(cli.GetMultiplier(jsonConfig.ReportInterval) * int64(repValue)),
+				PollInterval:   int(cli.GetMultiplier(jsonConfig.PollInterval) * pollValue),
+				ReportInterval: int(cli.GetMultiplier(jsonConfig.ReportInterval) * repValue),
 				PublicKeyPath:  jsonConfig.PublicKeyPath,
 			}, nil
 		}
