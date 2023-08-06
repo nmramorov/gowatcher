@@ -740,6 +740,7 @@ func TestHandler_ValidateIP(t *testing.T) {
 
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
+			defer resp.Body.Close()
 			assert.Equal(t, tt.want.code, resp.StatusCode)
 		})
 	}
