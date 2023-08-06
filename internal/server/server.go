@@ -46,10 +46,11 @@ func GetMetricsHandler(parent context.Context, options *config.ServerConfig) (*h
 		storedMetrics, err := reader.ReadJSON()
 		if err != nil {
 			log.ErrorLog.Printf("Error happened during JSON reading: %e", err)
-			return handlers.NewHandler(options.Key, options.PrivateKeyPath, options.TrustedSubnet, cursor), nil
+			return handlers.NewHandler(options.Key, options.PrivateKeyPath,
+				options.TrustedSubnet, cursor), nil
 		}
-		metricsHandler := handlers.NewHandlerFromSavedData(storedMetrics, options.Key, options.PrivateKeyPath,
-			options.TrustedSubnet, cursor)
+		metricsHandler := handlers.NewHandlerFromSavedData(storedMetrics, options.Key,
+			options.PrivateKeyPath, options.TrustedSubnet, cursor)
 		log.InfoLog.Println("Configuration restored.")
 		return metricsHandler, nil
 	}
