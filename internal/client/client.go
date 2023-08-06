@@ -166,7 +166,6 @@ func createCounterRequests(endpoint, path, key, certPath string, counterMetrics 
 	for k, v := range counterMetrics {
 		body := createBody(COUNTER, path, k, key, certPath, v)
 		req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
-
 		if err != nil {
 			log.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
 		}
