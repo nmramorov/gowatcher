@@ -174,7 +174,8 @@ func TestPOSTMetricsHandlerNoJson(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			urlPath := fmt.Sprintf("/update/%s/%s/%s", tt.args.metricType, tt.args.metricName, tt.args.metricValue)
+			urlPath := fmt.Sprintf("/update/%s/%s/%s", tt.args.metricType,
+				tt.args.metricName, tt.args.metricValue)
 			statusCode, body := testRequest(t, ts, "POST", urlPath)
 			assert.Equal(t, tt.want.code, statusCode)
 			assert.Equal(t, tt.want.response, body)
@@ -562,7 +563,10 @@ func TestNewHandlerFromSavedData(t *testing.T) {
 	ctx := context.Background()
 	col := collector.NewCollector()
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	assert.NotPanics(t, func() { NewHandlerFromSavedData(col.GetMetrics(), "sss", "", "", MOCKCURSOR) })
+	assert.NotPanics(t, func() {
+		NewHandlerFromSavedData(col.GetMetrics(),
+			"sss", "", "", MOCKCURSOR)
+	})
 }
 
 func TestPOSTMetricsHandlerJsonBatch(t *testing.T) {

@@ -35,8 +35,8 @@ func TestPositiveNewServerCLIOptions(t *testing.T) {
 }
 
 func TestNegativeNewServerCLIOptions(t *testing.T) {
-	os.Args = []string{"main.go", "-b", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd",
-		"-t=fsdf"}
+	os.Args = []string{"main.go", "-b", "localhost:38731", "-r=true",
+		"-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd", "-t=fsdf"}
 	_, err := NewServerCliOptions()
 	assert.Error(t, err)
 }
@@ -55,7 +55,8 @@ func TestPositiveNewAgentCLIOptions(t *testing.T) {
 }
 
 func TestNegativeNewAgentCLIOptions(t *testing.T) {
-	os.Args = []string{"main.go", "-b", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd"}
+	os.Args = []string{"main.go", "-b", "localhost:38731", "-r=true", "-i=5m",
+		"-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd"}
 	_, err := NewAgentCliOptions()
 	assert.Error(t, err)
 }
