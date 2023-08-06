@@ -19,6 +19,7 @@ type ServerCLIOptions struct {
 	Database      string
 	CryptoKey     string
 	Config        string
+	TrustedSubnet string
 }
 
 type AgentCLIOptions struct {
@@ -69,6 +70,7 @@ func NewServerCliOptions() (*ServerCLIOptions, error) {
 	database := serverOptions.String("d", "", "database link")
 	cryptoKey := serverOptions.String("crypto-key", "", "path to private key")
 	config := serverOptions.String("c", "", "server json config path")
+	subnet := serverOptions.String("t", "", "trusted subnet CIDR")
 	if err := serverOptions.Parse(os.Args[1:]); err != nil {
 		log.ErrorLog.Printf("error parsing server cli options: %e", err)
 		return nil, errors.ErrorWithCli
@@ -83,6 +85,7 @@ func NewServerCliOptions() (*ServerCLIOptions, error) {
 		Database:      *database,
 		CryptoKey:     *cryptoKey,
 		Config:        *config,
+		TrustedSubnet: *subnet,
 	}, nil
 }
 
