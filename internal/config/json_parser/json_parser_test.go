@@ -30,6 +30,7 @@ func TestReadJSONConfig(t *testing.T) {
 				Key:            "",
 				Database:       "",
 				PrivateKeyPath: "/path/to/key.pem",
+				TrustedSubnet:  "",
 			},
 			wantErr: false,
 		},

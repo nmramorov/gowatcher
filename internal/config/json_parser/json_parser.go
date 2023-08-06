@@ -15,6 +15,7 @@ type ServerJSONConfig struct {
 	Key            string `json:"key,omitempty"`
 	Database       string `json:"database_dsn"`
 	PrivateKeyPath string `json:"crypto_key"`
+	TrustedSubnet  string `json:"trusted_subnet"`
 }
 
 type AgentJSONConfig struct {
