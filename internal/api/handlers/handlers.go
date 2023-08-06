@@ -97,11 +97,12 @@ func (h *Handler) ValidateIP(next http.Handler) http.Handler {
 			return
 		}
 		ip := r.Header.Get("X-Real-IP")
-		if ip == "" {
-			next.ServeHTTP(w, r)
+		ipStr, _, err := net.SplitHostPort(ip)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		ipV4 := net.ParseIP(ip)
+		ipV4 := net.ParseIP(ipStr)
 
 		_, mask, err := net.ParseCIDR(h.TrustedSubnet)
 		if err != nil {
@@ -110,7 +111,7 @@ func (h *Handler) ValidateIP(next http.Handler) http.Handler {
 			return
 		}
 		if !mask.Contains(ipV4) {
-			log.ErrorLog.Println("Agent ip is not in trusted subnet")
+			log.ErrorLog.Printf("Agent ip is not in trusted subnet: %s", ipV4)
 			http.Error(w, "Agent ip is not in trusted subnet", http.StatusForbidden)
 			return
 		}

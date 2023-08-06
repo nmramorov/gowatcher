@@ -32,6 +32,7 @@ func CreateRequests(endpoint string, mtrcs *m.Metrics) []*http.Request {
 			log.ErrorLog.Printf("Could not do POST request for gauge with params: %s %f", k, v)
 		}
 		req.Header.Add("Content-Type", "text/plain")
+		req.Header.Add("X-Real-IP", endpoint)
 		requests = append(requests, req)
 	}
 	for k, v := range mtrcs.CounterMetrics {
@@ -40,6 +41,7 @@ func CreateRequests(endpoint string, mtrcs *m.Metrics) []*http.Request {
 			log.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
 		}
 		req.Header.Add("Content-Type", "text/plain")
+		req.Header.Add("X-Real-IP", endpoint)
 		requests = append(requests, req)
 	}
 	return requests
@@ -95,6 +97,7 @@ func createRequestsBatch(endpoint, path, certPath string, src *m.Metrics) *http.
 		log.ErrorLog.Println("Could not do POST batch request")
 	}
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-Real-IP", endpoint)
 	return req
 }
 
@@ -152,6 +155,7 @@ func createGaugeRequests(endpoint, path, key, certPath string, gaugeMetrics map[
 			log.ErrorLog.Printf("Could not do POST request for gauge with params: %s %f", k, v)
 		}
 		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("X-Real-IP", endpoint)
 		requests = append(requests, req)
 	}
 	return requests
@@ -162,10 +166,12 @@ func createCounterRequests(endpoint, path, key, certPath string, counterMetrics 
 	for k, v := range counterMetrics {
 		body := createBody(COUNTER, path, k, key, certPath, v)
 		req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
+
 		if err != nil {
 			log.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
 		}
 		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("X-Real-IP", endpoint)
 		requests = append(requests, req)
 	}
 	return requests

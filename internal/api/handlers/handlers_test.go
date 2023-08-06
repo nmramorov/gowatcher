@@ -735,7 +735,7 @@ func TestHandler_ValidateIP(t *testing.T) {
 			defer ts.Close()
 			urlPath := ts.URL + "/"
 			req, err := http.NewRequest("GET", urlPath, nil)
-			req.Header.Add("X-Real-IP", "192.168.1.11")
+			req.Header.Add("X-Real-IP", "192.168.1.11:8080")
 			require.NoError(t, err)
 
 			resp, err := http.DefaultClient.Do(req)
