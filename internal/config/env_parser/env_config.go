@@ -81,6 +81,7 @@ type ServerEnvConfig struct {
 	Database      string `env:"DATABASE_DSN"`
 	CryptoKey     string `env:"CRYPTO_KEY"`
 	Config        string `env:"CONFIG"`
+	TrustedSubnet string `env:"TRUSTED_SUBNET"`
 }
 
 func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
@@ -117,6 +118,7 @@ func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {
 		Database:      db,
 		CryptoKey:     envs.CryptoKey,
 		Config:        envs.Config,
+		TrustedSubnet: envs.TrustedSubnet,
 	}
 }
 
