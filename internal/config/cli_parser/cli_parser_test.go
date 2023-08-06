@@ -15,7 +15,8 @@ func TestGetMultiplier(t *testing.T) {
 func TestPositiveNewServerCLIOptions(t *testing.T) {
 	os.Args = []string{
 		"main.go", "-a", "localhost:38731", "-r=true", "-i=5m",
-		"-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd", "-crypto-key=sfsdfsdfsd", "-c=/path/to/json", "-t=255.255.255.0",
+		"-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd", "-crypto-key=sfsdfsdfsd", "-c=/path/to/json",
+		"-t=255.255.255.0",
 	}
 	config, err := NewServerCliOptions()
 	assert.NoError(t, err)
@@ -34,7 +35,8 @@ func TestPositiveNewServerCLIOptions(t *testing.T) {
 }
 
 func TestNegativeNewServerCLIOptions(t *testing.T) {
-	os.Args = []string{"main.go", "-b", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd", "-t=fsdf"}
+	os.Args = []string{"main.go", "-b", "localhost:38731", "-r=true", "-i=5m", "-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd",
+		"-t=fsdf"}
 	_, err := NewServerCliOptions()
 	assert.Error(t, err)
 }
