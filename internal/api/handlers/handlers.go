@@ -68,7 +68,8 @@ func NewHandler(key, privateKeyPath, trustedSubnet string, newCursor *db.Cursor)
 
 // Конструктор Handler, который инициализируется с записанными ранее данными Metrics.
 func NewHandlerFromSavedData(saved *m.Metrics, secretkey, privateKeyPath, trustedSubnet string,
-	cursor *db.Cursor) *Handler {
+	cursor *db.Cursor,
+) *Handler {
 	h := &Handler{
 		Mux:            chi.NewMux(),
 		collector:      col.NewCollectorFromSavedFile(saved),
