@@ -20,6 +20,7 @@ type ServerConfig struct {
 	Key            string
 	Database       string
 	PrivateKeyPath string
+	TrustedSubnet  string
 }
 
 func checkServerConfig(envs *env.ServerEnvConfig, clies *cli.ServerCLIOptions) *ServerConfig {
@@ -32,6 +33,7 @@ func checkServerConfig(envs *env.ServerEnvConfig, clies *cli.ServerCLIOptions) *
 	key := clies.Key
 	db := clies.Database
 	cryptoKey := clies.CryptoKey
+	subnet := clies.TrustedSubnet
 	if envs.Address != env.Address && envs.Address != addr {
 		addr = envs.Address
 	}
@@ -64,6 +66,9 @@ func checkServerConfig(envs *env.ServerEnvConfig, clies *cli.ServerCLIOptions) *
 	if cryptoKey == "" {
 		cryptoKey = envs.CryptoKey
 	}
+	if subnet == "" {
+		subnet = envs.TrustedSubnet
+	}
 	return &ServerConfig{
 		Address:        addr,
 		StoreInterval:  storeintNumeric,
@@ -72,6 +77,7 @@ func checkServerConfig(envs *env.ServerEnvConfig, clies *cli.ServerCLIOptions) *
 		Key:            key,
 		Database:       db,
 		PrivateKeyPath: cryptoKey,
+		TrustedSubnet:  subnet,
 	}
 }
 
