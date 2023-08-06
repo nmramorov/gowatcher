@@ -160,7 +160,7 @@ linters-settings:
       nestingReduce:
         # Min number of statements inside a branch to trigger a warning.
         # Default: 5
-        bodyWidth: 4
+        bodyWidth: 6
       rangeExprCopy:
         # Size in bytes that makes the warning trigger.
         # Default: 512
@@ -262,7 +262,7 @@ linters:
     - ineffassign
     - misspell
     - nakedret
-    - nestif
+    # - nestif
 #    - nilnil
 #    - nlreturn
     - nolintlint

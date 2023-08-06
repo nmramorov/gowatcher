@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	col "github.com/nmramorov/gowatcher/internal/collector"
@@ -12,6 +16,7 @@ import (
 	"github.com/nmramorov/gowatcher/internal/config"
 	"github.com/nmramorov/gowatcher/internal/hashgen"
 	"github.com/nmramorov/gowatcher/internal/log"
+	sec "github.com/nmramorov/gowatcher/internal/security"
 )
 
 var (
@@ -62,19 +67,29 @@ func createBatch(src *m.Metrics) []*m.JSONMetrics {
 	return batch
 }
 
-func encodeBatch(batch []*m.JSONMetrics) *bytes.Buffer {
+func encodeBatch(batch []*m.JSONMetrics, certPath string) *bytes.Buffer {
 	body := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(body)
 	err := encoder.Encode(&batch)
 	if err != nil {
 		log.ErrorLog.Printf("Error during batch encoding: %e", err)
 	}
-	return body
+	cert, err := sec.GetCertificate(certPath)
+	if err != nil {
+		log.ErrorLog.Printf("error getting cert: %e", err)
+	}
+	encodedMsg, err := sec.EncodeMsg(body.Bytes(), cert)
+	if err != nil {
+		log.ErrorLog.Printf("error encoding batch: %e", err)
+		return body
+	}
+	buf := bytes.NewBuffer(encodedMsg)
+	return buf
 }
 
-func createRequestsBatch(endpoint, path string, src *m.Metrics) *http.Request {
+func createRequestsBatch(endpoint, path, certPath string, src *m.Metrics) *http.Request {
 	batch := createBatch(src)
-	body := encodeBatch(batch)
+	body := encodeBatch(batch, certPath)
 	req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
 	if err != nil {
 		log.ErrorLog.Println("Could not do POST batch request")
@@ -83,7 +98,7 @@ func createRequestsBatch(endpoint, path string, src *m.Metrics) *http.Request {
 	return req
 }
 
-func createBody(metricType, path, key, secretkey string, value interface{}) *bytes.Buffer {
+func createBody(metricType, path, key, secretkey, certPath string, value interface{}) *bytes.Buffer {
 	var hash string
 	if secretkey != "" {
 		generator := hashgen.NewHashGenerator(secretkey)
@@ -117,13 +132,21 @@ func createBody(metricType, path, key, secretkey string, value interface{}) *byt
 	if err != nil {
 		log.ErrorLog.Printf("error encoding body: %e", err)
 	}
-	return body
+	cert, err := sec.GetCertificate(certPath)
+	if err != nil {
+		log.ErrorLog.Printf("error getting cert: %e", err)
+		return body
+	}
+	encodedMsg, _ := sec.EncodeMsg(body.Bytes(), cert)
+	buf := bytes.NewBuffer(encodedMsg)
+	return buf
 }
 
-func createGaugeRequests(endpoint, path, key string, gaugeMetrics map[string]m.Gauge) []*http.Request {
+func createGaugeRequests(endpoint, path, key, certPath string, gaugeMetrics map[string]m.Gauge) []*http.Request {
 	requests := make([]*http.Request, 0)
 	for k, v := range gaugeMetrics {
-		body := createBody(GAUGE, path, k, key, v)
+		body := createBody(GAUGE, path, k, key, certPath, v)
+
 		req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
 		if err != nil {
 			log.ErrorLog.Printf("Could not do POST request for gauge with params: %s %f", k, v)
@@ -134,10 +157,10 @@ func createGaugeRequests(endpoint, path, key string, gaugeMetrics map[string]m.G
 	return requests
 }
 
-func createCounterRequests(endpoint, path, key string, counterMetrics map[string]m.Counter) []*http.Request {
+func createCounterRequests(endpoint, path, key, certPath string, counterMetrics map[string]m.Counter) []*http.Request {
 	requests := make([]*http.Request, 0)
 	for k, v := range counterMetrics {
-		body := createBody(COUNTER, path, k, key, v)
+		body := createBody(COUNTER, path, k, key, certPath, v)
 		req, err := http.NewRequest(http.MethodPost, endpoint+path, body)
 		if err != nil {
 			log.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
@@ -148,19 +171,19 @@ func createCounterRequests(endpoint, path, key string, counterMetrics map[string
 	return requests
 }
 
-func generateMetricsRequests(endpoint, path, key string, src *m.Metrics) []*http.Request {
-	gaugeRequests := createGaugeRequests(endpoint, path, key, src.GaugeMetrics)
-	counterRequests := createCounterRequests(endpoint, path, key, src.CounterMetrics)
+func generateMetricsRequests(endpoint, path, key, certPath string, src *m.Metrics) []*http.Request {
+	gaugeRequests := createGaugeRequests(endpoint, path, key, certPath, src.GaugeMetrics)
+	counterRequests := createCounterRequests(endpoint, path, key, certPath, src.CounterMetrics)
 	return append(gaugeRequests, counterRequests...)
 }
 
-func PushMetrics(client *http.Client, endpoint string, mtrcs *m.Metrics, key string) {
+func PushMetrics(client *http.Client, endpoint string, mtrcs *m.Metrics, key, certPath string) {
 	defer func() {
 		if p := recover(); p != nil {
 			log.ErrorLog.Println(p)
 		}
 	}()
-	requests := generateMetricsRequests(endpoint, "/update/", key, mtrcs)
+	requests := generateMetricsRequests(endpoint, "/update/", key, certPath, mtrcs)
 	for _, request := range requests {
 		resp, err := client.Do(request)
 		if err != nil {
@@ -173,13 +196,13 @@ func PushMetrics(client *http.Client, endpoint string, mtrcs *m.Metrics, key str
 	}
 }
 
-func PushMetricsBatch(client *http.Client, endpoint string, mtrcs *m.Metrics) {
+func PushMetricsBatch(client *http.Client, endpoint, certPath string, mtrcs *m.Metrics) {
 	defer func() {
 		if p := recover(); p != nil {
 			log.ErrorLog.Println(p)
 		}
 	}()
-	request := createRequestsBatch(endpoint, "/updates/", mtrcs)
+	request := createRequestsBatch(endpoint, "/updates/", certPath, mtrcs)
 	resp, err := client.Do(request)
 	if err != nil {
 		log.ErrorLog.Println(err)
@@ -190,13 +213,13 @@ func PushMetricsBatch(client *http.Client, endpoint string, mtrcs *m.Metrics) {
 	}
 }
 
-func GetMetricsValues(client *http.Client, endpoint, key string, mtrcs *m.Metrics) {
+func GetMetricsValues(client *http.Client, endpoint, key, certPath string, mtrcs *m.Metrics) {
 	defer func() {
 		if p := recover(); p != nil {
 			log.ErrorLog.Println(p)
 		}
 	}()
-	requests := generateMetricsRequests(endpoint, "/value/", key, mtrcs)
+	requests := generateMetricsRequests(endpoint, "/value/", key, certPath, mtrcs)
 	for _, request := range requests {
 		resp, err := client.Do(request)
 		if err != nil {
@@ -213,13 +236,17 @@ type Job struct {
 	RequestType string
 }
 
-func RunTickers(agentConfig *config.AgentConfig, jobCh chan<- *Job) {
+func RunTickers(stateSig chan struct{}, agentConfig *config.AgentConfig, jobCh chan<- *Job) {
 	log.InfoLog.Println("Tickers are running...")
 	updateTicker := time.NewTicker(time.Duration(agentConfig.PollInterval) * time.Second)
 	pushTicker := time.NewTicker(time.Duration(agentConfig.ReportInterval) * time.Second)
 
 	for {
 		select {
+		case <-stateSig:
+			log.InfoLog.Println("received shutdown signal, shutting down tickers")
+			close(jobCh)
+
 		case <-updateTicker.C:
 			jobCh <- &Job{
 				RequestType: "update",
@@ -232,46 +259,54 @@ func RunTickers(agentConfig *config.AgentConfig, jobCh chan<- *Job) {
 	}
 }
 
-func RunConcurrently(config *config.AgentConfig, client *http.Client, endpoint string) {
+func RunConcurrently(stateSignal chan struct{}, config *config.AgentConfig, client *http.Client, endpoint string) {
 	jobCh := make(chan *Job, config.RateLimit)
-
+	var wg sync.WaitGroup
 	collector := col.NewCollector()
+	wg.Add(1)
 	go func() {
-		RunTickers(config, jobCh)
+		RunTickers(stateSignal, config, jobCh)
+		wg.Done()
 	}()
-
 	for job := range jobCh {
 		log.InfoLog.Printf("Running job %s", job.RequestType)
 		RunJob(job, collector, client, endpoint, config)
 	}
+	wg.Wait()
 }
 
 func RunJob(job *Job, collector *col.Collector, client *http.Client, endpoint string, agentConfig *config.AgentConfig) {
 	switch job.RequestType {
 	case "update":
-		go func() {
-			collector.UpdateMetrics()
-			log.InfoLog.Println("Metrics have been updated concurrently")
-		}()
-		go func() {
-			collector.UpdateExtraMetrics()
-			log.InfoLog.Println("Extra metrics have been updated concurrently")
-		}()
+		collector.UpdateMetrics()
+		log.InfoLog.Println("Metrics have been updated concurrently")
+		collector.UpdateExtraMetrics()
+		log.InfoLog.Println("Extra metrics have been updated concurrently")
 	case "push":
-		go func() {
-			PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key)
-			log.InfoLog.Println("Metrics have been pushed")
-			PushMetricsBatch(client, endpoint, collector.GetMetrics())
-			log.InfoLog.Println("Batch metrics were pushed")
-			GetMetricsValues(client, endpoint, agentConfig.Key, collector.GetMetrics())
-			log.InfoLog.Println("Metrics update has been received")
-		}()
+		PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key, agentConfig.PublicKeyPath)
+		log.InfoLog.Println("Metrics have been pushed")
+		PushMetricsBatch(client, endpoint, agentConfig.PublicKeyPath, collector.GetMetrics())
+		log.InfoLog.Println("Batch metrics were pushed")
+		GetMetricsValues(client, endpoint, agentConfig.Key, agentConfig.PublicKeyPath, collector.GetMetrics())
+		log.InfoLog.Println("Metrics update has been received")
 	}
 }
 
 type Client struct{}
 
 func (c *Client) Run() {
+	idleConnsClosed := make(chan struct{})
+
+	sigint := make(chan os.Signal, 1)
+	clientKill := make(chan struct{}, 1)
+	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+	go func() {
+		<-sigint
+		close(clientKill)
+		close(idleConnsClosed)
+	}()
+
 	agentConfig, err := config.GetAgentConfig()
 	if err != nil {
 		log.ErrorLog.Printf("Error with agent config: %e", err)
@@ -281,5 +316,6 @@ func (c *Client) Run() {
 
 	client := &http.Client{}
 
-	RunConcurrently(agentConfig, client, endpoint)
+	RunConcurrently(clientKill, agentConfig, client, endpoint)
+	<-idleConnsClosed
 }
