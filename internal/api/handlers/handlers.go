@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"io"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -37,20 +38,23 @@ type Handler struct {
 	collector      *col.Collector
 	secretkey      string
 	privateKeyPath string
+	TrustedSubnet  string
 	cursor         *db.Cursor
 }
 
 // Конструктор для объектов типа Handler.
-func NewHandler(key, privateKeyPath string, newCursor *db.Cursor) *Handler {
+func NewHandler(key, privateKeyPath, trustedSubnet string, newCursor *db.Cursor) *Handler {
 	h := &Handler{
 		Mux:            chi.NewMux(),
 		collector:      col.NewCollector(),
 		secretkey:      key,
 		cursor:         newCursor,
 		privateKeyPath: privateKeyPath,
+		TrustedSubnet:  trustedSubnet,
 	}
 	h.Use(middleware.GzipHandle)
 	h.Use(h.DecodeMessage)
+	h.Use(h.ValidateIP)
 	h.Get("/", h.ListMetricsHTML)
 	h.Get("/ping", h.HandlePing)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
@@ -63,16 +67,18 @@ func NewHandler(key, privateKeyPath string, newCursor *db.Cursor) *Handler {
 }
 
 // Конструктор Handler, который инициализируется с записанными ранее данными Metrics.
-func NewHandlerFromSavedData(saved *m.Metrics, secretkey, privateKeyPath string, cursor *db.Cursor) *Handler {
+func NewHandlerFromSavedData(saved *m.Metrics, secretkey, privateKeyPath, trustedSubnet string, cursor *db.Cursor) *Handler {
 	h := &Handler{
 		Mux:            chi.NewMux(),
 		collector:      col.NewCollectorFromSavedFile(saved),
 		secretkey:      secretkey,
 		cursor:         cursor,
 		privateKeyPath: privateKeyPath,
+		TrustedSubnet:  trustedSubnet,
 	}
 	h.Use(middleware.GzipHandle)
 	h.Use(h.DecodeMessage)
+	h.Use(h.ValidateIP)
 	h.Get("/", h.ListMetricsHTML)
 	h.Get("/ping", h.HandlePing)
 	h.Get("/value/{type}/{name}", h.GetMetricByTypeAndName)
@@ -82,6 +88,34 @@ func NewHandlerFromSavedData(saved *m.Metrics, secretkey, privateKeyPath string,
 	h.Post("/updates/", h.UpdateJSONBatch)
 
 	return h
+}
+
+func (h *Handler) ValidateIP(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if h.TrustedSubnet == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		ip := r.Header.Get("X-Real-IP")
+		if ip == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		ipV4 := net.ParseIP(ip)
+
+		_, mask, err := net.ParseCIDR(h.TrustedSubnet)
+		if err != nil {
+			log.ErrorLog.Printf("Error parsing CIDR %s: %e", h.TrustedSubnet, err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !mask.Contains(ipV4) {
+			log.ErrorLog.Println("Agent ip is not in trusted subnet")
+			http.Error(w, "Agent ip is not in trusted subnet", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (h *Handler) DecodeMessage(next http.Handler) http.Handler {
