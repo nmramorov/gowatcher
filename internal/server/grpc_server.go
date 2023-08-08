@@ -5,10 +5,9 @@ import (
 	"fmt"
 
 	// импортируем пакет со сгенерированными protobuf-файлами
-	col "github.com/nmramorov/gowatcher/internal/collector"
 	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
-	"github.com/nmramorov/gowatcher/internal/db"
 	"github.com/nmramorov/gowatcher/internal/log"
+	"github.com/nmramorov/gowatcher/internal/api/handlers"
 	pb "github.com/nmramorov/gowatcher/internal/proto"
 )
 
@@ -18,8 +17,7 @@ type MetricsServer struct {
 	// для совместимости с будущими версиями
 	pb.UnimplementedMetricsServer
 
-	collector col.Collector
-	cursor    db.Cursor
+	h handlers.Handler
 }
 
 // AddMetric реализует интерфейс добавления метрики.
@@ -32,13 +30,13 @@ func (s *MetricsServer) AddMetric(ctx context.Context, in *pb.AddMetricRequest) 
 		Value: &in.Metric.Value,
 		Hash:  in.Metric.Hash,
 	}
-	updatedData, err := s.collector.UpdateMetricFromJSON(&metricToAdd)
+	updatedData, err := s.h.Collector.UpdateMetricFromJSON(&metricToAdd)
 	if err != nil {
 		log.ErrorLog.Printf("Error occurred during metric update from json: %e", err)
 		response.Error = fmt.Sprintf("Error occurred during metric update from json: %e", err)
 	}
-	if s.cursor.IsValid {
-		err = s.cursor.Add(ctx, updatedData)
+	if s.h.Cursor.IsValid {
+		err = s.h.Cursor.Add(ctx, updatedData)
 		if err != nil {
 			log.ErrorLog.Printf("could not add data to db for metric %s: %e", metricToAdd.ID, err)
 			response.Error = fmt.Sprintf("could not add data to db for metric %s: %e", metricToAdd.ID, err)
@@ -56,15 +54,15 @@ func (s *MetricsServer) GetMetric(ctx context.Context, in *pb.GetMetricRequest) 
 	}
 	var metric *m.JSONMetrics
 	var err error
-	if s.cursor.IsValid {
-		metric, err = s.cursor.Get(ctx, &metricToAdd)
+	if s.h.Cursor.IsValid {
+		metric, err = s.h.Cursor.Get(ctx, &metricToAdd)
 		if err != nil {
 			log.ErrorLog.Printf("could not get data from db for metric %s: %e", metricToAdd.ID, err)
 			response.Error = fmt.Sprintf("could not get data from db for metric %s: %e", metricToAdd.ID, err)
 		}
 	}
 	if metric == nil {
-		metric, err = s.collector.GetMetricJSON(&metricToAdd)
+		metric, err = s.h.Collector.GetMetricJSON(&metricToAdd)
 		if err != nil {
 			log.ErrorLog.Printf("Error occurred during metric getting from json: %e", err)
 			response.Error = fmt.Sprintf("Error occurred during metric getting from json: %e", err)
@@ -80,6 +78,8 @@ func (s *MetricsServer) GetMetric(ctx context.Context, in *pb.GetMetricRequest) 
 
 	return &response, nil
 }
+
+
 
 // func main() {
 // 	// определяем порт для сервера

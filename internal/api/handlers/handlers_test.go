@@ -276,7 +276,7 @@ func TestHTML(t *testing.T) {
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
 	metricsHandler := NewHandler("", "", "", MOCKCURSOR)
-	metricsHandler.collector.UpdateMetrics()
+	metricsHandler.Collector.UpdateMetrics()
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -518,7 +518,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 				panic("Test error: error with unmarshalling JSON POST /value method")
 			}
 			assert.Equal(t, tt.want.response, result)
-			metricsHandler.collector.UpdateMetrics()
+			metricsHandler.Collector.UpdateMetrics()
 		})
 	}
 }
