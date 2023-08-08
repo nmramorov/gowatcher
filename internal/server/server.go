@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -15,6 +17,8 @@ import (
 	"github.com/nmramorov/gowatcher/internal/db"
 	"github.com/nmramorov/gowatcher/internal/file"
 	"github.com/nmramorov/gowatcher/internal/log"
+	pb "github.com/nmramorov/gowatcher/internal/proto"
+	"google.golang.org/grpc"
 )
 
 func GetMetricsHandler(parent context.Context, options *config.ServerConfig) (*handlers.Handler, error) {
@@ -171,6 +175,24 @@ func (s *Server) Run(parent context.Context) error {
 			log.ErrorLog.Printf("error shutting down server: %e", err)
 		}
 	}()
+
+	if serverConfig.GRPC {
+		// определяем порт для сервера
+		listen, err := net.Listen("tcp", ":"+strings.Split(serverConfig.Address, ":")[1])
+		if err != nil {
+			log.ErrorLog.Fatal(err)
+		}
+		// создаём gRPC-сервер без зарегистрированной службы
+		s := grpc.NewServer()
+		// регистрируем сервис
+		pb.RegisterMetricsServer(s, &MetricsServer{})
+
+		log.InfoLog.Println("Сервер gRPC начал работу")
+		// получаем запрос gRPC
+		if err := s.Serve(listen); err != nil {
+			log.ErrorLog.Fatal(err)
+		}
+	}
 
 	log.InfoLog.Println("Web server is ready to accept connections...")
 	err = server.ListenAndServe()

@@ -78,23 +78,3 @@ func (s *MetricsServer) GetMetric(ctx context.Context, in *pb.GetMetricRequest) 
 
 	return &response, nil
 }
-
-
-
-// func main() {
-// 	// определяем порт для сервера
-// 	listen, err := net.Listen("tcp", ":3200")
-// 	if err != nil {
-// 		log.ErrorLog.Fatal(err)
-// 	}
-// 	// создаём gRPC-сервер без зарегистрированной службы
-// 	s := grpc.NewServer()
-// 	// регистрируем сервис
-// 	pb.RegisterMetricsServer(s, &MetricsServer{})
-
-// 	fmt.Println("Сервер gRPC начал работу")
-// 	// получаем запрос gRPC
-// 	if err := s.Serve(listen); err != nil {
-// 		log.ErrorLog.Fatal(err)
-// 	}
-// }
