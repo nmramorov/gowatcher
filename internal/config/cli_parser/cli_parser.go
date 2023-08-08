@@ -20,6 +20,7 @@ type ServerCLIOptions struct {
 	CryptoKey     string
 	Config        string
 	TrustedSubnet string
+	GRPC          bool
 }
 
 type AgentCLIOptions struct {
@@ -30,6 +31,7 @@ type AgentCLIOptions struct {
 	RateLimit      int
 	CryptoKey      string
 	Config         string
+	GRPC           bool
 }
 
 func (scli *ServerCLIOptions) GetNumericInterval(intervalName string) int64 {
@@ -71,6 +73,7 @@ func NewServerCliOptions() (*ServerCLIOptions, error) {
 	cryptoKey := serverOptions.String("crypto-key", "", "path to private key")
 	config := serverOptions.String("c", "", "server json config path")
 	subnet := serverOptions.String("t", "", "trusted subnet CIDR")
+	grpc := serverOptions.Bool("grpc", false, "grpc mode")
 	if err := serverOptions.Parse(os.Args[1:]); err != nil {
 		log.ErrorLog.Printf("error parsing server cli options: %e", err)
 		return nil, errors.ErrorWithCli
@@ -86,6 +89,7 @@ func NewServerCliOptions() (*ServerCLIOptions, error) {
 		CryptoKey:     *cryptoKey,
 		Config:        *config,
 		TrustedSubnet: *subnet,
+		GRPC:          *grpc,
 	}, nil
 }
 
@@ -98,6 +102,7 @@ func NewAgentCliOptions() (*AgentCLIOptions, error) {
 	rate := agentOptions.Int("l", 0, "rate limit")
 	cryptoKey := agentOptions.String("crypto-key", "", "path to public key")
 	config := agentOptions.String("c", "", "path to agent json config")
+	grpc := agentOptions.Bool("grpc", false, "grpc mode")
 	if err := agentOptions.Parse(os.Args[1:]); err != nil {
 		log.ErrorLog.Printf("error parsing agent cli options: %e", err)
 		return nil, errors.ErrorWithCli
@@ -111,6 +116,7 @@ func NewAgentCliOptions() (*AgentCLIOptions, error) {
 		RateLimit:      *rate,
 		CryptoKey:      *cryptoKey,
 		Config:         *config,
+		GRPC:           *grpc,
 	}, nil
 }
 

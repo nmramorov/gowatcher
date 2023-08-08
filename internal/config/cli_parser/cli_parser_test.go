@@ -16,7 +16,7 @@ func TestPositiveNewServerCLIOptions(t *testing.T) {
 	os.Args = []string{
 		"main.go", "-a", "localhost:38731", "-r=true", "-i=5m",
 		"-f=/tmp/wmSoUM", "-k=aaab", "-d=ddd", "-crypto-key=sfsdfsdfsd", "-c=/path/to/json",
-		"-t=255.255.255.0",
+		"-t=255.255.255.0", "-grpc=true",
 	}
 	config, err := NewServerCliOptions()
 	assert.NoError(t, err)
@@ -29,6 +29,7 @@ func TestPositiveNewServerCLIOptions(t *testing.T) {
 	assert.Equal(t, "sfsdfsdfsd", config.CryptoKey)
 	assert.Equal(t, "/path/to/json", config.Config)
 	assert.Equal(t, "255.255.255.0", config.TrustedSubnet)
+	assert.Equal(t, true, config.GRPC)
 
 	assert.Equal(t, int64(300), config.GetNumericInterval("StoreInterval"))
 	assert.Equal(t, int64(0), config.GetNumericInterval("MyInterval"))
@@ -44,7 +45,7 @@ func TestNegativeNewServerCLIOptions(t *testing.T) {
 func TestPositiveNewAgentCLIOptions(t *testing.T) {
 	os.Args = []string{
 		"main.go", "-a", "localhost:38731", "-r=5s", "-p=5m",
-		"-k=salt", "-l=13", "-crypto-key=sfsdfsdfsd", "-c=/path/to/config",
+		"-k=salt", "-l=13", "-crypto-key=sfsdfsdfsd", "-c=/path/to/config", "-grpc=true",
 	}
 	config, err := NewAgentCliOptions()
 	assert.NoError(t, err)
