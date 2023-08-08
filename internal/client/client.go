@@ -319,6 +319,43 @@ func PushMetricsGRPC(ctx context.Context, col *col.Collector, client pb.MetricsC
 	}
 }
 
+func GetMetricsGRPC(ctx context.Context, metrics *m.Metrics, client pb.MetricsClient) {
+	for k := range metrics.CounterMetrics {
+		resp, err := client.GetMetric(
+			ctx, &pb.GetMetricRequest{
+				Metric: &pb.Metric{
+					Id:    k,
+					Mtype: "counter",
+				},
+			},
+		)
+		if err != nil {
+			log.ErrorLog.Printf("GRPC. Error getting metric %s: %e", k, err)
+		}
+		if resp.Error != "" {
+			log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
+		}
+		log.InfoLog.Printf("GRPC received metric %s:", resp.Metric)
+	}
+	for k := range metrics.GaugeMetrics {
+		resp, err := client.GetMetric(
+			ctx, &pb.GetMetricRequest{
+				Metric: &pb.Metric{
+					Id:    k,
+					Mtype: "gauge",
+				},
+			},
+		)
+		if err != nil {
+			log.ErrorLog.Printf("GRPC. Error getting metric %s: %e", k, err)
+		}
+		if resp.Error != "" {
+			log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
+		}
+		log.InfoLog.Printf("GRPC received metric %s:", resp.Metric)
+	}
+}
+
 func RunJob(ctx context.Context, job *Job, collector *col.Collector, client *http.Client,
 	grpcClient pb.MetricsClient, endpoint string, agentConfig *config.AgentConfig) {
 	jobCtx, cancel := context.WithTimeout(ctx, time.Duration(10)*time.Second)
@@ -336,7 +373,8 @@ func RunJob(ctx context.Context, job *Job, collector *col.Collector, client *htt
 				jobCtx, collector, grpcClient,
 			)
 			log.InfoLog.Println("Metrics have been pushed via GRPC")
-
+			GetMetricsGRPC(jobCtx, collector.GetMetrics(), grpcClient)
+			log.InfoLog.Println("Metrics have been received via GRPC")
 		} else {
 			PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key, agentConfig.PublicKeyPath)
 			log.InfoLog.Println("Metrics have been pushed")
