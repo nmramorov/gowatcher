@@ -2,11 +2,13 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -16,7 +18,10 @@ import (
 	"github.com/nmramorov/gowatcher/internal/config"
 	"github.com/nmramorov/gowatcher/internal/hashgen"
 	"github.com/nmramorov/gowatcher/internal/log"
+	pb "github.com/nmramorov/gowatcher/internal/proto"
 	sec "github.com/nmramorov/gowatcher/internal/security"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
@@ -264,7 +269,8 @@ func RunTickers(stateSig chan struct{}, agentConfig *config.AgentConfig, jobCh c
 	}
 }
 
-func RunConcurrently(stateSignal chan struct{}, config *config.AgentConfig, client *http.Client, endpoint string) {
+func RunConcurrently(ctx context.Context, stateSignal chan struct{}, config *config.AgentConfig,
+	client *http.Client, grpcClient pb.MetricsClient, endpoint string) {
 	jobCh := make(chan *Job, config.RateLimit)
 	var wg sync.WaitGroup
 	collector := col.NewCollector()
@@ -275,12 +281,49 @@ func RunConcurrently(stateSignal chan struct{}, config *config.AgentConfig, clie
 	}()
 	for job := range jobCh {
 		log.InfoLog.Printf("Running job %s", job.RequestType)
-		RunJob(job, collector, client, endpoint, config)
+		RunJob(ctx, job, collector, client, grpcClient, endpoint, config)
 	}
 	wg.Wait()
 }
 
-func RunJob(job *Job, collector *col.Collector, client *http.Client, endpoint string, agentConfig *config.AgentConfig) {
+func PushMetricsGRPC(ctx context.Context, col *col.Collector, client pb.MetricsClient) {
+	for k, v := range col.Metrics.CounterMetrics {
+		resp, err := client.AddMetric(ctx, &pb.AddMetricRequest{
+			Metric: &pb.Metric{
+				Id:    k,
+				Mtype: "counter",
+				Delta: int64(v),
+			},
+		})
+		if err != nil {
+			log.ErrorLog.Printf("GRPC. Error pushing metric %s: %e", k, err)
+		}
+		if resp.Error != "" {
+			log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
+		}
+	}
+	for k, v := range col.Metrics.GaugeMetrics {
+		resp, err := client.AddMetric(ctx, &pb.AddMetricRequest{
+			Metric: &pb.Metric{
+				Id:    k,
+				Mtype: "counter",
+				Value: float64(v),
+			},
+		})
+		if err != nil {
+			log.ErrorLog.Printf("GRPC. Error pushing metric %s: %e", k, err)
+		}
+		if resp.Error != "" {
+			log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
+		}
+	}
+}
+
+func RunJob(ctx context.Context, job *Job, collector *col.Collector, client *http.Client,
+	grpcClient pb.MetricsClient, endpoint string, agentConfig *config.AgentConfig) {
+	jobCtx, cancel := context.WithTimeout(ctx, time.Duration(10)*time.Second)
+	defer cancel()
+
 	switch job.RequestType {
 	case "update":
 		collector.UpdateMetrics()
@@ -288,18 +331,27 @@ func RunJob(job *Job, collector *col.Collector, client *http.Client, endpoint st
 		collector.UpdateExtraMetrics()
 		log.InfoLog.Println("Extra metrics have been updated concurrently")
 	case "push":
-		PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key, agentConfig.PublicKeyPath)
-		log.InfoLog.Println("Metrics have been pushed")
-		PushMetricsBatch(client, endpoint, agentConfig.PublicKeyPath, collector.GetMetrics())
-		log.InfoLog.Println("Batch metrics were pushed")
-		GetMetricsValues(client, endpoint, agentConfig.Key, agentConfig.PublicKeyPath, collector.GetMetrics())
-		log.InfoLog.Println("Metrics update has been received")
+		if agentConfig.GRPC {
+			PushMetricsGRPC(
+				jobCtx, collector, grpcClient,
+			)
+			log.InfoLog.Println("Metrics have been pushed via GRPC")
+
+		} else {
+			PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key, agentConfig.PublicKeyPath)
+			log.InfoLog.Println("Metrics have been pushed")
+			PushMetricsBatch(client, endpoint, agentConfig.PublicKeyPath, collector.GetMetrics())
+			log.InfoLog.Println("Batch metrics were pushed")
+			GetMetricsValues(client, endpoint, agentConfig.Key, agentConfig.PublicKeyPath, collector.GetMetrics())
+			log.InfoLog.Println("Metrics update has been received")
+		}
 	}
 }
 
 type Client struct{}
 
 func (c *Client) Run() {
+	ctx := context.Background()
 	idleConnsClosed := make(chan struct{})
 
 	sigint := make(chan os.Signal, 1)
@@ -320,7 +372,19 @@ func (c *Client) Run() {
 	endpoint := "http://" + agentConfig.Address
 
 	client := &http.Client{}
+	var grpcClient pb.MetricsClient
+	if agentConfig.GRPC {
+		conn, err := grpc.Dial(":"+strings.Split(agentConfig.Address, ":")[1],
+			grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.ErrorLog.Fatal(err)
+		}
+		defer conn.Close()
+		// получаем переменную интерфейсного типа UsersClient,
+		// через которую будем отправлять сообщения
+		grpcClient = pb.NewMetricsClient(conn)
+	}
 
-	RunConcurrently(clientKill, agentConfig, client, endpoint)
+	RunConcurrently(ctx, clientKill, agentConfig, client, grpcClient, endpoint)
 	<-idleConnsClosed
 }
