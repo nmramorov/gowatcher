@@ -109,12 +109,10 @@ func (h *Handler) ValidateIP(next http.Handler) http.Handler {
 
 		_, mask, err := net.ParseCIDR(h.TrustedSubnet)
 		if err != nil {
-			log.ErrorLog.Printf("Error parsing CIDR %s: %e", h.TrustedSubnet, err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		if !mask.Contains(ipV4) {
-			log.ErrorLog.Printf("Agent ip is not in trusted subnet: %s", ipV4)
 			http.Error(w, "Agent ip is not in trusted subnet", http.StatusForbidden)
 			return
 		}
@@ -130,13 +128,11 @@ func (h *Handler) DecodeMessage(next http.Handler) http.Handler {
 		}
 		privateKey, err := sec.GetPrivateKey(h.privateKeyPath)
 		if err != nil {
-			log.ErrorLog.Printf("error getting private key: %e", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		encodedMsg, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.ErrorLog.Printf("error reading encoded body")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -151,7 +147,6 @@ func (h *Handler) DecodeMessage(next http.Handler) http.Handler {
 		log.InfoLog.Printf("encoded msg: %s", encodedMsg)
 		decoded, err := sec.DecodeMsg(encodedMsg, privateKey)
 		if err != nil {
-			log.ErrorLog.Printf("error decoding msg: %e", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -277,13 +272,11 @@ func (h *Handler) GetMetricByTypeAndName(rw http.ResponseWriter, r *http.Request
 	if isValid {
 		metric, err := h.Collector.GetMetric(metricName)
 		if err != nil {
-			log.ErrorLog.Printf("No such metric %s of type %s: %e", metricName, metricType, err)
 			http.Error(rw, "Metric not found", http.StatusNotFound)
 			return
 		}
 		payload, err := h.Collector.String(metric)
 		if err != nil {
-			log.ErrorLog.Printf("Encoding error with metric %s of type %s: %e", metricName, metricType, err)
 			http.Error(rw, "Decoding error", http.StatusInternalServerError)
 			return
 		}
@@ -299,13 +292,10 @@ func (h *Handler) GetMetricByTypeAndName(rw http.ResponseWriter, r *http.Request
 
 // Deprecated: метод был создан для первых инкрементов, в настоящее время не используется.
 func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
-	log.InfoLog.Println("Started handling metric...")
-
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST requests are allowed for now", http.StatusMethodNotAllowed)
 		return
 	}
-	log.InfoLog.Println("Method is valid.")
 	w.Header().Set("Content-Type", "text/plain")
 
 	path := r.URL.Path
@@ -315,7 +305,6 @@ func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Provide proper operation", http.StatusNotFound)
 		return
 	}
-	log.InfoLog.Println(args)
 	if len(args) != 5 {
 		http.Error(w, "Wrong arguments in request", http.StatusNotFound)
 		return
@@ -329,7 +318,6 @@ func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.Collector.Metrics.GaugeMetrics[metricName] = m.Gauge(newMetricValue)
-		log.InfoLog.Printf("Value %s is set to %f", metricName, newMetricValue)
 
 	case "counter":
 		newMetricValue, err := strconv.ParseInt(metricValue, 10, 64)
@@ -337,7 +325,6 @@ func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Wrong Counter value", http.StatusBadRequest)
 			return
 		}
-		log.InfoLog.Printf("Value %s is set to %d", metricName, newMetricValue)
 		newValue := h.Collector.Metrics.CounterMetrics[metricName] + m.Counter(newMetricValue)
 		h.Collector.Metrics.CounterMetrics[metricName] = newValue
 	default:
@@ -394,32 +381,26 @@ func (h *Handler) UpdateJSONBatch(rw http.ResponseWriter, r *http.Request) {
 	}
 	err := h.Collector.UpdateBatch(metricsBatch)
 	if err != nil {
-		log.ErrorLog.Println("could not update batch...")
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if h.Cursor.IsValid {
 		err = h.Cursor.AddBatchV2(r.Context(), metricsBatch)
 		if err != nil {
-			log.ErrorLog.Println("could not add batch data to db...")
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
-	log.InfoLog.Println("received and worked with metrics batch")
-	log.InfoLog.Println(metricsBatch)
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
 	err = encoder.Encode(metricsBatch)
 	if err != nil {
-		log.ErrorLog.Printf("error encoding metrics batch: %e", err)
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	rw.Header().Set("Content-Type", "application/json")
 	_, err = rw.Write(buf.Bytes())
 	if err != nil {
-		log.ErrorLog.Printf("error updating JSON batch request: %e", err)
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
