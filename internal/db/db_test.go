@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	// "database/sql"
 	"testing"
@@ -86,6 +87,18 @@ func TestCursor_Close(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCursor_CloseByTimeout(t *testing.T) {
+	parent := context.Background()
+	ctx, cancel := context.WithTimeout(parent, time.Duration(1)*time.Microsecond)
+	defer cancel()
+	c, err := NewCursor(parent, "", "pgx")
+	if err != nil {
+		t.Errorf("Error creating Cursror %v", err)
+	}
+	err = c.CloseConnection(ctx)
+	require.NoError(t, err)
 }
 
 func TestCursor_Ping(t *testing.T) {
@@ -311,7 +324,6 @@ func TestGetNegative(t *testing.T) {
 	}
 	_, err = c.Get(parent, mockCounterMetric)
 	require.Error(t, err)
-
 }
 
 // func TestAddBatchPositiveNoBufCap(t *testing.T) {

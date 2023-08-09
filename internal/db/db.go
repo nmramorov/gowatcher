@@ -72,12 +72,22 @@ func (c *Cursor) CloseConnection(parent context.Context) error {
 	defer cancel()
 
 	err := func(ctx context.Context, cursor *Cursor) error {
-		err := cursor.DB.Close()
-		if err != nil {
-			log.ErrorLog.Printf("error closing db: %e", err)
+		select {
+		case <-ctx.Done():
+			err := cursor.DB.Close()
+			if err != nil {
+				log.ErrorLog.Printf("error closing db: %e", err)
+				return err
+			}
+			return err
+		default:
+			err := cursor.DB.Close()
+			if err != nil {
+				log.ErrorLog.Printf("error closing db: %e", err)
+				return err
+			}
 			return err
 		}
-		return err
 	}(ctx, c)
 
 	return err
@@ -158,7 +168,6 @@ func (c *Cursor) Get(parent context.Context, metricToFind *metrics.JSONMetrics) 
 			} else {
 				return nil, errors.ErrorDB
 			}
-
 		}
 		err := row.Scan(foundMetric.ID, foundMetric.MType, foundMetric.Value)
 		if err != nil {
