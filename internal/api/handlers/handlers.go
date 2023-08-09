@@ -399,7 +399,7 @@ func (h *Handler) UpdateJSONBatch(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if h.Cursor.IsValid {
-		err = h.Cursor.AddBatch(r.Context(), metricsBatch)
+		err = h.Cursor.AddBatchV2(r.Context(), metricsBatch)
 		if err != nil {
 			log.ErrorLog.Println("could not add batch data to db...")
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
