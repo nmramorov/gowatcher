@@ -698,7 +698,7 @@ func TestDecodeMsg(t *testing.T) {
 		name    string
 		want    want
 		handler *Handler
-		args    []m.JSONMetrics
+		args    *m.JSONMetrics
 	}{
 		{
 			name: "Negative test Gauge 1",
@@ -706,69 +706,59 @@ func TestDecodeMsg(t *testing.T) {
 				code: 400,
 			},
 			handler: NewHandler("dfd", "./key.pem", "", MOCKCURSOR),
-			args: []m.JSONMetrics{
-				{
+			args: &m.JSONMetrics{
 					ID:    "GaugeMetric",
 					MType: "gauge",
 					Value: &GaugeVal,
 				},
-			},
 		},
 		{
 			name:    "Negative test Counter 1",
-			handler: NewHandler("", "./key.pem", "", MOCKCURSOR),
+			handler: NewHandler("dsfdsf", "./key.pem", "", MOCKCURSOR),
 			want: want{
 				code: 400,
 			},
-			args: []m.JSONMetrics{
-				{
+			args: &m.JSONMetrics{
 					ID:    "CounterMetric",
 					MType: "counter",
 					Delta: &CountVal,
 				},
-			},
 		},
 		{
 			name:    "Positive test Counter 1",
-			handler: NewHandler("", "", "", MOCKCURSOR),
+			handler: NewHandler("dfdsfsdf", "", "", MOCKCURSOR),
 			want: want{
 				code: 200,
 			},
-			args: []m.JSONMetrics{
-				{
+			args: &m.JSONMetrics{
 					ID:    "CounterMetric",
 					MType: "counter",
 					Delta: &CountVal,
 				},
-			},
 		},
 		{
 			name:    "Negative test Counter 2",
-			handler: NewHandler("", "./.", "", MOCKCURSOR),
+			handler: NewHandler("dsfsdf", "./.", "", MOCKCURSOR),
 			want: want{
 				code: 400,
 			},
-			args: []m.JSONMetrics{
-				{
+			args: &m.JSONMetrics{
 					ID:    "CounterMetric",
 					MType: "counter",
 					Delta: &CountVal,
 				},
-			},
 		},
 		{
 			name:    "Negative test Counter 3",
-			handler: NewHandler("", "./key.pem", "", MOCKCURSOR),
+			handler: NewHandler("sdfdsfds", "./key.pem", "", MOCKCURSOR),
 			want: want{
 				code: 400,
 			},
-			args: []m.JSONMetrics{
-				{
+			args: &m.JSONMetrics{
 					ID:    "CounterMetric",
 					MType: "fdsf",
 					Delta: &CountVal,
 				},
-			},
 		},
 	}
 
@@ -777,7 +767,7 @@ func TestDecodeMsg(t *testing.T) {
 
 		defer ts.Close()
 		t.Run(tt.name, func(t *testing.T) {
-			urlPath := "/updates/"
+			urlPath := "/update/"
 			statusCode, body := testRequestJSON(t, ts, "POST", urlPath, tt.args)
 			assert.Equal(t, tt.want.code, statusCode)
 			assert.NotNil(t, body)

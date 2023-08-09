@@ -276,13 +276,13 @@ func (h *Handler) GetMetricByTypeAndName(rw http.ResponseWriter, r *http.Request
 	if isValid {
 		metric, err := h.Collector.GetMetric(metricName)
 		if err != nil {
-			log.ErrorLog.Fatalf("No such metric %s of type %s: %e", metricName, metricType, err)
+			log.ErrorLog.Printf("No such metric %s of type %s: %e", metricName, metricType, err)
 			http.Error(rw, "Metric not found", http.StatusNotFound)
 			return
 		}
 		payload, err := h.Collector.String(metric)
 		if err != nil {
-			log.ErrorLog.Fatalf("Encoding error with metric %s of type %s: %e", metricName, metricType, err)
+			log.ErrorLog.Printf("Encoding error with metric %s of type %s: %e", metricName, metricType, err)
 			http.Error(rw, "Decoding error", http.StatusInternalServerError)
 			return
 		}
