@@ -246,13 +246,17 @@ type Job struct {
 	RequestType string
 }
 
-func RunTickers(stateSig chan struct{}, agentConfig *config.AgentConfig, jobCh chan<- *Job) {
+func RunTickers(ctx context.Context, stateSig chan struct{}, agentConfig *config.AgentConfig, jobCh chan<- *Job) {
 	log.InfoLog.Println("Tickers are running...")
 	updateTicker := time.NewTicker(time.Duration(agentConfig.PollInterval) * time.Second)
 	pushTicker := time.NewTicker(time.Duration(agentConfig.ReportInterval) * time.Second)
 
 	for {
 		select {
+		case <-ctx.Done():
+			log.InfoLog.Println("received context cancel func, shutting down tickers")
+			close(jobCh)
+			return
 		case <-stateSig:
 			log.InfoLog.Println("received shutdown signal, shutting down tickers")
 			close(jobCh)
@@ -277,12 +281,18 @@ func RunConcurrently(ctx context.Context, stateSignal chan struct{}, config *con
 	collector := col.NewCollector()
 	wg.Add(1)
 	go func() {
-		RunTickers(stateSignal, config, jobCh)
+		RunTickers(ctx, stateSignal, config, jobCh)
 		wg.Done()
 	}()
-	for job := range jobCh {
-		log.InfoLog.Printf("Running job %s", job.RequestType)
-		RunJob(ctx, job, collector, client, grpcClient, endpoint, config)
+	select {
+	case <-ctx.Done():
+		wg.Wait()
+		return
+	default:
+		for job := range jobCh {
+			log.InfoLog.Printf("Running job %s", job.RequestType)
+			RunJob(ctx, job, collector, client, grpcClient, endpoint, config)
+		}
 	}
 	wg.Wait()
 }
@@ -298,9 +308,10 @@ func PushMetricsGRPC(ctx context.Context, col *col.Collector, client pb.MetricsC
 		})
 		if err != nil {
 			log.ErrorLog.Printf("GRPC. Error pushing metric %s: %e", k, err)
-		}
-		if resp.Error != "" {
-			log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
+		} else {
+			if resp.Error != "" {
+				log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
+			}
 		}
 	}
 	for k, v := range col.Metrics.GaugeMetrics {
@@ -313,9 +324,10 @@ func PushMetricsGRPC(ctx context.Context, col *col.Collector, client pb.MetricsC
 		})
 		if err != nil {
 			log.ErrorLog.Printf("GRPC. Error pushing metric %s: %e", k, err)
-		}
-		if resp.Error != "" {
-			log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
+		} else {
+			if resp.Error != "" {
+				log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
+			}
 		}
 	}
 }
@@ -332,11 +344,13 @@ func GetMetricsGRPC(ctx context.Context, metrics *m.Metrics, client pb.MetricsCl
 		)
 		if err != nil {
 			log.ErrorLog.Printf("GRPC. Error getting metric %s: %e", k, err)
+		} else {
+			if resp.Error != "" {
+				log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
+			} else {
+				log.InfoLog.Printf("GRPC received metric %s:", resp.Metric)
+			}
 		}
-		if resp.Error != "" {
-			log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
-		}
-		log.InfoLog.Printf("GRPC received metric %s:", resp.Metric)
 	}
 	for k := range metrics.GaugeMetrics {
 		resp, err := client.GetMetric(
@@ -349,11 +363,13 @@ func GetMetricsGRPC(ctx context.Context, metrics *m.Metrics, client pb.MetricsCl
 		)
 		if err != nil {
 			log.ErrorLog.Printf("GRPC. Error getting metric %s: %e", k, err)
+		} else {
+			if resp.Error != "" {
+				log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
+			} else {
+				log.InfoLog.Printf("GRPC received metric %s:", resp.Metric)
+			}
 		}
-		if resp.Error != "" {
-			log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
-		}
-		log.InfoLog.Printf("GRPC received metric %s:", resp.Metric)
 	}
 }
 
@@ -363,27 +379,33 @@ func RunJob(ctx context.Context, job *Job, collector *col.Collector, client *htt
 	jobCtx, cancel := context.WithTimeout(ctx, time.Duration(10)*time.Second)
 	defer cancel()
 
-	switch job.RequestType {
-	case "update":
-		collector.UpdateMetrics()
-		log.InfoLog.Println("Metrics have been updated concurrently")
-		collector.UpdateExtraMetrics()
-		log.InfoLog.Println("Extra metrics have been updated concurrently")
-	case "push":
-		if agentConfig.GRPC {
-			PushMetricsGRPC(
-				jobCtx, collector, grpcClient,
-			)
-			log.InfoLog.Println("Metrics have been pushed via GRPC")
-			GetMetricsGRPC(jobCtx, collector.GetMetrics(), grpcClient)
-			log.InfoLog.Println("Metrics have been received via GRPC")
-		} else {
-			PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key, agentConfig.PublicKeyPath)
-			log.InfoLog.Println("Metrics have been pushed")
-			PushMetricsBatch(client, endpoint, agentConfig.PublicKeyPath, collector.GetMetrics())
-			log.InfoLog.Println("Batch metrics were pushed")
-			GetMetricsValues(client, endpoint, agentConfig.Key, agentConfig.PublicKeyPath, collector.GetMetrics())
-			log.InfoLog.Println("Metrics update has been received")
+	select {
+	case <-ctx.Done():
+		log.InfoLog.Println("Context cancel was called, stopping job")
+		return
+	default:
+		switch job.RequestType {
+		case "update":
+			collector.UpdateMetrics()
+			log.InfoLog.Println("Metrics have been updated concurrently")
+			collector.UpdateExtraMetrics()
+			log.InfoLog.Println("Extra metrics have been updated concurrently")
+		case "push":
+			if agentConfig.GRPC {
+				PushMetricsGRPC(
+					jobCtx, collector, grpcClient,
+				)
+				log.InfoLog.Println("Metrics have been pushed via GRPC")
+				GetMetricsGRPC(jobCtx, collector.GetMetrics(), grpcClient)
+				log.InfoLog.Println("Metrics have been received via GRPC")
+			} else {
+				PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key, agentConfig.PublicKeyPath)
+				log.InfoLog.Println("Metrics have been pushed")
+				PushMetricsBatch(client, endpoint, agentConfig.PublicKeyPath, collector.GetMetrics())
+				log.InfoLog.Println("Batch metrics were pushed")
+				GetMetricsValues(client, endpoint, agentConfig.Key, agentConfig.PublicKeyPath, collector.GetMetrics())
+				log.InfoLog.Println("Metrics update has been received")
+			}
 		}
 	}
 }
@@ -425,7 +447,7 @@ func (c *Client) Run() {
 				log.ErrorLog.Println("error closing grpc client")
 			}
 		}()
-		// получаем переменную интерфейсного типа UsersClient,
+		// получаем переменную интерфейсного типа MetricsClient,
 		// через которую будем отправлять сообщения
 		grpcClient = pb.NewMetricsClient(conn)
 	}
