@@ -864,8 +864,8 @@ func TestHandler_ValidateIP(t *testing.T) {
 
 func TestCheckHash(t *testing.T) {
 	ctx := context.Background()
-	var delta int64 = 3
-	var value float64 = 0.0
+	delta := int64(3)
+	value := float64(0.0)
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
 	metricsHandler := NewHandler("very secret key", "", "", MOCKCURSOR)
