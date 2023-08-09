@@ -29,7 +29,7 @@ type AgentEnvConfig struct {
 	RateLimit      int    `env:"RATE_LIMIT"`
 	CryptoKey      string `env:"CRYPTO_KEY"`
 	Config         string `env:"CONFIG"`
-	GRPC           bool `env:"GRPC"`
+	GRPC           bool   `env:"GRPC"`
 }
 
 func checkAgentEnvs(envs *AgentEnvConfig) *AgentEnvConfig {
@@ -84,7 +84,7 @@ type ServerEnvConfig struct {
 	CryptoKey     string `env:"CRYPTO_KEY"`
 	Config        string `env:"CONFIG"`
 	TrustedSubnet string `env:"TRUSTED_SUBNET"`
-	GRPC          bool `env:"GRPC"`
+	GRPC          bool   `env:"GRPC"`
 }
 
 func checkServerEnvs(envs *ServerEnvConfig) *ServerEnvConfig {

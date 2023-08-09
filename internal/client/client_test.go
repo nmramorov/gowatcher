@@ -137,4 +137,3 @@ func TestRunConcurrentlyGRPC(t *testing.T) {
 	}
 	require.NotPanics(t, testFoo)
 }
-

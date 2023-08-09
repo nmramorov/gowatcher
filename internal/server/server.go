@@ -12,13 +12,14 @@ import (
 	"syscall"
 	"time"
 
+	"google.golang.org/grpc"
+
 	"github.com/nmramorov/gowatcher/internal/api/handlers"
 	"github.com/nmramorov/gowatcher/internal/config"
 	"github.com/nmramorov/gowatcher/internal/db"
 	"github.com/nmramorov/gowatcher/internal/file"
 	"github.com/nmramorov/gowatcher/internal/log"
 	pb "github.com/nmramorov/gowatcher/internal/proto"
-	"google.golang.org/grpc"
 )
 
 func GetMetricsHandler(parent context.Context, options *config.ServerConfig) (*handlers.Handler, error) {

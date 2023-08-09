@@ -13,6 +13,9 @@ import (
 	"syscall"
 	"time"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
 	col "github.com/nmramorov/gowatcher/internal/collector"
 	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
 	"github.com/nmramorov/gowatcher/internal/config"
@@ -20,8 +23,6 @@ import (
 	"github.com/nmramorov/gowatcher/internal/log"
 	pb "github.com/nmramorov/gowatcher/internal/proto"
 	sec "github.com/nmramorov/gowatcher/internal/security"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
@@ -308,10 +309,9 @@ func PushMetricsGRPC(ctx context.Context, col *col.Collector, client pb.MetricsC
 		})
 		if err != nil {
 			log.ErrorLog.Printf("GRPC. Error pushing metric %s: %e", k, err)
-		} else {
-			if resp.Error != "" {
-				log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
-			}
+		}
+		if resp != nil && resp.Error != "" {
+			log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
 		}
 	}
 	for k, v := range col.Metrics.GaugeMetrics {
@@ -324,10 +324,9 @@ func PushMetricsGRPC(ctx context.Context, col *col.Collector, client pb.MetricsC
 		})
 		if err != nil {
 			log.ErrorLog.Printf("GRPC. Error pushing metric %s: %e", k, err)
-		} else {
-			if resp.Error != "" {
-				log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
-			}
+		}
+		if resp != nil && resp.Error != "" {
+			log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
 		}
 	}
 }

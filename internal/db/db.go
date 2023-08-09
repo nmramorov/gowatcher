@@ -165,9 +165,8 @@ func (c *Cursor) Get(parent context.Context, metricToFind *metrics.JSONMetrics) 
 			log.ErrorLog.Printf("error getting gauge row %s to db", metricToFind.ID)
 			if row != nil {
 				return nil, row.Err()
-			} else {
-				return nil, errors.ErrorDB
 			}
+			return nil, errors.ErrorDB
 		}
 		err := row.Scan(foundMetric.ID, foundMetric.MType, foundMetric.Value)
 		if err != nil {
@@ -179,9 +178,8 @@ func (c *Cursor) Get(parent context.Context, metricToFind *metrics.JSONMetrics) 
 			log.ErrorLog.Printf("error getting counter row %s to db", metricToFind.ID)
 			if row != nil {
 				return nil, row.Err()
-			} else {
-				return nil, errors.ErrorDB
 			}
+			return nil, errors.ErrorDB
 		}
 		err := row.Scan(foundMetric.ID, foundMetric.MType, foundMetric.Delta)
 		if err != nil {
