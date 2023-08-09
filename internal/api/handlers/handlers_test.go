@@ -887,3 +887,11 @@ func TestInitDB(t *testing.T) {
 	err := metricsHandler.InitDB(ctx)
 	require.Error(t, err)
 }
+
+func TestGetCurrentMetrics(t *testing.T) {
+	ctx := context.Background()
+
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
+	metricsHandler := NewHandler("very secret key", "", "", MOCKCURSOR)
+	require.NotPanics(t, func(){metricsHandler.GetCurrentMetrics()})
+}
