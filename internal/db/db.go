@@ -8,6 +8,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib" // required import for pgx
 
 	"github.com/nmramorov/gowatcher/internal/collector/metrics"
+	"github.com/nmramorov/gowatcher/internal/errors"
 	"github.com/nmramorov/gowatcher/internal/log"
 )
 
@@ -159,9 +160,14 @@ func (c *Cursor) Get(parent context.Context, metricToFind *metrics.JSONMetrics) 
 	var row *sql.Row
 	switch metricToFind.MType {
 	case GAUGE:
-		if row = c.DB.QueryRowContext(ctx, SelectFromGauge, metricToFind.ID); row.Err() != nil {
-			log.ErrorLog.Printf("error getting gauge row %s to db: %e", metricToFind.ID, row.Err())
-			return nil, row.Err()
+		if row = c.DB.QueryRowContext(ctx, SelectFromGauge, metricToFind.ID); row == nil || row.Err() != nil {
+			log.ErrorLog.Printf("error getting gauge row %s to db", metricToFind.ID)
+			if row != nil {
+				return nil, row.Err()
+			} else {
+				return nil, errors.ErrorDB
+			}
+
 		}
 		err := row.Scan(foundMetric.ID, foundMetric.MType, foundMetric.Value)
 		if err != nil {
@@ -169,9 +175,13 @@ func (c *Cursor) Get(parent context.Context, metricToFind *metrics.JSONMetrics) 
 			return nil, err
 		}
 	case COUNTER:
-		if row = c.DB.QueryRowContext(ctx, SelectFromCounter, metricToFind.ID); row.Err() != nil {
-			log.ErrorLog.Printf("error getting counter row %s to db: %e", metricToFind.ID, row.Err())
-			return nil, row.Err()
+		if row = c.DB.QueryRowContext(ctx, SelectFromCounter, metricToFind.ID); row == nil || row.Err() != nil {
+			log.ErrorLog.Printf("error getting counter row %s to db", metricToFind.ID)
+			if row != nil {
+				return nil, row.Err()
+			} else {
+				return nil, errors.ErrorDB
+			}
 		}
 		err := row.Scan(foundMetric.ID, foundMetric.MType, foundMetric.Delta)
 		if err != nil {

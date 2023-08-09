@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	// "database/sql"
 	"testing"
 
@@ -229,6 +230,46 @@ func TestAddNegative(t *testing.T) {
 		DB: s,
 	}
 	require.Error(t, c.Add(parent, mockCounterMetric))
+}
+
+func TestGetNegative(t *testing.T) {
+	parent := context.Background()
+	mockVal := 55.3
+	mockDelta := int64(3)
+	mockGaugeMetric := &m.JSONMetrics{
+		ID:    "1",
+		MType: "gauge",
+		Value: &mockVal,
+	}
+	mockCounterMetric := &m.JSONMetrics{
+		ID:    "1",
+		MType: "counter",
+		Delta: &mockDelta,
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	s := mock_db.NewMockDriverMethods(ctrl)
+	s.EXPECT().
+		QueryRowContext(gomock.Any(), SelectFromGauge, mockGaugeMetric.ID).
+		MaxTimes(1)
+	c := Cursor{
+		DB: s,
+	}
+	_, err := c.Get(parent, mockGaugeMetric)
+	require.Error(t, err)
+
+	s = mock_db.NewMockDriverMethods(ctrl)
+	s.EXPECT().
+		QueryRowContext(gomock.Any(), SelectFromCounter, mockCounterMetric.ID).
+		MaxTimes(1)
+	c = Cursor{
+		DB: s,
+	}
+	_, err = c.Get(parent, mockCounterMetric)
+	require.Error(t, err)
+
 }
 
 func TestAddBatchPositiveNoBufCap(t *testing.T) {

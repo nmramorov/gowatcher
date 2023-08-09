@@ -9,4 +9,5 @@ var (
 	ErrorWithCli                = errors.New("cli error")
 	ErrorWithIntervalConvertion = errors.New("error converting Intervals to int64")
 	ErrorHash                   = errors.New("wrong hash")
+	ErrorDB                     = errors.New("DB error")
 )
