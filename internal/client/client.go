@@ -270,7 +270,8 @@ func RunTickers(stateSig chan struct{}, agentConfig *config.AgentConfig, jobCh c
 }
 
 func RunConcurrently(ctx context.Context, stateSignal chan struct{}, config *config.AgentConfig,
-	client *http.Client, grpcClient pb.MetricsClient, endpoint string) {
+	client *http.Client, grpcClient pb.MetricsClient, endpoint string,
+) {
 	jobCh := make(chan *Job, config.RateLimit)
 	var wg sync.WaitGroup
 	collector := col.NewCollector()
@@ -357,7 +358,8 @@ func GetMetricsGRPC(ctx context.Context, metrics *m.Metrics, client pb.MetricsCl
 }
 
 func RunJob(ctx context.Context, job *Job, collector *col.Collector, client *http.Client,
-	grpcClient pb.MetricsClient, endpoint string, agentConfig *config.AgentConfig) {
+	grpcClient pb.MetricsClient, endpoint string, agentConfig *config.AgentConfig,
+) {
 	jobCtx, cancel := context.WithTimeout(ctx, time.Duration(10)*time.Second)
 	defer cancel()
 

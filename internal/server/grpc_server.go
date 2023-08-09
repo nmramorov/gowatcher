@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	// импортируем пакет со сгенерированными protobuf-файлами
+	"github.com/nmramorov/gowatcher/internal/api/handlers"
 	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
 	"github.com/nmramorov/gowatcher/internal/log"
-	"github.com/nmramorov/gowatcher/internal/api/handlers"
 	pb "github.com/nmramorov/gowatcher/internal/proto"
 )
 
