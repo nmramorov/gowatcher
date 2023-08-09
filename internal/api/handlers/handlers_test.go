@@ -464,6 +464,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 					ID:    "GaugeMetric",
 					MType: "gauge",
 					Value: &GaugeVal,
+					Hash:  "3656285f954ce664a9b477f1a8cc166f78d1553f7d3ba193516afee3aca883dc",
 				},
 			},
 			args: arguments{
@@ -479,6 +480,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 					ID:    "CounterMetric",
 					MType: "counter",
 					Delta: &CountVal,
+					Hash:  "5390e57146a790545f73c78f7ec5f9718fef165f7d1a24904c0b684e6d405d0d",
 				},
 			},
 			args: arguments{
@@ -494,6 +496,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 					ID:    "PollCount",
 					MType: "counter",
 					Delta: &PollCount1,
+					Hash:  "fedfb63309d7ed69cf8a0e67f5229246f7efd62eba5d81d7c02b1674507275b2",
 				},
 			},
 			args: arguments{
@@ -509,6 +512,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 					ID:    "PollCount",
 					MType: "counter",
 					Delta: &PollCount2,
+					Hash:  "4a589fccfeff20c35ea3a2c9938a53260ebe59a1c99cd04249935336216e6dc3",
 				},
 			},
 			args: arguments{
@@ -520,7 +524,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 	ctx := context.Background()
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", "", "", MOCKCURSOR)
+	metricsHandler := NewHandler("some key", "", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -893,5 +897,5 @@ func TestGetCurrentMetrics(t *testing.T) {
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
 	metricsHandler := NewHandler("very secret key", "", "", MOCKCURSOR)
-	require.NotPanics(t, func(){metricsHandler.GetCurrentMetrics()})
+	require.NotPanics(t, func() { metricsHandler.GetCurrentMetrics() })
 }
