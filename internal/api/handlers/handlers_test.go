@@ -543,7 +543,7 @@ func TestPing(t *testing.T) {
 	ctx := context.Background()
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", "", "", MOCKCURSOR)
+	metricsHandler := NewHandler("fdsfds", "", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -843,6 +843,7 @@ func TestHandler_ValidateIP(t *testing.T) {
 func TestCheckHash(t *testing.T) {
 	ctx := context.Background()
 	var delta int64 = 3
+	var value float64 = 0.0
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
 	metricsHandler := NewHandler("very secret key", "", "", MOCKCURSOR)
@@ -850,6 +851,12 @@ func TestCheckHash(t *testing.T) {
 		ID:    "MyMetric",
 		MType: "counter",
 		Delta: &delta,
+	})
+	require.NoError(t, err)
+	err = metricsHandler.CheckHash(&m.JSONMetrics{
+		ID:    "MyMetric",
+		MType: "gauge",
+		Value: &value,
 	})
 	require.NoError(t, err)
 }

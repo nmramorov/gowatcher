@@ -205,15 +205,16 @@ func (h *Handler) UpdateMetricsJSON(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 	updatedData, err := h.Collector.UpdateMetricFromJSON(&metricData)
+	if err != nil {
+		log.ErrorLog.Printf("Error occurred during metric update from json: %e", err)
+	}
 	if h.Cursor.IsValid {
 		err = h.Cursor.Add(r.Context(), updatedData)
 		if err != nil {
 			log.ErrorLog.Println("could not add data to db...")
 		}
 	}
-	if err != nil {
-		log.ErrorLog.Printf("Error occurred during metric update from json: %e", err)
-	}
+
 	updatedData.Hash = h.getHash(updatedData)
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
