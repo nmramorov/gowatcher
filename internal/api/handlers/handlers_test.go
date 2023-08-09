@@ -163,6 +163,18 @@ func TestPOSTMetricsHandlerNoJson(t *testing.T) {
 				metricValue: "dfdf",
 			},
 		},
+		{
+			name: "Negative test Counter 3",
+			want: want{
+				code:     405,
+				response: "",
+			},
+			args: arguments{
+				metricType:  "counter",
+				metricName:  "newValue2",
+				metricValue: "dfdf",
+			},
+		},
 	}
 	ctx := context.Background()
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
@@ -176,6 +188,12 @@ func TestPOSTMetricsHandlerNoJson(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			urlPath := fmt.Sprintf("/update/%s/%s/%s", tt.args.metricType,
 				tt.args.metricName, tt.args.metricValue)
+			if tt.name == "Negative test Counter 3" {
+				statusCode, body := testRequest(t, ts, "GET", urlPath)
+				assert.Equal(t, tt.want.code, statusCode)
+				assert.Equal(t, tt.want.response, body)
+				return
+			}
 			statusCode, body := testRequest(t, ts, "POST", urlPath)
 			assert.Equal(t, tt.want.code, statusCode)
 			assert.Equal(t, tt.want.response, body)
