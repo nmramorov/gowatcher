@@ -22,6 +22,7 @@ import (
 	col "github.com/nmramorov/gowatcher/internal/collector"
 	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
 	"github.com/nmramorov/gowatcher/internal/db"
+	"github.com/nmramorov/gowatcher/internal/errors"
 	"github.com/nmramorov/gowatcher/internal/hashgen"
 	"github.com/nmramorov/gowatcher/internal/log"
 	sec "github.com/nmramorov/gowatcher/internal/security"
@@ -36,7 +37,7 @@ var (
 type Handler struct {
 	*chi.Mux
 	Collector      *col.Collector
-	secretkey      string
+	Secretkey      string
 	privateKeyPath string
 	TrustedSubnet  string
 	Cursor         *db.Cursor
@@ -47,7 +48,7 @@ func NewHandler(key, privateKeyPath, trustedSubnet string, newCursor *db.Cursor)
 	h := &Handler{
 		Mux:            chi.NewMux(),
 		Collector:      col.NewCollector(),
-		secretkey:      key,
+		Secretkey:      key,
 		Cursor:         newCursor,
 		privateKeyPath: privateKeyPath,
 		TrustedSubnet:  trustedSubnet,
@@ -73,7 +74,7 @@ func NewHandlerFromSavedData(saved *m.Metrics, secretkey, privateKeyPath, truste
 	h := &Handler{
 		Mux:            chi.NewMux(),
 		Collector:      col.NewCollectorFromSavedFile(saved),
-		secretkey:      secretkey,
+		Secretkey:      secretkey,
 		Cursor:         cursor,
 		privateKeyPath: privateKeyPath,
 		TrustedSubnet:  trustedSubnet,
@@ -160,9 +161,9 @@ func (h *Handler) DecodeMessage(next http.Handler) http.Handler {
 	})
 }
 
-func (h *Handler) checkHash(rw http.ResponseWriter, metricData *m.JSONMetrics) {
+func (h *Handler) CheckHash(metricData *m.JSONMetrics) error {
 	var hash string
-	generator := hashgen.NewHashGenerator(h.secretkey)
+	generator := hashgen.NewHashGenerator(h.Secretkey)
 	switch metricData.MType {
 	case GAUGE:
 		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Value)
@@ -172,14 +173,14 @@ func (h *Handler) checkHash(rw http.ResponseWriter, metricData *m.JSONMetrics) {
 	d, _ := hex.DecodeString(hash)
 	if hmac.Equal(d, []byte(metricData.Hash)) {
 		log.ErrorLog.Printf("wrong hash for %s", metricData.ID)
-		http.Error(rw, "wrong hash", http.StatusBadRequest)
-		return
+		return errors.ErrorHash
 	}
+	return nil
 }
 
 func (h *Handler) getHash(metricData *m.JSONMetrics) string {
 	var hash string
-	generator := hashgen.NewHashGenerator(h.secretkey)
+	generator := hashgen.NewHashGenerator(h.Secretkey)
 	switch metricData.MType {
 	case GAUGE:
 		hash = generator.GenerateHash(metricData.MType, metricData.ID, *metricData.Value)
@@ -196,8 +197,12 @@ func (h *Handler) UpdateMetricsJSON(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if h.secretkey != "" {
-		h.checkHash(rw, &metricData)
+	if h.Secretkey != "" {
+		err := h.CheckHash(&metricData)
+		if err != nil {
+			http.Error(rw, "wrong hash", http.StatusBadRequest)
+			return
+		}
 	}
 	updatedData, err := h.Collector.UpdateMetricFromJSON(&metricData)
 	if h.Cursor.IsValid {
@@ -246,7 +251,7 @@ func (h *Handler) GetMetricByJSON(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 	var hash string
-	if h.secretkey != "" {
+	if h.Secretkey != "" {
 		hash = h.getHash(metric)
 	}
 	metric.Hash = hash

@@ -685,6 +685,106 @@ func TestPOSTUpdateJsonBatch(t *testing.T) {
 	}
 }
 
+func TestDecodeMsg(t *testing.T) {
+	GaugeVal := 44.4
+	var CountVal int64 = 3
+	ctx := context.Background()
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
+
+	type want struct {
+		code int
+	}
+	tests := []struct {
+		name    string
+		want    want
+		handler *Handler
+		args    []m.JSONMetrics
+	}{
+		{
+			name: "Negative test Gauge 1",
+			want: want{
+				code: 400,
+			},
+			handler: NewHandler("dfd", "./key.pem", "", MOCKCURSOR),
+			args: []m.JSONMetrics{
+				{
+					ID:    "GaugeMetric",
+					MType: "gauge",
+					Value: &GaugeVal,
+				},
+			},
+		},
+		{
+			name:    "Negative test Counter 1",
+			handler: NewHandler("", "./key.pem", "", MOCKCURSOR),
+			want: want{
+				code: 400,
+			},
+			args: []m.JSONMetrics{
+				{
+					ID:    "CounterMetric",
+					MType: "counter",
+					Delta: &CountVal,
+				},
+			},
+		},
+		{
+			name:    "Positive test Counter 1",
+			handler: NewHandler("", "", "", MOCKCURSOR),
+			want: want{
+				code: 200,
+			},
+			args: []m.JSONMetrics{
+				{
+					ID:    "CounterMetric",
+					MType: "counter",
+					Delta: &CountVal,
+				},
+			},
+		},
+		{
+			name:    "Negative test Counter 2",
+			handler: NewHandler("", "./.", "", MOCKCURSOR),
+			want: want{
+				code: 400,
+			},
+			args: []m.JSONMetrics{
+				{
+					ID:    "CounterMetric",
+					MType: "counter",
+					Delta: &CountVal,
+				},
+			},
+		},
+		{
+			name:    "Negative test Counter 3",
+			handler: NewHandler("", "./key.pem", "", MOCKCURSOR),
+			want: want{
+				code: 400,
+			},
+			args: []m.JSONMetrics{
+				{
+					ID:    "CounterMetric",
+					MType: "fdsf",
+					Delta: &CountVal,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		ts := httptest.NewServer(tt.handler)
+
+		defer ts.Close()
+		t.Run(tt.name, func(t *testing.T) {
+			urlPath := "/updates/"
+			statusCode, body := testRequestJSON(t, ts, "POST", urlPath, tt.args)
+			assert.Equal(t, tt.want.code, statusCode)
+			assert.NotNil(t, body)
+		})
+	}
+}
+
 func TestHandler_ValidateIP(t *testing.T) {
 	ctx := context.Background()
 
@@ -748,4 +848,18 @@ func TestHandler_ValidateIP(t *testing.T) {
 			assert.Equal(t, tt.want.code, resp.StatusCode)
 		})
 	}
+}
+
+func TestCheckHash(t *testing.T) {
+	ctx := context.Background()
+	var delta int64 = 3
+
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
+	metricsHandler := NewHandler("very secret key", "", "", MOCKCURSOR)
+	err := metricsHandler.CheckHash(&m.JSONMetrics{
+		ID:    "MyMetric",
+		MType: "counter",
+		Delta: &delta,
+	})
+	require.NoError(t, err)
 }
