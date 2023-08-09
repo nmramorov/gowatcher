@@ -178,9 +178,9 @@ func (s *Server) Run(parent context.Context) error {
 
 	if serverConfig.GRPC {
 		// определяем порт для сервера
-		listen, err := net.Listen("tcp", ":"+strings.Split(serverConfig.Address, ":")[1])
-		if err != nil {
-			log.ErrorLog.Fatal(err)
+		listen, grpcErr := net.Listen("tcp", ":"+strings.Split(serverConfig.Address, ":")[1])
+		if grpcErr != nil {
+			log.ErrorLog.Fatal(grpcErr)
 		}
 		// создаём gRPC-сервер без зарегистрированной службы
 		s := grpc.NewServer()
@@ -189,7 +189,7 @@ func (s *Server) Run(parent context.Context) error {
 
 		log.InfoLog.Println("Сервер gRPC начал работу")
 		// получаем запрос gRPC
-		if err := s.Serve(listen); err != nil {
+		if err = s.Serve(listen); err != nil {
 			log.ErrorLog.Fatal(err)
 		}
 	} else {
