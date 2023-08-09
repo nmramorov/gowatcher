@@ -707,10 +707,10 @@ func TestDecodeMsg(t *testing.T) {
 			},
 			handler: NewHandler("dfd", "./key.pem", "", MOCKCURSOR),
 			args: &m.JSONMetrics{
-					ID:    "GaugeMetric",
-					MType: "gauge",
-					Value: &GaugeVal,
-				},
+				ID:    "GaugeMetric",
+				MType: "gauge",
+				Value: &GaugeVal,
+			},
 		},
 		{
 			name:    "Negative test Counter 1",
@@ -719,10 +719,10 @@ func TestDecodeMsg(t *testing.T) {
 				code: 400,
 			},
 			args: &m.JSONMetrics{
-					ID:    "CounterMetric",
-					MType: "counter",
-					Delta: &CountVal,
-				},
+				ID:    "CounterMetric",
+				MType: "counter",
+				Delta: &CountVal,
+			},
 		},
 		{
 			name:    "Positive test Counter 1",
@@ -731,10 +731,10 @@ func TestDecodeMsg(t *testing.T) {
 				code: 200,
 			},
 			args: &m.JSONMetrics{
-					ID:    "CounterMetric",
-					MType: "counter",
-					Delta: &CountVal,
-				},
+				ID:    "CounterMetric",
+				MType: "counter",
+				Delta: &CountVal,
+			},
 		},
 		{
 			name:    "Negative test Counter 2",
@@ -743,10 +743,10 @@ func TestDecodeMsg(t *testing.T) {
 				code: 400,
 			},
 			args: &m.JSONMetrics{
-					ID:    "CounterMetric",
-					MType: "counter",
-					Delta: &CountVal,
-				},
+				ID:    "CounterMetric",
+				MType: "counter",
+				Delta: &CountVal,
+			},
 		},
 		{
 			name:    "Negative test Counter 3",
@@ -755,10 +755,10 @@ func TestDecodeMsg(t *testing.T) {
 				code: 400,
 			},
 			args: &m.JSONMetrics{
-					ID:    "CounterMetric",
-					MType: "fdsf",
-					Delta: &CountVal,
-				},
+				ID:    "CounterMetric",
+				MType: "fdsf",
+				Delta: &CountVal,
+			},
 		},
 	}
 
@@ -852,4 +852,13 @@ func TestCheckHash(t *testing.T) {
 		Delta: &delta,
 	})
 	require.NoError(t, err)
+}
+
+func TestInitDB(t *testing.T) {
+	ctx := context.Background()
+
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
+	metricsHandler := NewHandler("very secret key", "", "", MOCKCURSOR)
+	err := metricsHandler.InitDB(ctx)
+	require.Error(t, err)
 }
