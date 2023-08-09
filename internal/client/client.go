@@ -417,7 +417,12 @@ func (c *Client) Run() {
 		if err != nil {
 			log.ErrorLog.Fatal(err)
 		}
-		defer conn.Close()
+		defer func() {
+			err := conn.Close()
+			if err != nil {
+				log.ErrorLog.Println("error closing grpc client")
+			}
+		}()
 		// получаем переменную интерфейсного типа UsersClient,
 		// через которую будем отправлять сообщения
 		grpcClient = pb.NewMetricsClient(conn)

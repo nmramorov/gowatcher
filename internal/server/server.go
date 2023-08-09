@@ -192,12 +192,12 @@ func (s *Server) Run(parent context.Context) error {
 		if err := s.Serve(listen); err != nil {
 			log.ErrorLog.Fatal(err)
 		}
-	}
-
-	log.InfoLog.Println("Web server is ready to accept connections...")
-	err = server.ListenAndServe()
-	if err != nil {
-		log.ErrorLog.Printf("Unexpected error occurred: %e", err)
+	} else {
+		log.InfoLog.Println("Web server is ready to accept connections...")
+		err = server.ListenAndServe()
+		if err != nil {
+			log.ErrorLog.Printf("Unexpected error occurred: %e", err)
+		}
 	}
 
 	<-idleConnsClosed
