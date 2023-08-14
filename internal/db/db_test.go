@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
+
 	// "database/sql"
 	"testing"
 
@@ -14,6 +16,7 @@ import (
 	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
 	mock_db "github.com/nmramorov/gowatcher/internal/db/mocks"
 	"github.com/nmramorov/gowatcher/internal/errors"
+	"github.com/nmramorov/gowatcher/internal/log"
 	"github.com/stretchr/testify/require"
 )
 
@@ -84,6 +87,18 @@ func TestCursor_Close(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCursor_CloseByTimeout(t *testing.T) {
+	parent := context.Background()
+	ctx, cancel := context.WithTimeout(parent, time.Duration(1)*time.Microsecond)
+	defer cancel()
+	c, err := NewCursor(parent, "", "pgx")
+	if err != nil {
+		t.Errorf("Error creating Cursror %v", err)
+	}
+	err = c.CloseConnection(ctx)
+	require.NoError(t, err)
 }
 
 func TestCursor_Ping(t *testing.T) {
@@ -231,20 +246,100 @@ func TestAddNegative(t *testing.T) {
 	require.Error(t, c.Add(parent, mockCounterMetric))
 }
 
-func TestAddBatchPositiveNoBufCap(t *testing.T) {
+func TestAddBatchV2(t *testing.T) {
 	parent := context.Background()
 	mockVal := 55.3
-	mockGaugeMetrics := make([]*m.JSONMetrics, 0, 1)
-	mockGaugeMetrics = append(mockGaugeMetrics, &m.JSONMetrics{
+	// mockDelta := int64(3)
+	mockGaugeMetric := &m.JSONMetrics{
 		ID:    "1",
 		MType: "gauge",
 		Value: &mockVal,
-	})
-	c := Cursor{
-		buffer: make([]*m.JSONMetrics, 0, 3),
 	}
-	require.NoError(t, c.AddBatch(parent, mockGaugeMetrics))
+	// mockCounterMetric := &m.JSONMetrics{
+	// 	ID:    "1",
+	// 	MType: "counter",
+	// 	Delta: &mockDelta,
+	// }
+	mockMetrics := make([]*m.JSONMetrics, 0)
+	mockMetrics = append(mockMetrics, mockGaugeMetric)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	s := mock_db.NewMockDriverMethods(ctrl)
+	s.EXPECT().
+		ExecContext(gomock.Any(), InsertIntoGauge, mockGaugeMetric.ID, mockGaugeMetric.MType, mockGaugeMetric.Value).
+		MaxTimes(1)
+	c := Cursor{
+		DB:     s,
+		buffer: make([]*m.JSONMetrics, 0),
+	}
+	log.InfoLog.Println(mockMetrics)
+	require.NoError(t, c.AddBatchV2(parent, mockMetrics))
+
+	// s = mock_db.NewMockDriverMethods(ctrl)
+	// s.EXPECT().
+	// 	ExecContext(gomock.Any(), InsertIntoCounter, mockCounterMetric.ID, mockCounterMetric.MType, mockCounterMetric.Delta).
+	// 	MaxTimes(1)
+	// c = Cursor{
+	// 	DB: s,
+	// }
+	// require.NoError(t, c.Add(parent, mockCounterMetric))
 }
+
+func TestGetNegative(t *testing.T) {
+	parent := context.Background()
+	mockVal := 55.3
+	mockDelta := int64(3)
+	mockGaugeMetric := &m.JSONMetrics{
+		ID:    "1",
+		MType: "gauge",
+		Value: &mockVal,
+	}
+	mockCounterMetric := &m.JSONMetrics{
+		ID:    "1",
+		MType: "counter",
+		Delta: &mockDelta,
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	s := mock_db.NewMockDriverMethods(ctrl)
+	s.EXPECT().
+		QueryRowContext(gomock.Any(), SelectFromGauge, mockGaugeMetric.ID).
+		MaxTimes(1)
+	c := Cursor{
+		DB: s,
+	}
+	_, err := c.Get(parent, mockGaugeMetric)
+	require.Error(t, err)
+
+	s = mock_db.NewMockDriverMethods(ctrl)
+	s.EXPECT().
+		QueryRowContext(gomock.Any(), SelectFromCounter, mockCounterMetric.ID).
+		MaxTimes(1)
+	c = Cursor{
+		DB: s,
+	}
+	_, err = c.Get(parent, mockCounterMetric)
+	require.Error(t, err)
+}
+
+// func TestAddBatchPositiveNoBufCap(t *testing.T) {
+// 	parent := context.Background()
+// 	mockVal := 55.3
+// 	mockGaugeMetrics := make([]*m.JSONMetrics, 0, 1)
+// 	mockGaugeMetrics = append(mockGaugeMetrics, &m.JSONMetrics{
+// 		ID:    "1",
+// 		MType: "gauge",
+// 		Value: &mockVal,
+// 	})
+// 	c := Cursor{
+// 		buffer: make([]*m.JSONMetrics, 0, 3),
+// 	}
+// 	require.NoError(t, c.AddBatch(parent, mockGaugeMetrics))
+// }
 
 // type addMock struct {}
 
@@ -332,36 +427,36 @@ func TestAzaza(t *testing.T) {
 	}
 }
 
-func TestAddBatchNegativeBufCap(t *testing.T) {
-	parent := context.Background()
-	mockVal := 55.3
-	mockDelta := int64(3)
-	mockGaugeMetric := &m.JSONMetrics{
-		ID:    "1",
-		MType: "gauge",
-		Value: &mockVal,
-	}
-	mockCounterMetric := &m.JSONMetrics{
-		ID:    "1",
-		MType: "counter",
-		Delta: &mockDelta,
-	}
-	mockBatch := make([]*m.JSONMetrics, 0, 2)
-	mockBatch = append(mockBatch, mockGaugeMetric, mockCounterMetric)
+// func TestAddBatchNegativeBufCap(t *testing.T) {
+// 	parent := context.Background()
+// 	mockVal := 55.3
+// 	mockDelta := int64(3)
+// 	mockGaugeMetric := &m.JSONMetrics{
+// 		ID:    "1",
+// 		MType: "gauge",
+// 		Value: &mockVal,
+// 	}
+// 	mockCounterMetric := &m.JSONMetrics{
+// 		ID:    "1",
+// 		MType: "counter",
+// 		Delta: &mockDelta,
+// 	}
+// 	mockBatch := make([]*m.JSONMetrics, 0, 2)
+// 	mockBatch = append(mockBatch, mockGaugeMetric, mockCounterMetric)
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+// 	ctrl := gomock.NewController(t)
+// 	defer ctrl.Finish()
 
-	s := mock_db.NewMockDriverMethods(ctrl)
-	s.EXPECT().
-		BeginTx(gomock.Any(), gomock.Any()).
-		Return(nil, errors.ErrorWithIntervalConvertion).
-		MaxTimes(1)
-	c := Cursor{
-		DB: s,
-	}
-	require.Error(t, c.AddBatch(parent, mockBatch))
-}
+// 	s := mock_db.NewMockDriverMethods(ctrl)
+// 	s.EXPECT().
+// 		BeginTx(gomock.Any(), gomock.Any()).
+// 		Return(nil, errors.ErrorWithIntervalConvertion).
+// 		MaxTimes(1)
+// 	c := Cursor{
+// 		DB: s,
+// 	}
+// 	require.Error(t, c.AddBatch(parent, mockBatch))
+// }
 
 // func TestAddBatchPositiveBufCap(t *testing.T) {
 // 	parent := context.Background()

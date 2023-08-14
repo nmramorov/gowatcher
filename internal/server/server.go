@@ -2,19 +2,24 @@ package server
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
+
+	"google.golang.org/grpc"
 
 	"github.com/nmramorov/gowatcher/internal/api/handlers"
 	"github.com/nmramorov/gowatcher/internal/config"
 	"github.com/nmramorov/gowatcher/internal/db"
 	"github.com/nmramorov/gowatcher/internal/file"
 	"github.com/nmramorov/gowatcher/internal/log"
+	pb "github.com/nmramorov/gowatcher/internal/proto"
 )
 
 func GetMetricsHandler(parent context.Context, options *config.ServerConfig) (*handlers.Handler, error) {
@@ -46,13 +51,15 @@ func GetMetricsHandler(parent context.Context, options *config.ServerConfig) (*h
 		storedMetrics, err := reader.ReadJSON()
 		if err != nil {
 			log.ErrorLog.Printf("Error happened during JSON reading: %e", err)
-			return handlers.NewHandler(options.Key, options.PrivateKeyPath, cursor), nil
+			return handlers.NewHandler(options.Key, options.PrivateKeyPath,
+				options.TrustedSubnet, cursor), nil
 		}
-		metricsHandler := handlers.NewHandlerFromSavedData(storedMetrics, options.Key, options.PrivateKeyPath, cursor)
+		metricsHandler := handlers.NewHandlerFromSavedData(storedMetrics, options.Key,
+			options.PrivateKeyPath, options.TrustedSubnet, cursor)
 		log.InfoLog.Println("Configuration restored.")
 		return metricsHandler, nil
 	}
-	return handlers.NewHandler(options.Key, options.PrivateKeyPath, cursor), nil
+	return handlers.NewHandler(options.Key, options.PrivateKeyPath, options.TrustedSubnet, cursor), nil
 }
 
 func StartSavingToDisk(killSig chan struct{}, options *config.ServerConfig, handler *handlers.Handler) error {
@@ -170,10 +177,28 @@ func (s *Server) Run(parent context.Context) error {
 		}
 	}()
 
-	log.InfoLog.Println("Web server is ready to accept connections...")
-	err = server.ListenAndServe()
-	if err != nil {
-		log.ErrorLog.Printf("Unexpected error occurred: %e", err)
+	if serverConfig.GRPC {
+		// определяем порт для сервера
+		listen, grpcErr := net.Listen("tcp", ":"+strings.Split(serverConfig.Address, ":")[1])
+		if grpcErr != nil {
+			log.ErrorLog.Fatal(grpcErr)
+		}
+		// создаём gRPC-сервер без зарегистрированной службы
+		s := grpc.NewServer()
+		// регистрируем сервис
+		pb.RegisterMetricsServer(s, &MetricsServer{})
+
+		log.InfoLog.Println("Сервер gRPC начал работу")
+		// получаем запрос gRPC
+		if err = s.Serve(listen); err != nil {
+			log.ErrorLog.Fatal(err)
+		}
+	} else {
+		log.InfoLog.Println("Web server is ready to accept connections...")
+		err = server.ListenAndServe()
+		if err != nil {
+			log.ErrorLog.Printf("Unexpected error occurred: %e", err)
+		}
 	}
 
 	<-idleConnsClosed

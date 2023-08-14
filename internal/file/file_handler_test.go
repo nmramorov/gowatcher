@@ -7,6 +7,7 @@ import (
 
 	"github.com/nmramorov/gowatcher/internal/collector/metrics"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestReaderWriter(t *testing.T) {
@@ -52,4 +53,14 @@ func TestReaderWriter(t *testing.T) {
 	}
 	fmt.Println(jsonContent)
 	assert.Equal(t, jsonContent, &testMetric)
+}
+
+func TestReaderWriterNegative(t *testing.T) {
+	filename := ""
+
+	_, err := NewWriter(filename)
+	require.Error(t, err)
+
+	_, err = NewReader(filename)
+	require.Error(t, err)
 }

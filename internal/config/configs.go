@@ -20,6 +20,8 @@ type ServerConfig struct {
 	Key            string
 	Database       string
 	PrivateKeyPath string
+	TrustedSubnet  string
+	GRPC           bool
 }
 
 func checkServerConfig(envs *env.ServerEnvConfig, clies *cli.ServerCLIOptions) *ServerConfig {
@@ -32,6 +34,8 @@ func checkServerConfig(envs *env.ServerEnvConfig, clies *cli.ServerCLIOptions) *
 	key := clies.Key
 	db := clies.Database
 	cryptoKey := clies.CryptoKey
+	subnet := clies.TrustedSubnet
+	grpc := clies.GRPC
 	if envs.Address != env.Address && envs.Address != addr {
 		addr = envs.Address
 	}
@@ -64,6 +68,12 @@ func checkServerConfig(envs *env.ServerEnvConfig, clies *cli.ServerCLIOptions) *
 	if cryptoKey == "" {
 		cryptoKey = envs.CryptoKey
 	}
+	if subnet == "" {
+		subnet = envs.TrustedSubnet
+	}
+	if envs.GRPC {
+		grpc = envs.GRPC
+	}
 	return &ServerConfig{
 		Address:        addr,
 		StoreInterval:  storeintNumeric,
@@ -72,6 +82,8 @@ func checkServerConfig(envs *env.ServerEnvConfig, clies *cli.ServerCLIOptions) *
 		Key:            key,
 		Database:       db,
 		PrivateKeyPath: cryptoKey,
+		TrustedSubnet:  subnet,
+		GRPC:           grpc,
 	}
 }
 
@@ -105,6 +117,7 @@ func GetServerConfig() (*ServerConfig, error) {
 				Restore:        jsonConfig.Restore,
 				PrivateKeyPath: jsonConfig.PrivateKeyPath,
 				Database:       jsonConfig.Database,
+				TrustedSubnet:  jsonConfig.TrustedSubnet,
 			}, nil
 		}
 		return checkServerConfig(envConfig, cliConfig), nil
@@ -122,6 +135,8 @@ func GetServerConfig() (*ServerConfig, error) {
 		StoreFile:      envConfig.StoreFile,
 		Database:       envConfig.Database,
 		PrivateKeyPath: envConfig.CryptoKey,
+		TrustedSubnet:  envConfig.TrustedSubnet,
+		GRPC:           envConfig.GRPC,
 	}, nil
 }
 
@@ -132,6 +147,7 @@ type AgentConfig struct {
 	Key            string
 	RateLimit      int
 	PublicKeyPath  string
+	GRPC           bool
 }
 
 func checkAgentConfig(envs *env.AgentEnvConfig, clies *cli.AgentCLIOptions) *AgentConfig {
@@ -143,6 +159,7 @@ func checkAgentConfig(envs *env.AgentEnvConfig, clies *cli.AgentCLIOptions) *Age
 	pollintNumeric := int(clies.GetNumericInterval("PollInterval"))
 	rate := clies.RateLimit
 	cryptoKey := clies.CryptoKey
+	grpc := clies.GRPC
 	if envs.Address != env.Address && envs.Address != addr {
 		addr = envs.Address
 	}
@@ -161,6 +178,9 @@ func checkAgentConfig(envs *env.AgentEnvConfig, clies *cli.AgentCLIOptions) *Age
 	if cryptoKey == "" {
 		cryptoKey = envs.CryptoKey
 	}
+	if envs.GRPC {
+		grpc = envs.GRPC
+	}
 	return &AgentConfig{
 		Address:        addr,
 		PollInterval:   pollintNumeric,
@@ -168,6 +188,7 @@ func checkAgentConfig(envs *env.AgentEnvConfig, clies *cli.AgentCLIOptions) *Age
 		Key:            key,
 		RateLimit:      rate,
 		PublicKeyPath:  cryptoKey,
+		GRPC:           grpc,
 	}
 }
 
@@ -205,6 +226,7 @@ func GetAgentConfig() (*AgentConfig, error) {
 				PollInterval:   int(cli.GetMultiplier(jsonConfig.PollInterval) * pollValue),
 				ReportInterval: int(cli.GetMultiplier(jsonConfig.ReportInterval) * repValue),
 				PublicKeyPath:  jsonConfig.PublicKeyPath,
+				GRPC:           false,
 			}, nil
 		}
 		return checkAgentConfig(envConfig, cliConfig), nil
@@ -215,5 +237,6 @@ func GetAgentConfig() (*AgentConfig, error) {
 		ReportInterval: int(envConfig.GetNumericInterval("ReportInterval")),
 		Key:            envConfig.Key,
 		PublicKeyPath:  envConfig.CryptoKey,
+		GRPC:           envConfig.GRPC,
 	}, nil
 }

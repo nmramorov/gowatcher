@@ -163,10 +163,22 @@ func TestPOSTMetricsHandlerNoJson(t *testing.T) {
 				metricValue: "dfdf",
 			},
 		},
+		{
+			name: "Negative test Counter 3",
+			want: want{
+				code:     405,
+				response: "",
+			},
+			args: arguments{
+				metricType:  "counter",
+				metricName:  "newValue2",
+				metricValue: "dfdf",
+			},
+		},
 	}
 	ctx := context.Background()
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", "", MOCKCURSOR)
+	metricsHandler := NewHandler("", "", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -174,7 +186,14 @@ func TestPOSTMetricsHandlerNoJson(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			urlPath := fmt.Sprintf("/update/%s/%s/%s", tt.args.metricType, tt.args.metricName, tt.args.metricValue)
+			urlPath := fmt.Sprintf("/update/%s/%s/%s", tt.args.metricType,
+				tt.args.metricName, tt.args.metricValue)
+			if tt.name == "Negative test Counter 3" {
+				statusCode, body := testRequest(t, ts, "GET", urlPath)
+				assert.Equal(t, tt.want.code, statusCode)
+				assert.Equal(t, tt.want.response, body)
+				return
+			}
 			statusCode, body := testRequest(t, ts, "POST", urlPath)
 			assert.Equal(t, tt.want.code, statusCode)
 			assert.Equal(t, tt.want.response, body)
@@ -254,7 +273,7 @@ func TestGETMetricsHandler(t *testing.T) {
 	}
 	ctx := context.Background()
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", "", MOCKCURSOR)
+	metricsHandler := NewHandler("", "", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -274,8 +293,8 @@ func TestHTML(t *testing.T) {
 	ctx := context.Background()
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", "", MOCKCURSOR)
-	metricsHandler.collector.UpdateMetrics()
+	metricsHandler := NewHandler("", "", "", MOCKCURSOR)
+	metricsHandler.Collector.UpdateMetrics()
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -342,7 +361,7 @@ func TestPOSTMetricsHandlerJson(t *testing.T) {
 	ctx := context.Background()
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", "", MOCKCURSOR)
+	metricsHandler := NewHandler("", "", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -445,6 +464,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 					ID:    "GaugeMetric",
 					MType: "gauge",
 					Value: &GaugeVal,
+					Hash:  "3656285f954ce664a9b477f1a8cc166f78d1553f7d3ba193516afee3aca883dc",
 				},
 			},
 			args: arguments{
@@ -460,6 +480,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 					ID:    "CounterMetric",
 					MType: "counter",
 					Delta: &CountVal,
+					Hash:  "5390e57146a790545f73c78f7ec5f9718fef165f7d1a24904c0b684e6d405d0d",
 				},
 			},
 			args: arguments{
@@ -475,6 +496,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 					ID:    "PollCount",
 					MType: "counter",
 					Delta: &PollCount1,
+					Hash:  "fedfb63309d7ed69cf8a0e67f5229246f7efd62eba5d81d7c02b1674507275b2",
 				},
 			},
 			args: arguments{
@@ -490,6 +512,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 					ID:    "PollCount",
 					MType: "counter",
 					Delta: &PollCount2,
+					Hash:  "4a589fccfeff20c35ea3a2c9938a53260ebe59a1c99cd04249935336216e6dc3",
 				},
 			},
 			args: arguments{
@@ -501,7 +524,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 	ctx := context.Background()
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", "", MOCKCURSOR)
+	metricsHandler := NewHandler("some key", "", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -517,7 +540,7 @@ func TestPOSTValueMetricsHandlerJson(t *testing.T) {
 				panic("Test error: error with unmarshalling JSON POST /value method")
 			}
 			assert.Equal(t, tt.want.response, result)
-			metricsHandler.collector.UpdateMetrics()
+			metricsHandler.Collector.UpdateMetrics()
 		})
 	}
 }
@@ -542,7 +565,7 @@ func TestPing(t *testing.T) {
 	ctx := context.Background()
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", "", MOCKCURSOR)
+	metricsHandler := NewHandler("fdsfds", "", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -562,7 +585,10 @@ func TestNewHandlerFromSavedData(t *testing.T) {
 	ctx := context.Background()
 	col := collector.NewCollector()
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	assert.NotPanics(t, func() { NewHandlerFromSavedData(col.GetMetrics(), "sss", "", MOCKCURSOR) })
+	assert.NotPanics(t, func() {
+		NewHandlerFromSavedData(col.GetMetrics(),
+			"sss", "", "", MOCKCURSOR)
+	})
 }
 
 func TestPOSTMetricsHandlerJsonBatch(t *testing.T) {
@@ -607,7 +633,7 @@ func TestPOSTMetricsHandlerJsonBatch(t *testing.T) {
 	ctx := context.Background()
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", "", MOCKCURSOR)
+	metricsHandler := NewHandler("", "", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -665,7 +691,7 @@ func TestPOSTUpdateJsonBatch(t *testing.T) {
 	ctx := context.Background()
 
 	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
-	metricsHandler := NewHandler("", "", MOCKCURSOR)
+	metricsHandler := NewHandler("", "", "", MOCKCURSOR)
 
 	ts := httptest.NewServer(metricsHandler)
 
@@ -679,4 +705,197 @@ func TestPOSTUpdateJsonBatch(t *testing.T) {
 			assert.NotNil(t, body)
 		})
 	}
+}
+
+func TestDecodeMsg(t *testing.T) {
+	GaugeVal := 44.4
+	var CountVal int64 = 3
+	ctx := context.Background()
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
+
+	type want struct {
+		code int
+	}
+	tests := []struct {
+		name    string
+		want    want
+		handler *Handler
+		args    *m.JSONMetrics
+	}{
+		{
+			name: "Negative test Gauge 1",
+			want: want{
+				code: 400,
+			},
+			handler: NewHandler("dfd", "./key.pem", "", MOCKCURSOR),
+			args: &m.JSONMetrics{
+				ID:    "GaugeMetric",
+				MType: "gauge",
+				Value: &GaugeVal,
+			},
+		},
+		{
+			name:    "Negative test Counter 1",
+			handler: NewHandler("dsfdsf", "./key.pem", "", MOCKCURSOR),
+			want: want{
+				code: 400,
+			},
+			args: &m.JSONMetrics{
+				ID:    "CounterMetric",
+				MType: "counter",
+				Delta: &CountVal,
+			},
+		},
+		{
+			name:    "Positive test Counter 1",
+			handler: NewHandler("dfdsfsdf", "", "", MOCKCURSOR),
+			want: want{
+				code: 200,
+			},
+			args: &m.JSONMetrics{
+				ID:    "CounterMetric",
+				MType: "counter",
+				Delta: &CountVal,
+			},
+		},
+		{
+			name:    "Negative test Counter 2",
+			handler: NewHandler("dsfsdf", "./.", "", MOCKCURSOR),
+			want: want{
+				code: 400,
+			},
+			args: &m.JSONMetrics{
+				ID:    "CounterMetric",
+				MType: "counter",
+				Delta: &CountVal,
+			},
+		},
+		{
+			name:    "Negative test Counter 3",
+			handler: NewHandler("sdfdsfds", "./key.pem", "", MOCKCURSOR),
+			want: want{
+				code: 400,
+			},
+			args: &m.JSONMetrics{
+				ID:    "CounterMetric",
+				MType: "fdsf",
+				Delta: &CountVal,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		ts := httptest.NewServer(tt.handler)
+
+		defer ts.Close()
+		t.Run(tt.name, func(t *testing.T) {
+			urlPath := "/update/"
+			statusCode, body := testRequestJSON(t, ts, "POST", urlPath, tt.args)
+			assert.Equal(t, tt.want.code, statusCode)
+			assert.NotNil(t, body)
+		})
+	}
+}
+
+func TestHandler_ValidateIP(t *testing.T) {
+	ctx := context.Background()
+
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
+	metricsHandlerWithoutSubnet := NewHandler("", "", "", MOCKCURSOR)
+	metricsHandlerWithWrongCIDR := NewHandler("", "", "sdfdsf", MOCKCURSOR)
+	metricsHandlerWithProperSubnet := NewHandler("", "", "192.168.1.0/24", MOCKCURSOR)
+	metricsHandlerWithWrongSubnet := NewHandler("", "", "192.168.0.1/24", MOCKCURSOR)
+
+	type want struct {
+		code int
+	}
+	tests := []struct {
+		name string
+		want want
+		args *Handler
+	}{
+		{
+			name: "Positive test no subnet provided",
+			want: want{
+				code: 200,
+			},
+			args: metricsHandlerWithoutSubnet,
+		},
+		{
+			name: "Positive test proper subnet provided",
+			want: want{
+				code: 200,
+			},
+			args: metricsHandlerWithProperSubnet,
+		},
+		{
+			name: "Negative test wrong subnet",
+			want: want{
+				code: 403,
+			},
+			args: metricsHandlerWithWrongSubnet,
+		},
+		{
+			name: "Negative test wrong CIDR",
+			want: want{
+				code: 500,
+			},
+			args: metricsHandlerWithWrongCIDR,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := httptest.NewServer(tt.args)
+
+			defer ts.Close()
+			urlPath := ts.URL + "/"
+			req, err := http.NewRequest("GET", urlPath, nil)
+			req.Header.Add("X-Real-IP", "192.168.1.11:8080")
+			require.NoError(t, err)
+
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+			assert.Equal(t, tt.want.code, resp.StatusCode)
+		})
+	}
+}
+
+func TestCheckHash(t *testing.T) {
+	ctx := context.Background()
+	delta := int64(3)
+	value := float64(0.0)
+
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
+	metricsHandler := NewHandler("very secret key", "", "", MOCKCURSOR)
+	err := metricsHandler.CheckHash(&m.JSONMetrics{
+		ID:    "MyMetric",
+		MType: "counter",
+		Delta: &delta,
+	})
+	require.NoError(t, err)
+	err = metricsHandler.CheckHash(&m.JSONMetrics{
+		ID:    "MyMetric",
+		MType: "gauge",
+		Value: &value,
+	})
+	require.NoError(t, err)
+}
+
+func TestInitDB(t *testing.T) {
+	ctx := context.Background()
+
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
+	metricsHandler := NewHandler("very secret key", "", "", MOCKCURSOR)
+	err := metricsHandler.InitDB(ctx)
+	require.Error(t, err)
+}
+
+func TestGetCurrentMetrics(t *testing.T) {
+	ctx := context.Background()
+
+	MOCKCURSOR, _ := db.NewCursor(ctx, "", "pgx")
+	metricsHandler := NewHandler("very secret key", "", "", MOCKCURSOR)
+	require.NotPanics(t, func() { metricsHandler.GetCurrentMetrics() })
 }

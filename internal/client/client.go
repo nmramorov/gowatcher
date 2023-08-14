@@ -2,20 +2,26 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	col "github.com/nmramorov/gowatcher/internal/collector"
 	m "github.com/nmramorov/gowatcher/internal/collector/metrics"
 	"github.com/nmramorov/gowatcher/internal/config"
 	"github.com/nmramorov/gowatcher/internal/hashgen"
 	"github.com/nmramorov/gowatcher/internal/log"
+	pb "github.com/nmramorov/gowatcher/internal/proto"
 	sec "github.com/nmramorov/gowatcher/internal/security"
 )
 
@@ -32,6 +38,7 @@ func CreateRequests(endpoint string, mtrcs *m.Metrics) []*http.Request {
 			log.ErrorLog.Printf("Could not do POST request for gauge with params: %s %f", k, v)
 		}
 		req.Header.Add("Content-Type", "text/plain")
+		req.Header.Add("X-Real-IP", endpoint)
 		requests = append(requests, req)
 	}
 	for k, v := range mtrcs.CounterMetrics {
@@ -40,6 +47,7 @@ func CreateRequests(endpoint string, mtrcs *m.Metrics) []*http.Request {
 			log.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
 		}
 		req.Header.Add("Content-Type", "text/plain")
+		req.Header.Add("X-Real-IP", endpoint)
 		requests = append(requests, req)
 	}
 	return requests
@@ -95,6 +103,7 @@ func createRequestsBatch(endpoint, path, certPath string, src *m.Metrics) *http.
 		log.ErrorLog.Println("Could not do POST batch request")
 	}
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-Real-IP", endpoint)
 	return req
 }
 
@@ -152,6 +161,7 @@ func createGaugeRequests(endpoint, path, key, certPath string, gaugeMetrics map[
 			log.ErrorLog.Printf("Could not do POST request for gauge with params: %s %f", k, v)
 		}
 		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("X-Real-IP", endpoint)
 		requests = append(requests, req)
 	}
 	return requests
@@ -166,6 +176,7 @@ func createCounterRequests(endpoint, path, key, certPath string, counterMetrics 
 			log.ErrorLog.Printf("Could not do POST request for counter with params: %s %d", k, v)
 		}
 		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("X-Real-IP", endpoint)
 		requests = append(requests, req)
 	}
 	return requests
@@ -236,13 +247,17 @@ type Job struct {
 	RequestType string
 }
 
-func RunTickers(stateSig chan struct{}, agentConfig *config.AgentConfig, jobCh chan<- *Job) {
+func RunTickers(ctx context.Context, stateSig chan struct{}, agentConfig *config.AgentConfig, jobCh chan<- *Job) {
 	log.InfoLog.Println("Tickers are running...")
 	updateTicker := time.NewTicker(time.Duration(agentConfig.PollInterval) * time.Second)
 	pushTicker := time.NewTicker(time.Duration(agentConfig.ReportInterval) * time.Second)
 
 	for {
 		select {
+		case <-ctx.Done():
+			log.InfoLog.Println("received context cancel func, shutting down tickers")
+			close(jobCh)
+			return
 		case <-stateSig:
 			log.InfoLog.Println("received shutdown signal, shutting down tickers")
 			close(jobCh)
@@ -259,42 +274,145 @@ func RunTickers(stateSig chan struct{}, agentConfig *config.AgentConfig, jobCh c
 	}
 }
 
-func RunConcurrently(stateSignal chan struct{}, config *config.AgentConfig, client *http.Client, endpoint string) {
+func RunConcurrently(ctx context.Context, stateSignal chan struct{}, config *config.AgentConfig,
+	client *http.Client, grpcClient pb.MetricsClient, endpoint string,
+) {
 	jobCh := make(chan *Job, config.RateLimit)
 	var wg sync.WaitGroup
 	collector := col.NewCollector()
 	wg.Add(1)
 	go func() {
-		RunTickers(stateSignal, config, jobCh)
+		RunTickers(ctx, stateSignal, config, jobCh)
 		wg.Done()
 	}()
-	for job := range jobCh {
-		log.InfoLog.Printf("Running job %s", job.RequestType)
-		RunJob(job, collector, client, endpoint, config)
+	select {
+	case <-ctx.Done():
+		wg.Wait()
+		return
+	default:
+		for job := range jobCh {
+			log.InfoLog.Printf("Running job %s", job.RequestType)
+			RunJob(ctx, job, collector, client, grpcClient, endpoint, config)
+		}
 	}
 	wg.Wait()
 }
 
-func RunJob(job *Job, collector *col.Collector, client *http.Client, endpoint string, agentConfig *config.AgentConfig) {
-	switch job.RequestType {
-	case "update":
-		collector.UpdateMetrics()
-		log.InfoLog.Println("Metrics have been updated concurrently")
-		collector.UpdateExtraMetrics()
-		log.InfoLog.Println("Extra metrics have been updated concurrently")
-	case "push":
-		PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key, agentConfig.PublicKeyPath)
-		log.InfoLog.Println("Metrics have been pushed")
-		PushMetricsBatch(client, endpoint, agentConfig.PublicKeyPath, collector.GetMetrics())
-		log.InfoLog.Println("Batch metrics were pushed")
-		GetMetricsValues(client, endpoint, agentConfig.Key, agentConfig.PublicKeyPath, collector.GetMetrics())
-		log.InfoLog.Println("Metrics update has been received")
+func PushMetricsGRPC(ctx context.Context, col *col.Collector, client pb.MetricsClient) {
+	for k, v := range col.Metrics.CounterMetrics {
+		resp, err := client.AddMetric(ctx, &pb.AddMetricRequest{
+			Metric: &pb.Metric{
+				Id:    k,
+				Mtype: "counter",
+				Delta: int64(v),
+			},
+		})
+		if err != nil {
+			log.ErrorLog.Printf("GRPC. Error pushing metric %s: %e", k, err)
+		}
+		if resp != nil && resp.Error != "" {
+			log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
+		}
+	}
+	for k, v := range col.Metrics.GaugeMetrics {
+		resp, err := client.AddMetric(ctx, &pb.AddMetricRequest{
+			Metric: &pb.Metric{
+				Id:    k,
+				Mtype: "counter",
+				Value: float64(v),
+			},
+		})
+		if err != nil {
+			log.ErrorLog.Printf("GRPC. Error pushing metric %s: %e", k, err)
+		}
+		if resp != nil && resp.Error != "" {
+			log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
+		}
+	}
+}
+
+func GetMetricsGRPC(ctx context.Context, metrics *m.Metrics, client pb.MetricsClient) {
+	for k := range metrics.CounterMetrics {
+		resp, err := client.GetMetric(
+			ctx, &pb.GetMetricRequest{
+				Metric: &pb.Metric{
+					Id:    k,
+					Mtype: "counter",
+				},
+			},
+		)
+		if err != nil {
+			log.ErrorLog.Printf("GRPC. Error getting metric %s: %e", k, err)
+		} else {
+			if resp.Error != "" {
+				log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
+			} else {
+				log.InfoLog.Printf("GRPC received metric %s:", resp.Metric)
+			}
+		}
+	}
+	for k := range metrics.GaugeMetrics {
+		resp, err := client.GetMetric(
+			ctx, &pb.GetMetricRequest{
+				Metric: &pb.Metric{
+					Id:    k,
+					Mtype: "gauge",
+				},
+			},
+		)
+		if err != nil {
+			log.ErrorLog.Printf("GRPC. Error getting metric %s: %e", k, err)
+		} else {
+			if resp.Error != "" {
+				log.ErrorLog.Printf("GRPC resp error: %s", resp.Error)
+			} else {
+				log.InfoLog.Printf("GRPC received metric %s:", resp.Metric)
+			}
+		}
+	}
+}
+
+func RunJob(ctx context.Context, job *Job, collector *col.Collector, client *http.Client,
+	grpcClient pb.MetricsClient, endpoint string, agentConfig *config.AgentConfig,
+) {
+	jobCtx, cancel := context.WithTimeout(ctx, time.Duration(10)*time.Second)
+	defer cancel()
+
+	select {
+	case <-ctx.Done():
+		log.InfoLog.Println("Context cancel was called, stopping job")
+		return
+	default:
+		switch job.RequestType {
+		case "update":
+			collector.UpdateMetrics()
+			log.InfoLog.Println("Metrics have been updated concurrently")
+			collector.UpdateExtraMetrics()
+			log.InfoLog.Println("Extra metrics have been updated concurrently")
+		case "push":
+			if agentConfig.GRPC {
+				PushMetricsGRPC(
+					jobCtx, collector, grpcClient,
+				)
+				log.InfoLog.Println("Metrics have been pushed via GRPC")
+				GetMetricsGRPC(jobCtx, collector.GetMetrics(), grpcClient)
+				log.InfoLog.Println("Metrics have been received via GRPC")
+			} else {
+				PushMetrics(client, endpoint, collector.GetMetrics(), agentConfig.Key, agentConfig.PublicKeyPath)
+				log.InfoLog.Println("Metrics have been pushed")
+				PushMetricsBatch(client, endpoint, agentConfig.PublicKeyPath, collector.GetMetrics())
+				log.InfoLog.Println("Batch metrics were pushed")
+				GetMetricsValues(client, endpoint, agentConfig.Key, agentConfig.PublicKeyPath, collector.GetMetrics())
+				log.InfoLog.Println("Metrics update has been received")
+			}
+		}
 	}
 }
 
 type Client struct{}
 
 func (c *Client) Run() {
+	ctx := context.Background()
 	idleConnsClosed := make(chan struct{})
 
 	sigint := make(chan os.Signal, 1)
@@ -315,7 +433,24 @@ func (c *Client) Run() {
 	endpoint := "http://" + agentConfig.Address
 
 	client := &http.Client{}
+	var grpcClient pb.MetricsClient
+	if agentConfig.GRPC {
+		conn, err := grpc.Dial(":"+strings.Split(agentConfig.Address, ":")[1],
+			grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.ErrorLog.Fatal(err)
+		}
+		defer func() {
+			err := conn.Close()
+			if err != nil {
+				log.ErrorLog.Println("error closing grpc client")
+			}
+		}()
+		// получаем переменную интерфейсного типа MetricsClient,
+		// через которую будем отправлять сообщения
+		grpcClient = pb.NewMetricsClient(conn)
+	}
 
-	RunConcurrently(clientKill, agentConfig, client, endpoint)
+	RunConcurrently(ctx, clientKill, agentConfig, client, grpcClient, endpoint)
 	<-idleConnsClosed
 }
